@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mr. Caf's Science News</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────── */
+    :root {
+      --bg:          #F7F8FA;
+      --surface:     #FFFFFF;
+      --text:        #1A1A2E;
+      --text-muted:  #6B7280;
+      --border:      #E5E7EB;
+      --shadow:      0 1px 4px rgba(0,0,0,.07), 0 2px 12px rgba(0,0,0,.05);
+      --shadow-hover:0 6px 24px rgba(0,0,0,.13);
+      --radius:      12px;
+
+      --physical:    #4361EE;
+      --life:        #2DC653;
+      --earth:       #F77F00;
+      --tech:        #9B5DE5;
+
+      --filter-active-bg: #1A1A2E;
+      --filter-active-text: #FFFFFF;
+    }
+
+    [data-theme="dark"] {
+      --bg:         #0F0F1A;
+      --surface:    #1A1A2E;
+      --text:       #F0F0F8;
+      --text-muted: #8888A8;
+      --border:     #2A2A40;
+      --shadow:     0 1px 4px rgba(0,0,0,.3), 0 2px 12px rgba(0,0,0,.2);
+      --shadow-hover:0 6px 24px rgba(0,0,0,.5);
+      --filter-active-bg: #F0F0F8;
+      --filter-active-text: #0F0F1A;
+    }
+
+    /* ── Reset & Base ───────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background .25s, color .25s;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: background .25s, border-color .25s;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .site-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      color: var(--text);
+    }
+
+    .site-subtitle {
+      font-size: .8rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* ── Dark mode toggle ───────────────────────────────────── */
+    .theme-toggle {
+      background: none;
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 12px;
+      cursor: pointer;
+      font-size: .8rem;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: border-color .2s, color .2s;
+      white-space: nowrap;
+    }
+    .theme-toggle:hover { border-color: var(--text-muted); color: var(--text); }
+
+    /* ── Controls bar ───────────────────────────────────────── */
+    .controls {
+      padding: 20px 32px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .search-wrap {
+      position: relative;
+      max-width: 480px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    #search {
+      width: 100%;
+      padding: 10px 16px 10px 40px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: .9rem;
+      transition: border-color .2s, background .25s;
+      outline: none;
+    }
+    #search:focus { border-color: var(--physical); }
+    #search::placeholder { color: var(--text-muted); }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      font-family: 'Inter', sans-serif;
+      font-size: .8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .filter-btn:hover { border-color: var(--text-muted); color: var(--text); }
+    .filter-btn.active {
+      background: var(--filter-active-bg);
+      color: var(--filter-active-text);
+      border-color: var(--filter-active-bg);
+    }
+    .filter-btn[data-cat="Physical Science"].active   { background: var(--physical); border-color: var(--physical); color: #fff; }
+    .filter-btn[data-cat="Life Science"].active        { background: var(--life);     border-color: var(--life);     color: #fff; }
+    .filter-btn[data-cat="Earth & Space Science"].active { background: var(--earth); border-color: var(--earth);   color: #fff; }
+    .filter-btn[data-cat="Technology & Engineering"].active { background: var(--tech); border-color: var(--tech); color: #fff; }
+
+    /* ── Results count ──────────────────────────────────────── */
+    .results-bar {
+      padding: 14px 32px 0;
+      font-size: .8rem;
+      color: var(--text-muted);
+      min-height: 28px;
+    }
+
+    /* ── Grid ───────────────────────────────────────────────── */
+    .grid {
+      padding: 16px 32px 48px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: 1fr;
+      gap: 20px;
+    }
+
+    /* ── Card ───────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      border-top: 4px solid var(--border);
+      transition: transform .2s, box-shadow .2s, background .25s, opacity .25s;
+      cursor: pointer;
+      position: relative;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    /* Reviewed state — full grayscale, clearly "done" */
+    .card.reviewed {
+      filter: grayscale(1);
+      opacity: .55;
+    }
+    .card.reviewed:hover {
+      filter: grayscale(1);
+      opacity: .75;
+    }
+
+    /* ── Reviewed filter button group ───────────────────────── */
+    .reviewed-filters {
+      display: flex;
+      gap: 4px;
+      margin-left: auto;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 3px;
+    }
+    .rev-btn {
+      padding: 4px 12px;
+      border-radius: 16px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Inter', sans-serif;
+      font-size: .78rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .rev-btn:hover { color: var(--text); }
+    .rev-btn.active {
+      background: var(--filter-active-bg);
+      color: var(--filter-active-text);
+    }
+
+    .card[data-cat="Physical Science"]          { border-top-color: var(--physical); }
+    .card[data-cat="Life Science"]               { border-top-color: var(--life); }
+    .card[data-cat="Earth & Space Science"]      { border-top-color: var(--earth); }
+    .card[data-cat="Technology & Engineering"]   { border-top-color: var(--tech); }
+
+    /* ── Thumbnail wrapper (for overlays) ───────────────────── */
+    .card-thumb-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      flex-shrink: 0;
+      background: var(--border);
+    }
+
+    .card-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .card-thumb-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 2rem;
+    }
+
+    /* Video play badge — bottom-left of thumbnail */
+    .video-badge {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(0,0,0,.62);
+      backdrop-filter: blur(4px);
+      border-radius: 6px;
+      padding: 3px 8px 3px 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: .7rem;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: .02em;
+      pointer-events: none;
+      user-select: none;
+    }
+    .video-badge svg { flex-shrink: 0; }
+
+    /* Reviewed checkmark — top-right corner of card */
+    .check-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 10;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.7);
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(4px);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s, border-color .15s, transform .15s;
+      color: transparent;
+    }
+    .check-btn:hover {
+      background: rgba(0,0,0,.55);
+      border-color: #fff;
+      transform: scale(1.1);
+    }
+    .check-btn svg { width: 14px; height: 14px; stroke: #fff; stroke-width: 2.5; fill: none; }
+
+    .card.reviewed .check-btn {
+      background: #22c55e;
+      border-color: #22c55e;
+    }
+    .card.reviewed .check-btn:hover {
+      background: #16a34a;
+      border-color: #16a34a;
+    }
+
+    .card-body {
+      padding: 14px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .card-badge {
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .card[data-cat="Physical Science"]        .card-badge { color: var(--physical); }
+    .card[data-cat="Life Science"]             .card-badge { color: var(--life); }
+    .card[data-cat="Earth & Space Science"]    .card-badge { color: var(--earth); }
+    .card[data-cat="Technology & Engineering"] .card-badge { color: var(--tech); }
+
+    .card-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: .95rem;
+      font-weight: 600;
+      line-height: 1.35;
+      color: var(--text);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .card-note {
+      font-size: .82rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .card-domain {
+      font-size: .72rem;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 65%;
+    }
+
+    .card-date {
+      font-size: .72rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    /* ── Empty / loading states ─────────────────────────────── */
+    .state-msg {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 64px 0;
+      color: var(--text-muted);
+      font-size: .95rem;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--physical);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      header { padding: 14px 16px; }
+      .site-subtitle { display: none; }
+      .controls { padding: 16px 16px 0; }
+      .results-bar { padding: 12px 16px 0; }
+      .grid { padding: 12px 16px 40px; grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card { transition: none; }
+      .spinner { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <span class="site-title">Mr. Caf's Science News</span>
+      <span class="site-subtitle">Curated reads &amp; videos</span>
+    </div>
+    <div class="header-right">
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+        <span id="themeIcon">🌙</span>
+        <span id="themeLabel">Dark</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="search-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="search" placeholder="Search articles, videos, topics…" autocomplete="off" />
+    </div>
+    <div class="filters">
+      <button class="filter-btn active" data-cat="All">All</button>
+      <button class="filter-btn" data-cat="Physical Science">Physical Science</button>
+      <button class="filter-btn" data-cat="Life Science">Life Science</button>
+      <button class="filter-btn" data-cat="Earth & Space Science">Earth &amp; Space Science</button>
+      <button class="filter-btn" data-cat="Technology & Engineering">Technology &amp; Engineering</button>
+      <div class="reviewed-filters">
+        <button class="rev-btn active" data-rev="all">Show All</button>
+        <button class="rev-btn" data-rev="hide">Hide Reviewed</button>
+        <button class="rev-btn" data-rev="only">Reviewed Only</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="results-bar" id="resultsBar"></div>
+
+  <main class="grid" id="grid">
+    <div class="state-msg">
+      <div class="spinner"></div>
+      Loading posts…
+    </div>
+  </main>
+
+  <script>
+    // ── Config ────────────────────────────────────────────────
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT4iP3G0C8-XPeT2puch308IS6ubR13pQplXZc8TBsZE5zIbZ8Z6YzoWEfeLO8geQdd0yF3RmJZKeFi/pub?output=csv';
+
+    // ── State ─────────────────────────────────────────────────
+    let allPosts      = [];
+    let activeFilter  = 'All';
+    let searchQuery   = '';
+    let reviewedMode  = 'all'; // 'all' | 'hide' | 'only' 
+
+    // ── Reviewed set (persisted in localStorage) ──────────────
+    const STORAGE_KEY = 'cafBlogReviewed';
+
+    function loadReviewed() {
+      try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')); }
+      catch { return new Set(); }
+    }
+
+    function saveReviewed(set) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+    }
+
+    let reviewedSet = loadReviewed();
+
+    function toggleReviewed(link) {
+      if (reviewedSet.has(link)) reviewedSet.delete(link);
+      else reviewedSet.add(link);
+      saveReviewed(reviewedSet);
+    }
+
+    // ── Theme ─────────────────────────────────────────────────
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon   = document.getElementById('themeIcon');
+    const themeLabel  = document.getElementById('themeLabel');
+
+    function applyTheme(dark) {
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      themeIcon.textContent  = dark ? '☀️' : '🌙';
+      themeLabel.textContent = dark ? 'Light' : 'Dark';
+      localStorage.setItem('cafBlogTheme', dark ? 'dark' : 'light');
+    }
+
+    const savedTheme = localStorage.getItem('cafBlogTheme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(savedTheme ? savedTheme === 'dark' : prefersDark);
+
+    themeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      applyTheme(!isDark);
+    });
+
+    // ── CSV parser ────────────────────────────────────────────
+    function parseCSV(text) {
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) return [];
+      const headers = splitCSVLine(lines[0]);
+      return lines.slice(1).map(line => {
+        const vals = splitCSVLine(line);
+        const obj = {};
+        headers.forEach((h, i) => obj[h.trim()] = (vals[i] || '').trim());
+        return obj;
+      }).filter(r => r['Link']);
+    }
+
+    function splitCSVLine(line) {
+      const result = [];
+      let cur = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
+          else inQuotes = !inQuotes;
+        } else if (ch === ',' && !inQuotes) {
+          result.push(cur); cur = '';
+        } else {
+          cur += ch;
+        }
+      }
+      result.push(cur);
+      return result;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────
+    function getDomain(url) {
+      try { return new URL(url).hostname.replace(/^www\./, ''); }
+      catch { return url; }
+    }
+
+    function formatDate(ts) {
+      const d = new Date(ts);
+      if (isNaN(d)) return '';
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function isYouTube(url) {
+      return /youtube\.com|youtu\.be/.test(url);
+    }
+
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    // ── Render ────────────────────────────────────────────────
+    function render() {
+      const grid       = document.getElementById('grid');
+      const resultsBar = document.getElementById('resultsBar');
+      const q          = searchQuery.toLowerCase();
+
+      const filtered = allPosts.filter(post => {
+        const isRev = reviewedSet.has(post['Link']);
+        if (reviewedMode === 'hide' && isRev) return false;
+        if (reviewedMode === 'only' && !isRev) return false;
+        const matchesCat    = activeFilter === 'All' || post['Content Area'] === activeFilter;
+        const matchesSearch = !q ||
+          (post['Title']        || '').toLowerCase().includes(q) ||
+          (post['Note']         || '').toLowerCase().includes(q) ||
+          (post['Link']         || '').toLowerCase().includes(q) ||
+          (post['Content Area'] || '').toLowerCase().includes(q);
+        return matchesCat && matchesSearch;
+      });
+
+      // Results count
+      if (allPosts.length > 0) {
+        const reviewedCount = [...reviewedSet].filter(l => allPosts.some(p => p['Link'] === l)).length;
+        const reviewedNote  = reviewedCount > 0 ? ` · ${reviewedCount} reviewed` : '';
+        resultsBar.textContent = filtered.length === allPosts.length
+          ? `${allPosts.length} post${allPosts.length !== 1 ? 's' : ''}${reviewedNote}`
+          : `${filtered.length} of ${allPosts.length} posts${reviewedNote}`;
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="state-msg">${
+          allPosts.length === 0 ? 'No posts yet — check back soon!' : 'No posts match your search.'
+        }</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(post => {
+        const cat      = post['Content Area'] || '';
+        const title    = post['Title'] || getDomain(post['Link']);
+        const note     = post['Note'] || '';
+        const thumb    = post['Thumbnail URL'] || '';
+        const link     = post['Link'] || '#';
+        const date     = post['Published Date'] || formatDate(post['Timestamp']);
+        const domain   = getDomain(link);
+        const isYT     = isYouTube(link);
+        const isRev    = reviewedSet.has(link);
+        const safeLink = escHtml(link);
+
+        // Thumbnail area
+        const thumbImg = thumb
+          ? `<img class="card-thumb" src="${escHtml(thumb)}" alt="" loading="lazy"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : '';
+        const thumbPlaceholder = `<div class="card-thumb-placeholder" style="${thumb ? 'display:none' : ''}">${isYT ? '▶' : '🔗'}</div>`;
+
+        // Video badge (only for YouTube)
+        const videoBadge = isYT ? `
+          <div class="video-badge">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="white"><polygon points="2,1 9,5 2,9"/></svg>
+            VIDEO
+          </div>` : '';
+
+        // Checkmark button (SVG checkmark, filled green when reviewed)
+        const checkBtn = `
+          <button class="check-btn" aria-label="${isRev ? 'Mark as unreviewed' : 'Mark as reviewed'}"
+            onclick="event.stopPropagation(); handleReview(this, '${safeLink}')">
+            <svg viewBox="0 0 16 16" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="2.5,8 6,11.5 13.5,4"/>
+            </svg>
+          </button>`;
+
+        return `
+          <article class="card${isRev ? ' reviewed' : ''}" data-cat="${escHtml(cat)}"
+            onclick="window.open('${safeLink}','_blank')">
+            ${checkBtn}
+            <div class="card-thumb-wrap">
+              ${thumbImg}
+              ${thumbPlaceholder}
+              ${videoBadge}
+            </div>
+            <div class="card-body">
+              <span class="card-badge">${escHtml(cat)}</span>
+              <h2 class="card-title">${escHtml(title)}</h2>
+              ${note ? `<p class="card-note">${escHtml(note)}</p>` : '<p class="card-note"></p>'}
+              <div class="card-footer">
+                <span class="card-domain">${escHtml(domain)}</span>
+                ${date ? `<span class="card-date">${date}</span>` : ''}
+              </div>
+            </div>
+          </article>`;
+      }).join('');
+    }
+
+    // ── Handle review toggle (called from card button) ────────
+    function handleReview(btn, link) {
+      toggleReviewed(link);
+      const card = btn.closest('.card');
+      const isNowReviewed = reviewedSet.has(link);
+      card.classList.toggle('reviewed', isNowReviewed);
+      btn.setAttribute('aria-label', isNowReviewed ? 'Mark as unreviewed' : 'Mark as reviewed');
+      // Update results bar count without full re-render
+      const reviewedCount = [...reviewedSet].filter(l => allPosts.some(p => p['Link'] === l)).length;
+      const total = allPosts.length;
+      const reviewedNote = reviewedCount > 0 ? ` · ${reviewedCount} reviewed` : '';
+      document.getElementById('resultsBar').textContent =
+        `${total} post${total !== 1 ? 's' : ''}${reviewedNote}`;
+      // If in a mode that should hide this card now, fade it out
+      if ((reviewedMode === 'hide' && isNowReviewed) || (reviewedMode === 'only' && !isNowReviewed)) {
+        card.style.transition = 'opacity .3s';
+        card.style.opacity = '0';
+        setTimeout(() => render(), 320);
+      }
+    }
+
+    // ── Fetch & parse CSV ─────────────────────────────────────
+    async function loadPosts() {
+      try {
+        const res = await fetch(CSV_URL + '&t=' + Date.now());
+        if (!res.ok) throw new Error('Fetch failed');
+        const text = await res.text();
+        allPosts = parseCSV(text).reverse();
+        render();
+      } catch (err) {
+        document.getElementById('grid').innerHTML =
+          `<div class="state-msg">Couldn't load posts right now. Try refreshing the page.</div>`;
+      }
+    }
+
+    // ── Category filters ──────────────────────────────────────
+    document.querySelectorAll('.filter-btn[data-cat]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn[data-cat]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilter = btn.dataset.cat;
+        render();
+      });
+    });
+
+    // ── Reviewed mode buttons (Show All / Hide Reviewed / Reviewed Only) ──
+    document.querySelectorAll('.rev-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.rev-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        reviewedMode = btn.dataset.rev;
+        render();
+      });
+    });
+
+    // ── Search (debounced) ────────────────────────────────────
+    let searchTimer;
+    document.getElementById('search').addEventListener('input', e => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { searchQuery = e.target.value; render(); }, 200);
+    });
+
+    // ── Init ──────────────────────────────────────────────────
+    loadPosts();
+  </script>
+</body>
+</html>
