@@ -1,0 +1,2430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👾 Monster Genetics Simulator 🧬</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
+
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #00cec9;
+            --dark: #2d3436;
+            --light: #dfe6e9;
+            --success: #00b894;
+            --danger: #d63031;
+            --bg: #f5f6fa;
+            --baby1: #3498db;
+            --baby2: #9b59b6;
+        }
+
+        /* Bulletproof box-sizing */
+        *, *::before, *::after { box-sizing: border-box; }
+
+        /* Aggressively stops pull-to-refresh on iPads/Chromebooks */
+        html, body {
+            overscroll-behavior: none; 
+        }
+
+        body {
+            font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--dark);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-wrapper {
+            display: flex;
+            gap: 25px;
+            max-width: 1450px;
+            width: 100%;
+        }
+
+        .workspace {
+            flex: 1.8;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+            width: 100%;
+            min-width: 0; 
+        }
+
+        .sidebar {
+            flex: 1.2;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+            align-self: flex-start;
+            min-width: 0; 
+        }
+
+        h1, h2, h3 { color: var(--primary); margin-top: 0; font-weight: 800; }
+        h1 { font-size: 2.5em; text-align: center; margin-bottom: 10px;}
+        h2 { font-size: 1.8em; border-bottom: 2px solid var(--light); padding-bottom: 10px; }
+
+        .intro-box {
+            background-color: #e8f4f8;
+            border-left: 6px solid var(--primary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-size: 1.15em;
+            color: #2c3e50;
+        }
+
+        .intro-box ol { margin-top: 10px; margin-bottom: 0; padding-left: 20px; }
+        .intro-box li { margin-bottom: 5px; }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 800;
+            font-family: 'Nunito', sans-serif;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+
+        .btn:hover:not(:disabled) { background-color: #5b4bc4; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(108, 92, 231, 0.3); }
+        .btn:active:not(:disabled) { transform: translateY(-1px); }
+        .btn:disabled { background-color: #b2bec3; cursor: not-allowed; opacity: 0.8; box-shadow: none; transform: none;}
+        .btn-success { background-color: var(--success); }
+        .btn-success:hover:not(:disabled) { background-color: #00a884; box-shadow: 0 5px 15px rgba(0, 184, 148, 0.3); }
+        .btn-b1 { background-color: var(--baby1); font-size: 1.1em;}
+        .btn-b1:hover:not(:disabled) { background-color: #2980b9; box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3); }
+        .btn-b2 { background-color: var(--baby2); font-size: 1.1em;}
+        .btn-b2:hover:not(:disabled) { background-color: #8e44ad; box-shadow: 0 5px 15px rgba(155, 89, 182, 0.3); }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 0.95em; 
+            table-layout: fixed; 
+            word-wrap: break-word;
+        }
+        th, td {
+            border: 1px solid var(--light);
+            padding: 4px;
+            text-align: center;
+            vertical-align: middle;
+            transition: all 0.3s ease;
+        }
+        th { background-color: var(--primary); color: white; line-height: 1.3; font-weight: 800; padding: 6px; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        
+        .dropdown {
+            padding: 4px 6px;
+            font-size: 14px;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            border-radius: 6px;
+            border: 2px solid var(--light);
+            outline: none;
+            width: auto; 
+            min-width: 110px;
+            margin: 0;
+            display: inline-block;
+        }
+        .dropdown.error { border-color: var(--danger); background-color: #ffefef; }
+        .dropdown.correct { border-color: var(--success); background-color: #e6f9f0; pointer-events: none;}
+        .dropdown:disabled { background-color: #ecf0f1; cursor: not-allowed; opacity: 0.7;}
+
+        .split-workspace {
+            display: grid;
+            grid-template-columns: 1fr 1.6fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .draggable-allele {
+            display: inline-block;
+            background: var(--dark);
+            color: white;
+            padding: 5px 12px;
+            margin: 0 5px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 1.3em;
+            font-weight: 800;
+            cursor: grab;
+            user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+            /* Prevents touch actions like panning from interfering with dragging */
+            touch-action: none; 
+        }
+        .draggable-allele:active { cursor: grabbing; transform: scale(0.95); }
+        .draggable-allele.used { opacity: 0; pointer-events: none; }
+
+        .drop-zone {
+            border: 3px dashed #b2bec3 !important;
+            background-color: #f1f2f6;
+            color: transparent !important;
+            transition: all 0.2s;
+        }
+        .drop-zone.filled {
+            border: 3px solid var(--danger) !important;
+            background-color: white;
+            color: var(--danger) !important;
+        }
+        .drop-zone.drag-over { background-color: #ffeaa7; border-color: #fdcb6e !important; }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 45px 100px 100px;
+            grid-template-rows: 45px 100px 100px;
+            gap: 8px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 800;
+            position: relative;
+        }
+        .header-cell { color: var(--danger); font-size: 32px; border-radius: 8px;}
+        
+        .quad-label {
+            position: absolute;
+            top: 5px;
+            left: 8px;
+            font-size: 16px;
+            color: #b2bec3;
+            pointer-events: none; 
+            font-weight: 800;
+        }
+
+        input.square-input {
+            width: 100%;
+            height: 100%;
+            font-size: 36px;
+            font-weight: 800;
+            font-family: 'Nunito', sans-serif;
+            text-align: center;
+            border: 3px solid var(--light);
+            border-radius: 12px;
+            text-transform: none;
+            transition: all 0.2s ease;
+        }
+        input.square-input:disabled { background-color: #f1f2f6; cursor: not-allowed; border-color: #dfe6e9; color: transparent;}
+        input.square-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 10px rgba(108, 92, 231, 0.2); }
+        input.square-input.correct { background-color: #e6f9f0; border-color: var(--success); color: var(--success); }
+        input.square-input.incorrect { background-color: #ffefef; border-color: var(--danger); color: var(--danger); }
+        
+        .feedback { text-align: center; font-weight: 800; margin: 10px 0; min-height: 24px; font-size: 1.1em;}
+        .highlight-b1 { border: 5px solid var(--baby1) !important; background-color: #ebf5fb !important; z-index: 5;}
+        .highlight-b2 { border: 5px solid var(--baby2) !important; background-color: #f5eef8 !important; z-index: 5;}
+        
+        .extreme-highlight {
+            transform: scale(1.15) !important;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+            z-index: 10 !important;
+            border-width: 6px !important;
+        }
+
+        .hidden { display: none !important; }
+        
+        .geno-badge {
+            background: var(--dark);
+            color: white;
+            padding: 2px 8px; 
+            border-radius: 6px;
+            font-weight: 800;
+            font-family: monospace;
+            font-size: 1.1em; 
+            letter-spacing: 1px;
+            display: inline-block;
+            min-width: 32px;
+            text-align: center;
+        }
+
+        .slot-spin {
+            animation: shake 0.1s infinite;
+            filter: blur(1px);
+            color: #ffeaa7;
+            background: var(--primary);
+        }
+        @keyframes shake {
+            0% { transform: translateY(-2px); }
+            50% { transform: translateY(2px); }
+            100% { transform: translateY(-2px); }
+        }
+
+        .summary-container {
+            background: var(--bg);
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 20px;
+            border: 2px solid var(--light);
+        }
+
+        .baby-cards-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .baby-card {
+            background: white; 
+            padding: 15px 20px; 
+            border-radius: 12px; 
+            border-left: 8px solid #ccc;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+        .card-b1 { border-left-color: var(--baby1); }
+        .card-b2 { border-left-color: var(--baby2); }
+
+        .horizontal-result {
+            display: flex;
+            flex: 1;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .roll-info {
+            display: flex;
+            align-items: center;
+            background: #f1f2f6;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 1.15em;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .roll-info:hover { background-color: #dfe6e9; }
+
+        .pheno-action {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        @keyframes pulse {
+            0% { background-color: transparent; transform: scale(1); box-shadow: none; }
+            50% { background-color: #ffeaa7; transform: scale(1.02); box-shadow: 0 0 15px rgba(253, 203, 110, 0.8); }
+            100% { background-color: transparent; transform: scale(1); box-shadow: none; }
+        }
+        .pulsate {
+            animation: pulse 1.5s infinite;
+            border-radius: 6px;
+            position: relative;
+            z-index: 10;
+            border: 2px solid #fdcb6e;
+        }
+        
+        .hover-area:hover { background-color: #f1f2f6; cursor: pointer; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(45, 52, 54, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.hidden { display: none; }
+        
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            border-top: 10px solid var(--danger);
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .modal-content h3 { font-size: 2.5em; color: var(--danger); margin-bottom: 10px; margin-top: 0;}
+        .modal-content p { font-size: 1.3em; margin-bottom: 15px; }
+        .modal-content .highlight-text { font-size: 1.5em; font-weight: 900; color: var(--primary); background: #f1f2f6; padding: 5px 15px; border-radius: 8px; display: inline-block;}
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .mini-grid {
+            display: grid;
+            grid-template-columns: 25px 50px 50px;
+            grid-template-rows: 25px 50px 50px;
+            gap: 4px;
+            justify-content: center;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        .mini-cell {
+            display: flex; align-items: center; justify-content: center;
+            background: white; border: 2px solid var(--light); border-radius: 6px;
+            font-weight: 800;
+        }
+        .mini-header { border: none; background: transparent; color: var(--danger); font-size: 20px; }
+        .mini-b1 { border-color: var(--baby1); background-color: #ebf5fb; }
+        .mini-b2 { border-color: var(--baby2); background-color: #f5eef8; }
+        .mini-both { border: 3px dashed #8e44ad; background: linear-gradient(135deg, #ebf5fb 50%, #f5eef8 50%); }
+        
+        .table-responsive { overflow-x: auto; width: 100%; display: block; }
+
+        .workspace-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--light);
+            padding-bottom: 10px;
+        }
+
+        /* --- RESPONSIVE BREAKPOINTS (A3: AGGRESSIVE CHROMEBOOK CRUNCH) --- */
+        @media (max-width: 1366px) {
+            body { padding: 10px; line-height: 1.3; }
+            .app-wrapper { gap: 15px; }
+            .workspace { padding: 15px; }
+            .sidebar { padding: 15px; }
+            
+            h1 { font-size: 1.8em; margin-bottom: 5px; }
+            h2 { font-size: 1.4em; padding-bottom: 5px; margin-bottom: 10px; }
+            h3 { font-size: 1.1em !important; margin-bottom: 5px !important; }
+            
+            .intro-box { padding: 10px 15px; margin-bottom: 15px; font-size: 0.95em; }
+            .intro-box p, .intro-box ol { margin-bottom: 5px; }
+            
+            /* Tighten Tables */
+            table { margin-bottom: 10px; font-size: 0.85em; }
+            th, td { padding: 2px; }
+            
+            /* Tweak Forms */
+            .btn { font-size: 14px !important; padding: 6px 12px !important; }
+            .dropdown { font-size: 12px; padding: 2px 4px; min-width: 85px; }
+            .geno-badge { font-size: 1em; padding: 1px 6px; }
+            
+            /* Squish the Save/Load Widget specifically */
+            .sidebar > div:first-of-type { margin-bottom: 15px !important; }
+            #save-load-body { padding: 0 10px 10px 10px !important; }
+            #save-load-body hr { margin: 8px 0 !important; }
+            textarea { font-size: 0.75em !important; padding: 4px !important; min-height: 25px !important;}
+            
+            /* Shrink Punnett Squares */
+            .grid-container {
+                grid-template-columns: 30px 70px 70px;
+                grid-template-rows: 30px 70px 70px;
+                gap: 4px;
+                margin: 10px 0;
+            }
+            input.square-input { font-size: 24px; border-width: 2px; }
+            .cell { font-size: 20px; }
+            .header-cell { font-size: 24px; }
+            .draggable-allele { font-size: 1em; padding: 3px 8px; margin: 0 3px;}
+            .quad-label { font-size: 12px; top: 2px; left: 4px; }
+            
+            /* Baby Rolls */
+            .baby-card { padding: 10px 15px; gap: 10px; }
+            .roll-info { font-size: 1em; padding: 6px 10px; }
+        }
+
+        @media (max-width: 1050px) {
+            .app-wrapper { flex-direction: column; }
+            .sidebar { position: static !important; width: 100%; }
+            .split-workspace { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 700px) {
+            .workspace-header { flex-direction: column; gap: 10px; }
+        }
+
+        /* --- PEDIGREE STYLES --- */
+        .pedigree-view { display: none; }
+        .pedigree-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 2px solid var(--light);
+        }
+        .pedigree-canvas {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            margin: 10px auto;
+            max-width: 520px;
+        }
+        .ped-gen-label {
+            font-size: 0.85em;
+            font-weight: 800;
+            color: #b2bec3;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            align-self: flex-start;
+            margin-bottom: 4px;
+        }
+        .ped-parents-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 0;
+            width: 100%;
+            position: relative;
+        }
+        .ped-individual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: 120px;
+        }
+        .ped-shape-wrap {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+        .ped-circle, .ped-square {
+            width: 80px;
+            height: 80px;
+            border: 4px solid var(--dark);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .ped-circle { border-radius: 50%; }
+        .ped-square { border-radius: 8px; }
+
+        /* Standard trait shading */
+        .ped-filled       { background-color: #2d3436; border-color: #2d3436; }
+        .ped-unfilled     { background-color: white; border-color: #2d3436; }
+        .ped-sex-label {
+            font-size: 0.75em;
+            font-weight: 800;
+            color: #636e72;
+            text-align: center;
+            margin-top: -4px;
+        }
+        .ped-name {
+            font-size: 0.95em;
+            font-weight: 800;
+            color: var(--dark);
+            text-align: center;
+            line-height: 1.2;
+        }
+        .ped-geno {
+            font-family: monospace;
+            font-size: 1.05em;
+            font-weight: 800;
+            background: var(--dark);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 6px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        /* Blended shading */
+        .ped-blend-upper { background-color: #1a5276; border-color: #1a5276; }
+        .ped-blend-mid   { background-color: #aed6f1; border-color: #7fb3d3; }
+        .ped-blend-lower { background-color: white;   border-color: #2d3436; }
+
+        /* Connector lines drawn with CSS */
+        .ped-mating-line {
+            height: 4px;
+            background: var(--dark);
+            flex: 1;
+            align-self: center;
+            margin-top: -36px; /* vertically centers in shape */
+            position: relative;
+            z-index: 0;
+        }
+        .ped-connector-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            position: relative;
+            margin-top: -36px;
+        }
+        .ped-vertical-drop {
+            width: 4px;
+            background: var(--dark);
+            height: 50px;
+        }
+        .ped-sibship-line {
+            height: 4px;
+            background: var(--dark);
+            width: 160px;
+        }
+        .ped-offspring-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 60px;
+            width: 100%;
+            margin-top: 0;
+            position: relative;
+        }
+        .ped-offspring-drop {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .ped-offspring-drop-line {
+            width: 4px;
+            height: 40px;
+            background: var(--dark);
+        }
+
+        .ped-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+            padding: 12px 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px solid var(--light);
+            font-size: 0.95em;
+            font-weight: 700;
+        }
+        .ped-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .ped-legend-swatch {
+            width: 22px;
+            height: 22px;
+            border: 3px solid var(--dark);
+            border-radius: 4px;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .ped-legend-circle-swatch {
+            width: 22px;
+            height: 22px;
+            border: 3px solid var(--dark);
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="format-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Oops! 🛑</h3>
+            <p>Remember that the <strong>uppercase letter</strong> always comes first!</p>
+            <p>For example, you should write it like this:</p>
+            <div class="highlight-text" id="modal-example">Rr</div>
+            <p style="font-size: 1.1em; color: #636e72; margin-top: 25px;">(Don't worry, we fixed it for you!)</p>
+            <button type="button" class="btn" style="margin-top: 10px; font-size: 1.3em; padding: 12px 40px;" onclick="closeModal()">Got it!</button>
+        </div>
+    </div>
+
+    <div id="new-family-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="border-top-color: #f39c12; max-width: 540px;">
+            <h3 style="color: #d35400;">⚠️ Start Over?</h3>
+            <p>This will <strong>erase all your current progress</strong> and cannot be undone.</p>
+            <p style="font-size: 1.1em; color: #636e72;">Want to save your work first? Generate and copy a save code before continuing.</p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 5px; margin-bottom: 10px;">
+                <button type="button" class="btn" style="background-color: #f39c12; font-size: 1.05em; padding: 10px 20px;" onclick="modalGenerateAndCopy()">📋 Generate &amp; Copy Save Code</button>
+            </div>
+            <div id="new-family-copy-confirm" style="color: var(--success); font-weight: 800; font-size: 1em; min-height: 1.4em; margin-bottom: 8px;"></div>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 10px;">
+                <button type="button" class="btn" style="background-color: var(--danger); font-size: 1.1em; padding: 10px 25px;" onclick="confirmNewFamily()">🗑️ Yes, Start Over</button>
+                <button type="button" class="btn" style="background-color: #b2bec3; color: var(--dark); font-size: 1.1em; padding: 10px 25px;" onclick="closeNewFamilyModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="load-success-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="border-top-color: var(--success);">
+            <h3 style="color: var(--success);">Game Loaded! 🎉</h3>
+            <p>Your saved game has been restored.</p>
+            <p style="font-size: 1.1em; color: #636e72;">Pick up right where you left off!</p>
+            <button type="button" class="btn btn-success" style="margin-top: 10px; font-size: 1.3em; padding: 12px 40px;" onclick="closeLoadSuccessModal()">Let's Go! ➔</button>
+        </div>
+    </div>
+
+    <div id="load-error-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Invalid Code! 🛑</h3>
+            <p>That save code doesn't look right.</p>
+            <p style="font-size: 1.1em; color: #636e72;">Make sure you copied the <strong>entire</strong> code string without any extra spaces or missing characters.</p>
+            <button type="button" class="btn" style="margin-top: 10px; font-size: 1.3em; padding: 12px 40px;" onclick="closeLoadErrorModal()">Try Again</button>
+        </div>
+    </div>
+
+    <div class="app-wrapper">
+        <div class="workspace">
+            <h1>👾 Monster Genetics 🧬</h1>
+            
+            <div class="intro-box" id="intro-box">
+                <p style="margin-top:0;">Welcome to the Monster Genetics Simulator! These monsters have <strong>9 different traits</strong>.</p>
+                <p>The first 6 traits follow standard Mendelian inheritance, meaning they exhibit a dominant/recessive relationship (just like the <em>polled vs. having horns</em> gene in cattle). The last 3 traits exhibit blending (just like the <em>musculature</em> trait in cattle).</p>
+                <p>Here is what you will be doing:</p>
+                <ol>
+                    <li><strong>Generate Parents:</strong> Randomly create the genetic makeup of two parent monsters and decode their phenotypes.</li>
+                    <li><strong>Build Punnett Squares:</strong> Drag and drop the alleles to setup crosses for each trait.</li>
+                    <li><strong>Roll for Offspring:</strong> Roll a 4-sided die to randomly determine exactly which traits each baby monster inherits!</li>
+                </ol>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;" id="start-section">
+                <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                    <button type="button" class="btn" onclick="startNewActivity()" style="font-size: 1.4em; padding: 15px 40px;">
+                        ⚡ Start New Activity ⚡
+                    </button>
+                    <button type="button" id="btn-resume-game" class="btn btn-success hidden" onclick="resumeGame()" style="font-size: 1.4em; padding: 15px 40px;">
+                        💾 Resume Saved Game
+                    </button>
+                </div>
+            </div>
+
+            <div id="step-1" class="hidden">
+                <h2>Step 1: Identify Parent Phenotypes 👹</h2>
+                
+                <div style="text-align: center; margin-bottom: 15px;" id="randomize-container">
+                    <p style="font-size: 1.1em; color: #636e72; margin-bottom:10px;">Click the button below to randomly generate the alleles for both parents.</p>
+                    <button type="button" class="btn" id="btn-randomize" onclick="randomizeParents()" style="font-size: 1.2em; padding: 10px 25px; background-color: #f39c12;">
+                        🎰 Randomize Parents!
+                    </button>
+                </div>
+
+                <p id="step-1-instructions" class="hidden" style="font-size: 1.05em; text-align:center; margin-bottom:10px;">Hover over a row to highlight it in the key! Use the Trait Key to determine what each parent looks like.</p>
+                
+                <div class="table-responsive">
+                    <table id="pheno-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 20%;">Trait</th>
+                                <th style="width: 40%;">Monster 1 (Geno ➔ Pheno)</th>
+                                <th style="width: 40%;">Monster 2 (Geno ➔ Pheno)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pheno-tbody">
+                            </tbody>
+                    </table>
+                </div>
+                
+                <div style="text-align: center; margin-top: 15px;">
+                    <button type="button" class="btn btn-success hidden" id="btn-check-phenos" onclick="checkAllPhenotypes()" style="font-size: 1.2em;">Check All Phenotypes</button>
+                </div>
+                <div id="pheno-feedback" class="feedback"></div>
+                
+                <div id="btn-to-punnett-container" style="text-align: center; margin-top: 20px;" class="hidden">
+                    <button type="button" class="btn btn-success" onclick="goToPunnett()" style="font-size: 1.3em; padding: 12px 30px; background-color: #8e44ad;">
+                        Let's move to the Punnett Squares ➔
+                    </button>
+                </div>
+            </div>
+
+            <div id="active-trait-workspace" class="hidden">
+                <div class="workspace-header">
+                    <button type="button" class="btn" style="font-size: 1em; padding: 8px 15px; background-color: #b2bec3; color: var(--dark);" onclick="goBackToParents()">⬅️ Back to Parents</button>
+                    <h2 style="margin: 0; border: none; padding: 0;">Step 2 & 3: Squares & Babies 🍼</h2>
+                    <div style="width: 140px; display: none;" id="header-spacer"></div>
+                </div>
+                
+                <div class="split-workspace">
+                    
+                    <div id="ps-workspace" style="background: white; border: 2px solid var(--light); padding: 20px; border-radius: 12px;">
+                        <h3 style="margin:0 0 15px 0; color: var(--dark); font-size: 1.5em; text-align: center;" id="current-trait-header"></h3>
+                        
+                        <div style="background: var(--bg); padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 15px;">
+                            <p id="drag-instruction" style="color: var(--danger); font-weight: 800; font-size: 1.1em; margin: 0 0 10px 0;">
+                                Drag and drop the alleles to setup the top and left sides of the Punnett Square!
+                            </p>
+                            <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                <div>
+                                    <strong style="display:block; margin-bottom:5px;">M1 (Left)</strong>
+                                    <span id="m1-alleles-drag"></span>
+                                </div>
+                                <div>
+                                    <strong style="display:block; margin-bottom:5px;">M2 (Top)</strong>
+                                    <span id="m2-alleles-drag"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-container">
+                            <div class="cell"></div>
+                            <div class="cell header-cell drop-zone" id="p2-allele-1" data-parent="2"></div>
+                            <div class="cell header-cell drop-zone" id="p2-allele-2" data-parent="2"></div>
+                            
+                            <div class="cell header-cell drop-zone" id="p1-allele-1" data-parent="1"></div>
+                            <div class="cell">
+                                <div class="quad-label">#1</div>
+                                <input type="text" maxlength="2" class="square-input" id="sq1" oninput="checkTyping(this)">
+                            </div>
+                            <div class="cell">
+                                <div class="quad-label">#2</div>
+                                <input type="text" maxlength="2" class="square-input" id="sq2" oninput="checkTyping(this)">
+                            </div>
+                            
+                            <div class="cell header-cell drop-zone" id="p1-allele-2" data-parent="1"></div>
+                            <div class="cell">
+                                <div class="quad-label">#3</div>
+                                <input type="text" maxlength="2" class="square-input" id="sq3" oninput="checkTyping(this)">
+                            </div>
+                            <div class="cell">
+                                <div class="quad-label">#4</div>
+                                <input type="text" maxlength="2" class="square-input" id="sq4" oninput="checkTyping(this)">
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 25px;" id="check-sq-container">
+                            <button type="button" class="btn" id="btn-check-sq" onclick="checkSquare()" style="font-size: 1.2em;" disabled>Check Square</button>
+                        </div>
+                        <div class="feedback" id="ps-feedback"></div>
+                    </div>
+
+                    <div class="hidden" id="offspring-section" style="background: #fff3cd; padding: 20px; border-radius: 12px; border: 4px dashed #ffeaa7;">
+                        <h3 style="margin-top: 0; color: #d35400; font-size: 1.6em; text-align: center;">Roll for Babies 🎲</h3>
+                        <p style="text-align:center; font-size: 1.1em; margin:5px 0 15px 0;">Roll the die, then hover over your result to see it on the square!</p>
+                        
+                        <div class="baby-cards-wrapper">
+                            <div class="baby-card card-b1" id="block-b1">
+                                <button type="button" class="btn btn-b1" id="btn-roll-1" onclick="rollOffspring(1)" style="flex-shrink: 0; min-width: 140px;">Roll Baby #1</button>
+                                
+                                <div id="result-1" class="horizontal-result hidden">
+                                    <div class="roll-info roll-hover-target" onmouseenter="focusBox(1, true)" onmouseleave="focusBox(1, false)">
+                                        <span id="die-display-1" style="font-size: 1.4em;">🎲</span> <span style="margin-left:5px;">Box <strong>#<span id="roll-num-1"></span></strong></span> 
+                                        <span style="margin: 0 10px; color:#b2bec3;">|</span> 
+                                        Geno: <span id="geno-display-1" class="geno-badge" style="margin-left:5px;"></span>
+                                    </div>
+                                    
+                                    <div class="pheno-action">
+                                        <label for="pheno-select-1" style="font-weight: 800;">Phenotype:</label>
+                                        <select id="pheno-select-1" class="dropdown" style="margin: 0; width: 130px;" onchange="saveGameState()"></select>
+                                        <button type="button" class="btn btn-success" id="btn-check-1" style="padding: 8px 15px; font-size:1em;" onclick="checkBabyPheno(1)">Check</button>
+                                    </div>
+                                </div>
+                                <div id="feedback-1" class="feedback hidden" style="width: 100%; font-size: 1em; margin: 10px 0 0 0; text-align:left;"></div>
+                            </div>
+
+                            <div class="baby-card card-b2 hidden" id="block-b2">
+                                <button type="button" class="btn btn-b2" id="btn-roll-2" onclick="rollOffspring(2)" style="flex-shrink: 0; min-width: 140px;">Roll Baby #2</button>
+                                
+                                <div id="result-2" class="horizontal-result hidden">
+                                    <div class="roll-info roll-hover-target" onmouseenter="focusBox(2, true)" onmouseleave="focusBox(2, false)">
+                                        <span id="die-display-2" style="font-size: 1.4em;">🎲</span> <span style="margin-left:5px;">Box <strong>#<span id="roll-num-2"></span></strong></span> 
+                                        <span style="margin: 0 10px; color:#b2bec3;">|</span> 
+                                        Geno: <span id="geno-display-2" class="geno-badge" style="margin-left:5px;"></span>
+                                    </div>
+                                    
+                                    <div class="pheno-action">
+                                        <label for="pheno-select-2" style="font-weight: 800;">Phenotype:</label>
+                                        <select id="pheno-select-2" class="dropdown" style="margin: 0; width: 130px;" onchange="saveGameState()"></select>
+                                        <button type="button" class="btn btn-success" id="btn-check-2" style="padding: 8px 15px; font-size:1em;" onclick="checkBabyPheno(2)">Check</button>
+                                    </div>
+                                </div>
+                                <div id="feedback-2" class="feedback hidden" style="width: 100%; font-size: 1em; margin: 10px 0 0 0; text-align:left;"></div>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center;">
+                            <button type="button" class="btn btn-success hidden" id="btn-next-trait" style="margin-top: 20px; font-size: 1.2em; padding: 10px 30px;" onclick="nextTrait()">Next Trait ➔</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div id="summary-section" class="summary-container hidden"></div>
+        </div>
+
+        <div class="sidebar">
+
+            <div style="background: #fff3cd; border-radius: 12px; border: 3px solid #ffeaa7; margin-bottom: 25px; overflow: hidden;">
+                <button type="button" onclick="toggleSaveLoad()" id="save-load-toggle-btn" style="width:100%; background:none; border:none; cursor:pointer; padding: 12px 15px; display:flex; justify-content:space-between; align-items:center; font-family:'Nunito',sans-serif;">
+                    <span style="font-weight:800; font-size:1.15em; color:#d35400;">💾 Save / Load Game</span>
+                    <span id="save-load-chevron" style="font-size:1.1em; color:#d35400; transition: transform 0.25s ease;">▼</span>
+                </button>
+                <div id="save-load-body" style="display:none; padding: 0 15px 15px 15px;">
+                    <div id="autosave-status" style="text-align: center; font-size: 0.8em; font-weight: 700; color: var(--success); min-height: 1.2em; margin-bottom: 6px; opacity: 0; transition: opacity 0.5s ease;"></div>
+                    <div style="margin-bottom: 10px; display: flex; gap: 8px; flex-direction: column;">
+                        <button type="button" class="btn btn-roll" style="width: 100%; font-size: 1em; padding: 8px;" onclick="generateSaveCode()">1. Generate Save Code</button>
+                        
+                        <div style="display: flex; gap: 5px;">
+                            <textarea id="save-code-display" readonly placeholder="Code appears here..." style="flex: 1; padding: 8px; font-family: monospace; border-radius: 6px; border: 1px solid #ccc; font-size: 0.8em; background:#f8f9fa; resize:none; overflow:hidden;" rows="2"></textarea>
+                            <button type="button" id="btn-copy-code" class="btn btn-success" style="padding: 8px 15px; font-size: 0.9em;" onclick="copySaveCode()" disabled>Copy</button>
+                        </div>
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid #ffeaa7; margin: 12px 0;">
+                    <div style="display: flex; gap: 5px; flex-direction: column;">
+                        <textarea id="load-code-input" placeholder="Paste your code here..." style="width: 100%; padding: 8px; font-family: monospace; border-radius: 6px; border: 1px solid #ccc; font-size: 0.8em; resize:vertical;" rows="2"></textarea>
+                        <button type="button" class="btn btn-primary" style="width: 100%; font-size: 1em; padding: 8px; background:var(--primary);" onclick="loadSaveCode()">2. Load Game</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 style="font-size: 1.3em; margin-bottom: 10px; margin-top: 20px;">Standard Traits</h3>
+                <table>
+                    <tr><th style="width: 10%;">#</th><th style="width: 25%;">Trait</th><th style="width: 15%;">Alleles</th><th style="width: 25%;">Dominant</th><th style="width: 25%;">Recessive</th></tr>
+                    <tr id="key-row-1"><td>1</td><td>Fur</td><td>B or b</td><td>brown</td><td>blue</td></tr>
+                    <tr id="key-row-2"><td>2</td><td>Head</td><td>R or r</td><td>round</td><td>triangle</td></tr>
+                    <tr id="key-row-3"><td>3</td><td>Tail</td><td>D or d</td><td>spikey</td><td>smooth</td></tr>
+                    <tr id="key-row-4"><td>4</td><td>Ears</td><td>F or f</td><td>flappy</td><td>pointy</td></tr>
+                    <tr id="key-row-5"><td>5</td><td>Eyes</td><td>Y or y</td><td>red</td><td>blue</td></tr>
+                    <tr id="key-row-6"><td>6</td><td>Teeth</td><td>Q or q</td><td>Dull</td><td>Sharp</td></tr>
+                </table>
+
+                <h3 style="font-size: 1.3em; margin-bottom: 10px; margin-top: 30px;">Blended Traits</h3>
+                <table>
+                    <tr><th style="width: 10%;">#</th><th style="width: 15%;">Trait</th><th style="width: 15%;">Alleles</th><th style="width: 20%;">Upper<br>(Ex: AA)</th><th style="width: 20%;">Mixed<br>(Ex: Aa)</th><th style="width: 20%;">Lower<br>(Ex: aa)</th></tr>
+                    <tr id="key-row-7"><td>7</td><td>Hands</td><td>A or a</td><td>4 claws</td><td>3 claws</td><td>2 claws</td></tr>
+                    <tr id="key-row-8"><td>8</td><td>Eyes</td><td>E or e</td><td>1 eye</td><td>2 eyes</td><td>3 eyes</td></tr>
+                    <tr id="key-row-9"><td>9</td><td>Hair</td><td>G or g</td><td>long</td><td>medium</td><td>short</td></tr>
+                </table>
+            </div>
+
+            <div id="review-container" class="hidden" style="margin-top: 40px; background: #e8f4f8; padding: 20px; border-radius: 12px; border-left: 6px solid var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <h3 style="margin-top: 0; font-size: 1.4em; color: var(--dark);">🔬 Review a Trait</h3>
+                <p style="font-size: 1em; margin-bottom: 10px;">Select a trait below to see the cross and the inherited boxes.</p>
+                <select id="review-trait-select" class="dropdown" style="width: 100%; max-width: 100%; margin-left: 0; margin-bottom: 15px;" onchange="renderReviewSquare()">
+                    <option value="">-- Select Trait --</option>
+                </select>
+                <div id="review-square-area" style="display: none;"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- LZ-STRING (Pieroxy, MIT) — compressToEncodedURIComponent / decompressFromEncodedURIComponent ---
+        const LZString = (function() {
+            const keyStrUriSafe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
+            const baseReverseDic = {};
+            function getBaseValue(alp, c) {
+                if (!baseReverseDic[alp]) {
+                    baseReverseDic[alp] = {};
+                    for (let i = 0; i < alp.length; i++) baseReverseDic[alp][alp[i]] = i;
+                }
+                return baseReverseDic[alp][c];
+            }
+            function compress(uncompressed, bitsPerChar, getCharFromInt) {
+                if (uncompressed == null) return "";
+                let i, value, contextDictionary = {}, contextDictionaryToCreate = {},
+                    contextC = "", contextWC = "", contextW = "",
+                    contextEnlargeIn = 2, contextDictSize = 3, contextNumBits = 2,
+                    contextData = [], contextDataVal = 0, contextDataPosition = 0, ii;
+                for (ii = 0; ii < uncompressed.length; ii++) {
+                    contextC = uncompressed[ii];
+                    if (!Object.prototype.hasOwnProperty.call(contextDictionary, contextC)) {
+                        contextDictionary[contextC] = contextDictSize++;
+                        contextDictionaryToCreate[contextC] = true;
+                    }
+                    contextWC = contextW + contextC;
+                    if (Object.prototype.hasOwnProperty.call(contextDictionary, contextWC)) {
+                        contextW = contextWC;
+                    } else {
+                        if (Object.prototype.hasOwnProperty.call(contextDictionaryToCreate, contextW)) {
+                            if (contextW.charCodeAt(0) < 256) {
+                                for (i = 0; i < contextNumBits; i++) { contextDataVal = (contextDataVal << 1); if (contextDataPosition == bitsPerChar - 1) { contextDataPosition = 0; contextData.push(getCharFromInt(contextDataVal)); contextDataVal = 0; } else contextDataPosition++; }
+                                value = contextW.charCodeAt(0);
+                                for (i = 0; i < 8; i++) { contextDataVal = (contextDataVal << 1) | (value & 1); value >>= 1; if (contextDataPosition == bitsPerChar - 1) { contextDataPosition = 0; contextData.push(getCharFromInt(contextDataVal)); contextDataVal = 0; } else contextDataPosition++; }
+                            } else {
+                                value = 1;
+                                for (i = 0; i < contextNumBits; i++) { contextDataVal = (contextDataVal << 1) | value; value = 0; if (contextDataPosition == bitsPerChar - 1) { contextDataPosition = 0; contextData.push(getCharFromInt(contextDataVal)); contextDataVal = 0; } else contextDataPosition++; }
+                                value = contextW.charCodeAt(0);
+                                for (i = 0; i < 16; i++) { contextDataVal = (contextDataVal << 1) | (value & 1); value >>= 1; if (contextDataPosition == bitsPerChar - 1) { contextDataPosition = 0; contextData.push(getCharFromInt(contextDataVal)); contextDataVal = 0; } else contextDataPosition++; }
+                            }
+                            contextEnlargeIn--;
+                            if (contextEnlargeIn == 0) { contextEnlargeIn = Math.pow(2, contextNumBits); contextNumBits++; }
+                            delete contextDictionaryToCreate[contextW];
+                        } else {
+                            value = contextDictionary[contextW];
+                            for (i = 0; i < contextNumBits; i++) { contextDataVal = (contextDataVal << 1) | (value & 1); value >>= 1; if (contextDataPosition == bitsPerChar - 1) { contextDataPosition = 0; contextData.push(getCharFromInt(contextDataVal)); contextDataVal = 0; } else contextDataPosition++; }
+                        }
+                        contextEnlargeIn--;
+                        if (contextEnlargeIn == 0) { contextEnlargeIn = Math.pow(2, contextNumBits); contextNumBits++; }
+                        contextDictionary[contextWC] = contextDictSize++;
+                        contextW = String(contextC);
+                    }
+                }
+                if (contextW !== "") {
+                    if (Object.prototype.hasOwnProperty.call(contextDictionaryToCreate, contextW)) {
+                        if (contextW.charCodeAt(0) < 256) {
+                            for (i = 0; i < contextNumBits; i++) { contextDataVal = (contextDataVal << 1); if (contextDataPosition == bitsPerChar - 1) { contextDataPosition = 0; contextData.push(getCharFromInt(contextDataVal)); contextDataVal = 0; } else contextDataPosition++; }
+                            value = contextW.charCodeAt(0);
+                            for (i = 0; i < 8; i++) { contextDataVal = (contextDataVal << 1) | (value & 1); value >>= 1; if (contextDataPosition == bitsPerChar - 1) { contextDataPosition = 0; contextData.push(getCharFromInt(contextDataVal)); contextDataVal = 0; } else contextDataPosition++; }
+                        } else {
+                            value = 1;
+                            for (i = 0; i < contextNumBits; i++) { contextDataVal = (contextDataVal << 1) | value; value = 0; if (contextDataPosition == bitsPerChar - 1) { contextDataPosition = 0; contextData.push(getCharFromInt(contextDataVal)); contextDataVal = 0; } else contextDataPosition++; }
+                            value = contextW.charCodeAt(0);
+                            for (i = 0; i < 16; i++) { contextDataVal = (contextDataVal << 1) | (value & 1); value >>= 1; if (contextDataPosition == bitsPerChar - 1) { contextDataPosition = 0; contextData.push(getCharFromInt(contextDataVal)); contextDataVal = 0; } else contextDataPosition++; }
+                        }
+                        contextEnlargeIn--;
+                        if (contextEnlargeIn == 0) { contextEnlargeIn = Math.pow(2, contextNumBits); contextNumBits++; }
+                        delete contextDictionaryToCreate[contextW];
+                    } else {
+                        value = contextDictionary[contextW];
+                        for (i = 0; i < contextNumBits; i++) { contextDataVal = (contextDataVal << 1) | (value & 1); value >>= 1; if (contextDataPosition == bitsPerChar - 1) { contextDataPosition = 0; contextData.push(getCharFromInt(contextDataVal)); contextDataVal = 0; } else contextDataPosition++; }
+                    }
+                    contextEnlargeIn--;
+                    if (contextEnlargeIn == 0) { contextEnlargeIn = Math.pow(2, contextNumBits); contextNumBits++; }
+                }
+                value = 2;
+                for (i = 0; i < contextNumBits; i++) { contextDataVal = (contextDataVal << 1) | (value & 1); value >>= 1; if (contextDataPosition == bitsPerChar - 1) { contextDataPosition = 0; contextData.push(getCharFromInt(contextDataVal)); contextDataVal = 0; } else contextDataPosition++; }
+                while (true) { contextDataVal = (contextDataVal << 1); if (contextDataPosition == bitsPerChar - 1) { contextData.push(getCharFromInt(contextDataVal)); break; } else contextDataPosition++; }
+                return contextData.join('');
+            }
+            function decompress(length, resetValue, getNextValue) {
+                let dictionary = [], next, enlargeIn = 4, dictSize = 4, numBits = 3,
+                    entry = "", result = [], i, w, bits, resb, maxpower, power, c,
+                    data = { val: getNextValue(0), position: resetValue, index: 1 };
+                for (i = 0; i < 3; i++) dictionary[i] = i;
+                bits = 0; maxpower = Math.pow(2, 2); power = 1;
+                while (power != maxpower) { resb = data.val & data.position; data.position >>= 1; if (data.position == 0) { data.position = resetValue; data.val = getNextValue(data.index++); } bits |= (resb > 0 ? 1 : 0) * power; power <<= 1; }
+                switch (next = bits) {
+                    case 0: bits = 0; maxpower = Math.pow(2, 8); power = 1; while (power != maxpower) { resb = data.val & data.position; data.position >>= 1; if (data.position == 0) { data.position = resetValue; data.val = getNextValue(data.index++); } bits |= (resb > 0 ? 1 : 0) * power; power <<= 1; } c = String.fromCharCode(bits); break;
+                    case 1: bits = 0; maxpower = Math.pow(2, 16); power = 1; while (power != maxpower) { resb = data.val & data.position; data.position >>= 1; if (data.position == 0) { data.position = resetValue; data.val = getNextValue(data.index++); } bits |= (resb > 0 ? 1 : 0) * power; power <<= 1; } c = String.fromCharCode(bits); break;
+                    case 2: return "";
+                }
+                dictionary[3] = c; w = c; result.push(c);
+                while (true) {
+                    if (data.index > length) return "";
+                    bits = 0; maxpower = Math.pow(2, numBits); power = 1;
+                    while (power != maxpower) { resb = data.val & data.position; data.position >>= 1; if (data.position == 0) { data.position = resetValue; data.val = getNextValue(data.index++); } bits |= (resb > 0 ? 1 : 0) * power; power <<= 1; }
+                    switch (c = bits) {
+                        case 0: bits = 0; maxpower = Math.pow(2, 8); power = 1; while (power != maxpower) { resb = data.val & data.position; data.position >>= 1; if (data.position == 0) { data.position = resetValue; data.val = getNextValue(data.index++); } bits |= (resb > 0 ? 1 : 0) * power; power <<= 1; } dictionary[dictSize++] = String.fromCharCode(bits); c = dictSize - 1; enlargeIn--; break;
+                        case 1: bits = 0; maxpower = Math.pow(2, 16); power = 1; while (power != maxpower) { resb = data.val & data.position; data.position >>= 1; if (data.position == 0) { data.position = resetValue; data.val = getNextValue(data.index++); } bits |= (resb > 0 ? 1 : 0) * power; power <<= 1; } dictionary[dictSize++] = String.fromCharCode(bits); c = dictSize - 1; enlargeIn--; break;
+                        case 2: return result.join('');
+                    }
+                    if (enlargeIn == 0) { enlargeIn = Math.pow(2, numBits); numBits++; }
+                    if (dictionary[c]) { entry = dictionary[c]; } else { if (c === dictSize) { entry = w + w[0]; } else return null; }
+                    result.push(entry);
+                    dictionary[dictSize++] = w + entry[0];
+                    enlargeIn--;
+                    if (enlargeIn == 0) { enlargeIn = Math.pow(2, numBits); numBits++; }
+                    w = entry;
+                }
+            }
+            return {
+                compressToEncodedURIComponent: function(input) {
+                    if (input == null) return "";
+                    return compress(input, 6, function(a) { return keyStrUriSafe.charAt(a); }) + "=";
+                },
+                decompressFromEncodedURIComponent: function(input) {
+                    if (input == null) return "";
+                    if (input === "") return null;
+                    input = input.replace(/ /g, '+');
+                    return decompress(input.length, 32, function(index) { return getBaseValue(keyStrUriSafe, input[index]); });
+                }
+            };
+        })();
+        const traits = [
+            { id: 1, name: "Fur Color", type: "standard", alleles: ["B", "b"], traits: {"dom": "brown", "rec": "blue"} },
+            { id: 2, name: "Head Shape", type: "standard", alleles: ["R", "r"], traits: {"dom": "round", "rec": "triangle"} },
+            { id: 3, name: "Tail", type: "standard", alleles: ["D", "d"], traits: {"dom": "spikey", "rec": "smooth"} },
+            { id: 4, name: "Ears", type: "standard", alleles: ["F", "f"], traits: {"dom": "flappy", "rec": "pointy"} },
+            { id: 5, name: "Eye Color", type: "standard", alleles: ["Y", "y"], traits: {"dom": "red", "rec": "blue"} },
+            { id: 6, name: "Teeth", type: "standard", alleles: ["Q", "q"], traits: {"dom": "Dull", "rec": "Sharp"} },
+            { id: 7, name: "Hands", type: "blended", alleles: ["A", "a"], traits: {"homUpper": "4 claws", "het": "3 claws", "homLower": "2 claws"} },
+            { id: 8, name: "Eyes", type: "blended", alleles: ["E", "e"], traits: {"homUpper": "1 eye", "het": "2 eyes", "homLower": "3 eyes"} },
+            { id: 9, name: "Hair", type: "blended", alleles: ["G", "g"], traits: {"homUpper": "long", "het": "medium", "homLower": "short"} }
+        ];
+
+        let parent1 = [], parent2 = [];
+        let offspring1 = [], offspring2 = [];
+        let currentTraitIndex = 0;
+        let expectedAnswers = [];
+        let userMistakes = 0; 
+        let punnettInitialized = false; 
+        let squareChecked = false;
+        let step1Passed = false;
+        let babyChecked = {1: false, 2: false};
+        
+        let rolledData = {
+            1: { geno: "", pheno: "", box: 0, prob: 0 },
+            2: { geno: "", pheno: "", box: 0, prob: 0 }
+        };
+
+        // GLOBAL KEYDOWN PREVENTER (Stops 'Enter' key from submitting hidden forms and refreshing)
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+            }
+        });
+
+        // SAFELY WRAP LOCALSTORAGE SO HTML VIEWERS DONT CRASH
+        const StorageManager = {
+            set: function(key, value) {
+                try { localStorage.setItem(key, value); } catch(e) {}
+            },
+            get: function(key) {
+                try { return localStorage.getItem(key); } catch(e) { return null; }
+            },
+            remove: function(key) {
+                try { localStorage.removeItem(key); } catch(e) {}
+            }
+        };
+
+        window.addEventListener('resize', adjustHeader);
+        function adjustHeader() {
+            const spacer = document.getElementById('header-spacer');
+            if (spacer) {
+                spacer.style.display = window.innerWidth > 700 ? 'block' : 'none';
+            }
+        }
+        adjustHeader();
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if(StorageManager.get("monsterGeneticsSave")) {
+                const resBtn = document.getElementById("btn-resume-game");
+                if(resBtn) resBtn.classList.remove("hidden");
+            }
+
+            const psWorkspace = document.getElementById("ps-workspace");
+            if (psWorkspace) {
+                psWorkspace.addEventListener('mouseenter', () => {
+                    if (!document.getElementById("active-trait-workspace").classList.contains("hidden")) {
+                        document.getElementById(`key-row-${traits[currentTraitIndex].id}`).classList.add('pulsate');
+                        psWorkspace.style.borderColor = "#ffeaa7";
+                    }
+                });
+                psWorkspace.addEventListener('mouseleave', () => {
+                    if (!document.getElementById("active-trait-workspace").classList.contains("hidden")) {
+                        document.getElementById(`key-row-${traits[currentTraitIndex].id}`).classList.remove('pulsate');
+                        psWorkspace.style.borderColor = "transparent";
+                    }
+                });
+            }
+            
+            // Re-bind drop events manually just to ensure stability
+            ['p2-allele-1', 'p2-allele-2', 'p1-allele-1', 'p1-allele-2'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('drop', dropAllele);
+                    el.addEventListener('dragover', allowDrop);
+                    el.addEventListener('dragenter', dragEnter);
+                    el.addEventListener('dragleave', dragLeave);
+                }
+            });
+        });
+
+        // --- BROWSER AUTO-SAVE LOGIC ---
+        let _autoSaveFlashTimer = null;
+        function flashAutoSave() {
+            const el = document.getElementById('autosave-status');
+            if (!el) return;
+            el.innerText = '✔ Auto-saved';
+            el.style.opacity = '1';
+            clearTimeout(_autoSaveFlashTimer);
+            _autoSaveFlashTimer = setTimeout(() => { el.style.opacity = '0'; }, 2500);
+        }
+
+        // Save on tab close / navigation away so no progress is lost
+        window.addEventListener('beforeunload', function() {
+            if (parent1.length > 0) saveGameState();
+        });
+
+        function saveGameState() {
+            let d1Array = [], d2Array = [], dzArray = [], sqArray = [];
+            
+            for(let i=0; i<9; i++) {
+                let el1 = document.getElementById('p1-sel-'+i);
+                d1Array.push(el1 ? el1.value : "");
+                let el2 = document.getElementById('p2-sel-'+i);
+                d2Array.push(el2 ? el2.value : "");
+            }
+
+            let dzIds = ['p2-allele-1', 'p2-allele-2', 'p1-allele-1', 'p1-allele-2'];
+            dzIds.forEach(id => {
+                let el = document.getElementById(id);
+                dzArray.push(el ? el.innerText : "");
+            });
+
+            for(let i=1; i<=4; i++) {
+                let el = document.getElementById('sq'+i);
+                sqArray.push(el ? el.value : "");
+            }
+
+            const state = {
+                p1: parent1, p2: parent2, o1: offspring1, o2: offspring2,
+                c: currentTraitIndex, u: userMistakes, i: punnettInitialized,
+                r: rolledData, sc: squareChecked, sp: step1Passed, bc: babyChecked,
+                sh: !document.getElementById("summary-section").classList.contains("hidden"),
+                d1: d1Array, d2: d2Array, dz: dzArray, sq: sqArray
+            };
+            StorageManager.set("monsterGeneticsSave", JSON.stringify(state));
+            flashAutoSave();
+        }
+
+        // --- MANUAL SAVE/LOAD WIDGET ---
+        function generateSaveCode() {
+            if (parent1.length === 0) {
+                alert("Please start the activity and generate parents before saving!");
+                return;
+            }
+            
+            let d1Array = [], d2Array = [], dzArray = [], sqArray = [];
+            
+            for(let i=0; i<9; i++) {
+                let el1 = document.getElementById('p1-sel-'+i);
+                d1Array.push(el1 ? el1.value : "");
+                let el2 = document.getElementById('p2-sel-'+i);
+                d2Array.push(el2 ? el2.value : "");
+            }
+
+            let dzIds = ['p2-allele-1', 'p2-allele-2', 'p1-allele-1', 'p1-allele-2'];
+            dzIds.forEach(id => {
+                let el = document.getElementById(id);
+                dzArray.push(el ? el.innerText : "");
+            });
+
+            for(let i=1; i<=4; i++) {
+                let el = document.getElementById('sq'+i);
+                sqArray.push(el ? el.value : "");
+            }
+
+            const state = {
+                p1: parent1, p2: parent2, o1: offspring1, o2: offspring2,
+                c: currentTraitIndex, u: userMistakes, i: punnettInitialized,
+                r: rolledData, sc: squareChecked, sp: step1Passed, bc: babyChecked,
+                sh: !document.getElementById("summary-section").classList.contains("hidden"),
+                d1: d1Array, d2: d2Array, dz: dzArray, sq: sqArray
+            };
+            
+            // LZ-string compression produces much shorter codes than raw Base64
+            const code = LZString.compressToEncodedURIComponent(JSON.stringify(state));
+            const displayEl = document.getElementById('save-code-display');
+            displayEl.value = code;
+            
+            const copyBtn = document.getElementById('btn-copy-code');
+            copyBtn.disabled = false;
+        }
+
+        function copySaveCode() {
+            const displayEl = document.getElementById('save-code-display');
+            displayEl.select();
+            displayEl.setSelectionRange(0, 99999); 
+            
+            try {
+                document.execCommand('copy');
+                const copyBtn = document.getElementById('btn-copy-code');
+                const originalText = copyBtn.innerText;
+                copyBtn.innerText = "Copied!";
+                setTimeout(() => { copyBtn.innerText = originalText; }, 2000);
+            } catch (err) {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(displayEl.value).then(() => {
+                        const copyBtn = document.getElementById('btn-copy-code');
+                        const originalText = copyBtn.innerText;
+                        copyBtn.innerText = "Copied!";
+                        setTimeout(() => { copyBtn.innerText = originalText; }, 2000);
+                    });
+                }
+            }
+        }
+
+        function loadSaveCode() {
+            const rawCode = document.getElementById('load-code-input').value.trim();
+            if(!rawCode) return;
+            
+            // Clean unseen whitespaces
+            let cleanCode = rawCode.replace(/\s/g, '');
+            // Correct any missing padding
+            while (cleanCode.length % 4 !== 0) cleanCode += '=';
+            
+            try {
+                // Try LZ-string first (new format), fall back to legacy Base64 for old codes
+                let jsonString;
+                try {
+                    const lzResult = LZString.decompressFromEncodedURIComponent(cleanCode);
+                    if (lzResult) {
+                        jsonString = lzResult;
+                    } else {
+                        jsonString = decodeURIComponent(atob(cleanCode));
+                    }
+                } catch(e2) {
+                    jsonString = decodeURIComponent(atob(cleanCode));
+                }
+                const saved = JSON.parse(jsonString);
+                restoreGameState(saved);
+                document.getElementById('load-code-input').value = "";
+                document.getElementById('load-success-modal').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (e) {
+                document.getElementById('load-error-modal').classList.remove('hidden');
+            }
+        }
+
+        function resumeGame() {
+            const savedRaw = StorageManager.get("monsterGeneticsSave");
+            if (!savedRaw) return;
+            const saved = JSON.parse(savedRaw);
+            restoreGameState(saved);
+        }
+
+        // Shared restore logic for both Auto-Resume and Manual Load Code
+        function restoreGameState(saved) {
+            parent1 = saved.p1 || saved.parent1 || [];
+            parent2 = saved.p2 || saved.parent2 || [];
+            offspring1 = saved.o1 || saved.offspring1 || [];
+            offspring2 = saved.o2 || saved.offspring2 || [];
+            
+            // Explicit tracking to ensure false values load correctly
+            currentTraitIndex = saved.c !== undefined ? saved.c : (saved.currentTraitIndex || 0);
+            userMistakes = saved.u !== undefined ? saved.u : (saved.userMistakes || 0);
+            punnettInitialized = saved.i !== undefined ? saved.i : (saved.punnettInitialized || false);
+            rolledData = saved.r || saved.rolledData || { 1: { geno: "", pheno: "", box: 0, prob: 0 }, 2: { geno: "", pheno: "", box: 0, prob: 0 } };
+            expectedAnswers = saved.expectedAnswers || [];
+            squareChecked = saved.sc !== undefined ? saved.sc : (saved.squareChecked || false);
+            step1Passed = saved.sp !== undefined ? saved.sp : (saved.step1Passed || false);
+            babyChecked = saved.bc || saved.babyChecked || {1: false, 2: false};
+
+            const summaryShowing = saved.sh !== undefined ? saved.sh : saved.summaryHidden;
+
+            document.getElementById("start-section").classList.add("hidden");
+            document.getElementById("intro-box").classList.add("hidden");
+
+            // Hard reset UI visibility
+            document.getElementById("summary-section").classList.add("hidden");
+            document.getElementById("active-trait-workspace").classList.add("hidden");
+            document.getElementById("step-1").classList.remove("hidden");
+            
+            initializeActivity(); 
+            document.getElementById("randomize-container").classList.add("hidden");
+            document.getElementById("step-1-instructions").classList.remove("hidden");
+            document.getElementById("btn-check-phenos").classList.remove("hidden");
+
+            const s1Drops = saved.d1 || saved.step1Dropdowns || [];
+            const s2Drops = saved.d2 || saved.step1Dropdowns || [];
+            const dZones = saved.dz || saved.dropZones || [];
+            const sqIns = saved.sq || saved.sqInputs || [];
+
+            traits.forEach((t, i) => {
+                document.getElementById(`p1-badge-${i}`).innerText = parent1[i];
+                document.getElementById(`p2-badge-${i}`).innerText = parent2[i];
+                
+                let s1 = document.getElementById(`p1-sel-${i}`);
+                let s2 = document.getElementById(`p2-sel-${i}`);
+                if (s1) s1.disabled = false; 
+                if (s2) s2.disabled = false;
+                
+                // Handle both the short array and the older object format
+                if (s1 && s1Drops[i]) s1.value = s1Drops[i].p1 !== undefined ? s1Drops[i].p1 : s1Drops[i];
+                if (s2 && s2Drops[i]) s2.value = s2Drops[i].p2 !== undefined ? s2Drops[i].p2 : s2Drops[i];
+            });
+
+            // Route user back to exact screen they were on
+            if (summaryShowing) { 
+                document.getElementById("step-1").classList.add("hidden");
+                showSummary();
+            } else if (step1Passed) {
+                document.getElementById("btn-check-phenos").classList.add("hidden");
+                document.getElementById("btn-to-punnett-container").classList.remove("hidden");
+                
+                if (punnettInitialized) {
+                    document.getElementById("step-1").classList.add("hidden");
+                    document.getElementById("active-trait-workspace").classList.remove("hidden");
+                    loadPunnettSquare(currentTraitIndex);
+                    
+                    if (dZones.length > 0) {
+                        const dropIds = ['p2-allele-1', 'p2-allele-2', 'p1-allele-1', 'p1-allele-2'];
+                        dropIds.forEach((id, i) => {
+                            let val = typeof dZones[i] === 'string' ? dZones[i] : (dZones[i] || "");
+                            if (val) {
+                                let el = document.getElementById(id);
+                                if(el) {
+                                    el.innerText = val;
+                                    el.classList.add('filled');
+                                    el.classList.remove('drop-zone');
+                                    
+                                    const sourceParent = el.getAttribute('data-parent');
+                                    let d1 = document.getElementById(`drag-p${sourceParent}-0`);
+                                    let d2 = document.getElementById(`drag-p${sourceParent}-1`);
+                                    if (d1 && !d1.classList.contains('used') && d1.innerText === val) {
+                                        d1.classList.add('used');
+                                    } else if (d2 && !d2.classList.contains('used') && d2.innerText === val) {
+                                        d2.classList.add('used');
+                                    }
+                                }
+                            }
+                        });
+                        checkAllDropped(); 
+                    }
+                    
+                    if (sqIns.length > 0) {
+                        sqIns.forEach((val, i) => {
+                            let sq = document.getElementById(`sq${i+1}`);
+                            if(sq) sq.value = val;
+                        });
+                        // Recalculate dynamic expectations before checking
+                        if (squareChecked) checkSquare(true);
+                    }
+
+                    [1, 2].forEach(num => {
+                        if (rolledData[num].box > 0) {
+                            document.getElementById(`btn-roll-${num}`).style.display = "none";
+                            document.getElementById(`roll-num-${num}`).innerText = rolledData[num].box;
+                            document.getElementById(`geno-display-${num}`).innerText = rolledData[num].geno;
+                            document.getElementById(`result-${num}`).classList.remove("hidden");
+                            
+                            if (babyChecked[num]) {
+                                let sel = document.getElementById(`pheno-select-${num}`);
+                                if (sel) {
+                                    sel.value = rolledData[num].pheno;
+                                    checkBabyPheno(num, true); 
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        // --- NEW FAMILY CONFIRMATION MODAL ---
+        function promptNewFamily() {
+            document.getElementById('new-family-copy-confirm').innerText = '';
+            document.getElementById('new-family-modal').classList.remove('hidden');
+        }
+
+        function closeNewFamilyModal() {
+            document.getElementById('new-family-modal').classList.add('hidden');
+        }
+
+        function modalGenerateAndCopy() {
+            // Reuse the existing save code generation logic
+            generateSaveCode();
+            const code = document.getElementById('save-code-display').value;
+            if (!code) return;
+            const confirm = document.getElementById('new-family-copy-confirm');
+            try {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(code).then(() => {
+                        confirm.innerText = '✔ Save code copied to clipboard!';
+                    });
+                } else {
+                    const ta = document.getElementById('save-code-display');
+                    ta.select();
+                    ta.setSelectionRange(0, 99999);
+                    document.execCommand('copy');
+                    confirm.innerText = '✔ Save code copied to clipboard!';
+                }
+            } catch(e) {
+                confirm.innerText = '⚠️ Could not auto-copy. Copy it from the Save box in the sidebar.';
+            }
+        }
+
+        function confirmNewFamily() {
+            closeNewFamilyModal();
+            startNewActivity();
+        }
+
+        // --- HARD RESET FIX (No Reloads) ---
+        function startNewActivity() {
+            StorageManager.remove("monsterGeneticsSave");
+            
+            parent1 = []; parent2 = []; offspring1 = []; offspring2 = [];
+            currentTraitIndex = 0; expectedAnswers = []; userMistakes = 0; 
+            punnettInitialized = false; squareChecked = false; step1Passed = false;
+            babyChecked = {1: false, 2: false};
+            rolledData = { 1: { geno: "", pheno: "", box: 0, prob: 0 }, 2: { geno: "", pheno: "", box: 0, prob: 0 } };
+            
+            const resBtn = document.getElementById("btn-resume-game");
+            if(resBtn) resBtn.classList.add("hidden");
+
+            document.getElementById('save-code-display').value = "";
+            document.getElementById('btn-copy-code').disabled = true;
+
+            document.getElementById("summary-section").classList.add("hidden");
+            document.getElementById("active-trait-workspace").classList.add("hidden");
+            document.getElementById("review-container").classList.add("hidden");
+            document.getElementById("btn-to-punnett-container").classList.add("hidden");
+            
+            document.getElementById("step-1-instructions").classList.add("hidden");
+            document.getElementById("btn-check-phenos").classList.add("hidden");
+            document.getElementById("randomize-container").classList.remove("hidden");
+            
+            document.getElementById("btn-randomize").disabled = false;
+            document.getElementById("btn-randomize").innerText = "🎰 Randomize Parents!";
+            document.getElementById("pheno-feedback").innerText = "";
+
+            initializeActivity();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+
+        // DRAG AND DROP LOGIC (MOUSE)
+        function dragStart(ev) {
+            ev.dataTransfer.setData("text/plain", ev.target.id);
+            ev.dataTransfer.setData("parent", ev.target.getAttribute("data-parent"));
+            ev.dataTransfer.setData("letter", ev.target.getAttribute("data-letter"));
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); }
+        function dragEnter(ev) { ev.currentTarget.classList.add('drag-over'); }
+        function dragLeave(ev) { ev.currentTarget.classList.remove('drag-over'); }
+
+        function dropAllele(ev) {
+            ev.preventDefault();
+            let target = ev.currentTarget;
+            target.classList.remove('drag-over');
+            
+            if (target.classList.contains("filled")) return;
+
+            let sourceParent = ev.dataTransfer.getData("parent");
+            let targetParent = target.getAttribute("data-parent");
+
+            if (sourceParent === targetParent) {
+                let letter = ev.dataTransfer.getData("letter");
+                let draggedId = ev.dataTransfer.getData("text/plain");
+                
+                target.innerText = letter;
+                target.classList.add("filled");
+                target.classList.remove("drop-zone");
+                
+                document.getElementById(draggedId).classList.add("used");
+                checkAllDropped();
+                saveGameState();
+            } else {
+                target.style.backgroundColor = "#ffefef";
+                setTimeout(() => target.style.backgroundColor = "white", 300);
+            }
+        }
+
+        // --- TOUCH SCREEN DRAG AND DROP LOGIC ---
+        let draggedElement = null;
+        let touchGhost = null;
+
+        function handleTouchStart(ev) {
+            draggedElement = ev.target;
+            if(draggedElement.classList.contains("used")) return; 
+            
+            touchGhost = draggedElement.cloneNode(true);
+            touchGhost.style.position = 'fixed'; 
+            touchGhost.style.zIndex = '9999';
+            touchGhost.style.opacity = '0.8';
+            touchGhost.style.pointerEvents = 'none'; 
+            touchGhost.style.margin = '0';
+            document.body.appendChild(touchGhost);
+            
+            const touch = ev.touches[0];
+            moveGhost(touch.clientX, touch.clientY);
+        }
+
+        function handleTouchMove(ev) {
+            if (!touchGhost) return;
+            ev.preventDefault(); 
+            const touch = ev.touches[0];
+            moveGhost(touch.clientX, touch.clientY);
+        }
+
+        function moveGhost(clientX, clientY) {
+            touchGhost.style.left = clientX - (touchGhost.offsetWidth / 2) + 'px';
+            touchGhost.style.top = clientY - (touchGhost.offsetHeight / 2) + 'px';
+        }
+
+        function handleTouchEnd(ev) {
+            if (!touchGhost || !draggedElement) return;
+            
+            const touch = ev.changedTouches[0];
+            if(touchGhost.parentNode) {
+                document.body.removeChild(touchGhost);
+            }
+            touchGhost = null;
+            
+            const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (dropTarget && dropTarget.classList.contains('drop-zone') && !dropTarget.classList.contains('filled')) {
+                const sourceParent = draggedElement.getAttribute("data-parent");
+                const targetParent = dropTarget.getAttribute("data-parent");
+                
+                if (sourceParent === targetParent) {
+                    dropTarget.innerText = draggedElement.getAttribute("data-letter");
+                    dropTarget.classList.add("filled");
+                    dropTarget.classList.remove("drop-zone");
+                    draggedElement.classList.add("used");
+                    checkAllDropped();
+                    saveGameState();
+                } else {
+                    dropTarget.style.backgroundColor = "#ffefef";
+                    setTimeout(() => dropTarget.style.backgroundColor = "white", 300);
+                }
+            }
+            draggedElement = null;
+        }
+
+        function checkAllDropped() {
+            let allFilled = true;
+            ['p1-allele-1', 'p1-allele-2', 'p2-allele-1', 'p2-allele-2'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el && !el.classList.contains("filled")) allFilled = false;
+            });
+
+            if (allFilled) {
+                document.getElementById("drag-instruction").classList.add("hidden");
+                document.getElementById("btn-check-sq").disabled = false;
+                for(let i=1; i<=4; i++) {
+                    let sq = document.getElementById(`sq${i}`);
+                    if(sq) {
+                        sq.disabled = false;
+                        sq.style.backgroundColor = "white"; 
+                        sq.style.color = "var(--dark)";
+                    }
+                }
+            }
+        }
+
+        // TYPING VALIDATION
+        function checkTyping(inputEl) {
+            let val = inputEl.value;
+            if (val.length === 2) {
+                let firstIsLower = (val[0] === val[0].toLowerCase() && val[0] !== val[0].toUpperCase());
+                let secondIsUpper = (val[1] === val[1].toUpperCase() && val[1] !== val[1].toLowerCase());
+
+                if (firstIsLower && secondIsUpper) {
+                    document.getElementById('modal-example').innerText = val[1] + val[0];
+                    document.getElementById('format-modal').classList.remove('hidden');
+                    inputEl.value = val[1] + val[0];
+                }
+            }
+            saveGameState();
+        }
+
+        function closeModal() { document.getElementById('format-modal').classList.add('hidden'); }
+
+        function toggleSaveLoad() {
+            const body    = document.getElementById('save-load-body');
+            const chevron = document.getElementById('save-load-chevron');
+            const isOpen  = body.style.display !== 'none';
+            body.style.display    = isOpen ? 'none'   : 'block';
+            chevron.style.transform = isOpen ? ''      : 'rotate(180deg)';
+        }
+
+        function closeLoadSuccessModal() { document.getElementById('load-success-modal').classList.add('hidden'); }
+        function closeLoadErrorModal()   { document.getElementById('load-error-modal').classList.add('hidden'); }
+
+        // UTILITIES
+        function getRandomGenotype(alleles) {
+            const a1 = alleles[Math.floor(Math.random() * 2)];
+            const a2 = alleles[Math.floor(Math.random() * 2)];
+            return a1 < a2 ? a1 + a2 : a2 + a1; 
+        }
+
+        function sortAlleles(str) { return str.split('').sort((a, b) => a < b ? -1 : 1).join(''); }
+
+        function getPhenotype(genotype, trait) {
+            if (trait.type === "standard") {
+                return genotype.includes(trait.alleles[0]) ? trait.traits.dom : trait.traits.rec;
+            } else {
+                if (genotype === trait.alleles[0] + trait.alleles[0]) return trait.traits.homUpper;
+                if (genotype === trait.alleles[1] + trait.alleles[1]) return trait.traits.homLower;
+                return trait.traits.het;
+            }
+        }
+
+        function buildOptions(trait) {
+            let options = `<option value="">-- Select --</option>`;
+            if (trait.type === "standard") {
+                options += `<option value="${trait.traits.dom}">${trait.traits.dom}</option>`;
+                options += `<option value="${trait.traits.rec}">${trait.traits.rec}</option>`;
+            } else {
+                options += `<option value="${trait.traits.homUpper}">${trait.traits.homUpper}</option>`;
+                options += `<option value="${trait.traits.het}">${trait.traits.het}</option>`;
+                options += `<option value="${trait.traits.homLower}">${trait.traits.homLower}</option>`;
+            }
+            return options;
+        }
+
+        // INITIALIZATION & STEP 1
+        function initializeActivity() {
+            document.getElementById("start-section").classList.add("hidden");
+            document.getElementById("intro-box").classList.add("hidden");
+            document.getElementById("step-1").classList.remove("hidden");
+
+            const tbody = document.getElementById("pheno-tbody");
+            tbody.innerHTML = "";
+
+            traits.forEach((trait, i) => {
+                const tr = document.createElement("tr");
+                tr.className = "hover-area"; 
+                tr.innerHTML = `
+                    <td style="font-size:0.95em;"><strong>#${trait.id}: ${trait.name}</strong></td>
+                    <td>
+                        <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 6px;">
+                            <span class="geno-badge" id="p1-badge-${i}">?</span>
+                            <strong style="color:var(--dark);">➔</strong>
+                            <select id="p1-sel-${i}" class="dropdown" disabled onchange="saveGameState()">${buildOptions(trait)}</select>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 6px;">
+                            <span class="geno-badge" id="p2-badge-${i}">?</span>
+                            <strong style="color:var(--dark);">➔</strong>
+                            <select id="p2-sel-${i}" class="dropdown" disabled onchange="saveGameState()">${buildOptions(trait)}</select>
+                        </div>
+                    </td>
+                `;
+                
+                tr.addEventListener('mouseenter', () => {
+                    if (!document.getElementById("step-1").classList.contains("hidden")) {
+                        document.getElementById(`key-row-${trait.id}`).classList.add('pulsate');
+                    }
+                });
+                tr.addEventListener('mouseleave', () => {
+                    if (!document.getElementById("step-1").classList.contains("hidden")) {
+                        document.getElementById(`key-row-${trait.id}`).classList.remove('pulsate');
+                    }
+                });
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function randomizeParents() {
+            const btn = document.getElementById("btn-randomize");
+            btn.disabled = true;
+            btn.innerText = "Generating...";
+
+            parent1 = []; parent2 = [];
+            offspring1 = []; offspring2 = [];
+            userMistakes = 0; 
+            punnettInitialized = false;
+            squareChecked = false;
+            step1Passed = false;
+            babyChecked = {1: false, 2: false};
+            
+            traits.forEach((trait) => {
+                parent1.push(getRandomGenotype(trait.alleles));
+                parent2.push(getRandomGenotype(trait.alleles));
+            });
+
+            let ticks = 0;
+            const maxTicks = 45; 
+            
+            traits.forEach((trait, i) => {
+                document.getElementById(`p1-badge-${i}`).classList.add("slot-spin");
+                document.getElementById(`p2-badge-${i}`).classList.add("slot-spin");
+            });
+
+            const spinInterval = setInterval(() => {
+                ticks++;
+                traits.forEach((trait, i) => {
+                    let lockTick = (i + 1) * 5; 
+                    if (ticks < lockTick) {
+                        document.getElementById(`p1-badge-${i}`).innerText = trait.alleles[Math.floor(Math.random()*2)] + trait.alleles[Math.floor(Math.random()*2)];
+                        document.getElementById(`p2-badge-${i}`).innerText = trait.alleles[Math.floor(Math.random()*2)] + trait.alleles[Math.floor(Math.random()*2)];
+                    } else if (ticks === lockTick) {
+                        document.getElementById(`p1-badge-${i}`).innerText = parent1[i];
+                        document.getElementById(`p2-badge-${i}`).innerText = parent2[i];
+                        document.getElementById(`p1-badge-${i}`).classList.remove("slot-spin");
+                        document.getElementById(`p2-badge-${i}`).classList.remove("slot-spin");
+                    }
+                });
+
+                if (ticks >= maxTicks) {
+                    clearInterval(spinInterval);
+                    document.getElementById("randomize-container").classList.add("hidden");
+                    document.getElementById("step-1-instructions").classList.remove("hidden");
+                    document.getElementById("btn-check-phenos").classList.remove("hidden");
+                    
+                    for(let j=0; j<traits.length; j++) {
+                        let s1 = document.getElementById(`p1-sel-${j}`);
+                        let s2 = document.getElementById(`p2-sel-${j}`);
+                        if(s1) s1.disabled = false;
+                        if(s2) s2.disabled = false;
+                    }
+                    saveGameState();
+                }
+            }, 50);
+        }
+
+        function checkAllPhenotypes() {
+            let allCorrect = true;
+            let currentErrors = 0;
+
+            for(let i = 0; i < traits.length; i++) {
+                const trait = traits[i];
+                const actP1 = getPhenotype(parent1[i], trait);
+                const actP2 = getPhenotype(parent2[i], trait);
+                const sel1 = document.getElementById(`p1-sel-${i}`);
+                const sel2 = document.getElementById(`p2-sel-${i}`);
+
+                sel1.classList.remove("error", "correct");
+                sel2.classList.remove("error", "correct");
+
+                if (sel1.value === actP1) { 
+                    sel1.classList.add("correct"); 
+                } else { 
+                    sel1.classList.add("error"); 
+                    currentErrors++;
+                    allCorrect = false; 
+                }
+
+                if (sel2.value === actP2) { 
+                    sel2.classList.add("correct"); 
+                } else { 
+                    sel2.classList.add("error"); 
+                    currentErrors++;
+                    allCorrect = false; 
+                }
+            }
+
+            userMistakes += currentErrors;
+
+            const feedback = document.getElementById("pheno-feedback");
+            if (allCorrect) {
+                step1Passed = true;
+                feedback.style.color = "var(--success)";
+                feedback.innerText = "Fantastic! All phenotypes are correct.";
+                document.getElementById("btn-check-phenos").classList.add("hidden");
+                
+                document.getElementById("btn-to-punnett-container").classList.remove("hidden");
+            } else {
+                feedback.style.color = "var(--danger)";
+                feedback.innerText = "Some phenotypes are incorrect (highlighted in red). Check the trait key and try again!";
+            }
+            saveGameState();
+        }
+
+        function goToPunnett() {
+            document.getElementById("step-1").classList.add("hidden");
+            document.getElementById("active-trait-workspace").classList.remove("hidden");
+            
+            if (!punnettInitialized) {
+                loadPunnettSquare(0);
+                punnettInitialized = true;
+            } else {
+                for(let i=1; i<=9; i++) { document.getElementById(`key-row-${i}`).classList.remove('pulsate'); }
+                document.getElementById(`key-row-${traits[currentTraitIndex].id}`).classList.add('pulsate');
+            }
+            saveGameState();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function goBackToParents() {
+            document.getElementById("active-trait-workspace").classList.add("hidden");
+            document.getElementById("step-1").classList.remove("hidden");
+            for(let i=1; i<=9; i++) { document.getElementById(`key-row-${i}`).classList.remove('pulsate'); }
+            saveGameState();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function loadPunnettSquare(index) {
+            currentTraitIndex = index;
+            squareChecked = false;
+            babyChecked = {1: false, 2: false};
+            const trait = traits[index];
+            const p1Geno = parent1[index];
+            const p2Geno = parent2[index];
+
+            for(let i=1; i<=9; i++) { document.getElementById(`key-row-${i}`).classList.remove('pulsate'); }
+            document.getElementById(`key-row-${trait.id}`).classList.add('pulsate');
+
+            document.getElementById("current-trait-header").innerText = `Trait #${trait.id}: ${trait.name}`;
+            
+            document.getElementById("m1-alleles-drag").innerHTML = `
+                <div class="draggable-allele" draggable="true" ondragstart="dragStart(event)" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)" id="drag-p1-0" data-parent="1" data-letter="${p1Geno[0]}">${p1Geno[0]}</div>
+                <div class="draggable-allele" draggable="true" ondragstart="dragStart(event)" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)" id="drag-p1-1" data-parent="1" data-letter="${p1Geno[1]}">${p1Geno[1]}</div>
+            `;
+            document.getElementById("m2-alleles-drag").innerHTML = `
+                <div class="draggable-allele" draggable="true" ondragstart="dragStart(event)" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)" id="drag-p2-0" data-parent="2" data-letter="${p2Geno[0]}">${p2Geno[0]}</div>
+                <div class="draggable-allele" draggable="true" ondragstart="dragStart(event)" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)" id="drag-p2-1" data-parent="2" data-letter="${p2Geno[1]}">${p2Geno[1]}</div>
+            `;
+
+            ['p1-allele-1', 'p1-allele-2', 'p2-allele-1', 'p2-allele-2'].forEach(id => {
+                let el = document.getElementById(id);
+                el.innerText = "";
+                el.classList.remove("filled");
+                el.classList.add("drop-zone");
+                el.style.backgroundColor = "#f1f2f6";
+            });
+
+            document.getElementById("drag-instruction").classList.remove("hidden");
+            document.getElementById("btn-check-sq").disabled = true;
+            document.getElementById("offspring-section").classList.add("hidden");
+            document.getElementById("check-sq-container").classList.remove("hidden");
+            document.getElementById("ps-feedback").innerText = "";
+            document.getElementById("btn-next-trait").classList.add("hidden");
+            
+            rolledData = { 1: { geno: "", pheno: "", box: 0, prob: 0 }, 2: { geno: "", pheno: "", box: 0, prob: 0 } };
+
+            [1, 2].forEach(num => {
+                document.getElementById(`btn-roll-${num}`).disabled = false;
+                document.getElementById(`btn-roll-${num}`).innerText = `Roll Baby #${num}`;
+                document.getElementById(`btn-roll-${num}`).style.display = "inline-block";
+                
+                document.getElementById(`result-${num}`).classList.add("hidden");
+                document.getElementById(`btn-check-${num}`).style.display = "inline-block";
+                
+                const fbak = document.getElementById(`feedback-${num}`);
+                fbak.innerHTML = "";
+                fbak.classList.add("hidden");
+                
+                const sel = document.getElementById(`pheno-select-${num}`);
+                sel.innerHTML = buildOptions(trait);
+                sel.disabled = false;
+                sel.classList.remove("correct", "error");
+            });
+            document.getElementById("block-b2").classList.add("hidden"); 
+            
+            for(let i=1; i<=4; i++) {
+                let sq = document.getElementById(`sq${i}`);
+                sq.value = "";
+                sq.className = "square-input";
+                sq.disabled = true; 
+                sq.readOnly = false; 
+                sq.classList.remove("highlight-b1", "highlight-b2", "extreme-highlight");
+            }
+            saveGameState();
+        }
+
+        // --- DYNAMIC CHECK SQUARE LOGIC FIX ---
+        function checkSquare(isResume = false) {
+            
+            // Read exactly what letters the student dropped into the boxes
+            let p2_1 = document.getElementById('p2-allele-1').innerText.trim();
+            let p2_2 = document.getElementById('p2-allele-2').innerText.trim();
+            let p1_1 = document.getElementById('p1-allele-1').innerText.trim();
+            let p1_2 = document.getElementById('p1-allele-2').innerText.trim();
+
+            // Dynamically generate the expected answers based on their placement
+            expectedAnswers = [
+                sortAlleles(p1_1 + p2_1),
+                sortAlleles(p1_1 + p2_2),
+                sortAlleles(p1_2 + p2_1),
+                sortAlleles(p1_2 + p2_2)
+            ];
+
+            let allCorrect = true;
+            let currentErrors = 0;
+
+            for(let i=1; i<=4; i++) {
+                let sq = document.getElementById(`sq${i}`);
+                let rawVal = sq.value.trim();
+                let sortedVal = sortAlleles(rawVal);
+                
+                if (sortedVal === expectedAnswers[i-1] && rawVal.length === 2) {
+                    sq.className = "square-input correct";
+                    sq.readOnly = true;
+                } else {
+                    sq.className = "square-input incorrect";
+                    currentErrors++;
+                    allCorrect = false;
+                }
+            }
+
+            if(!isResume) userMistakes += currentErrors;
+
+            const feedback = document.getElementById("ps-feedback");
+            if (allCorrect) {
+                squareChecked = true;
+                feedback.style.color = "var(--success)";
+                feedback.innerText = "Perfect! Now roll for the offspring over on the right. ➔";
+                document.getElementById("check-sq-container").classList.add("hidden");
+                document.getElementById("offspring-section").classList.remove("hidden");
+            } else {
+                feedback.style.color = "var(--danger)";
+                feedback.innerText = "Check your work! Make sure your letters match the headers.";
+            }
+            saveGameState();
+        }
+
+        function rollOffspring(num) {
+            const btnRoll = document.getElementById(`btn-roll-${num}`);
+            btnRoll.disabled = true;
+            btnRoll.innerText = "Rolling...";
+
+            const finalRoll = Math.floor(Math.random() * 4) + 1;
+            let currentStep = 0;
+            const totalSteps = 12 + finalRoll; 
+
+            const spinInterval = setInterval(() => {
+                for(let i=1; i<=4; i++) { document.getElementById(`sq${i}`).classList.remove(`highlight-b${num}`); }
+                
+                currentStep++;
+                let boxToHighlight = (currentStep % 4) === 0 ? 4 : (currentStep % 4);
+                
+                document.getElementById(`sq${boxToHighlight}`).classList.add(`highlight-b${num}`);
+                
+                const diceEmojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"];
+                document.getElementById(`die-display-${num}`).innerText = diceEmojis[boxToHighlight - 1];
+
+                if (currentStep >= totalSteps) {
+                    clearInterval(spinInterval);
+                    
+                    const fGeno = expectedAnswers[finalRoll - 1];
+                    const fPheno = getPhenotype(fGeno, traits[currentTraitIndex]);
+                    
+                    rolledData[num].geno = fGeno;
+                    rolledData[num].pheno = fPheno;
+                    rolledData[num].box = finalRoll;
+
+                    let matchCount = 0;
+                    expectedAnswers.forEach(g => {
+                        if(getPhenotype(g, traits[currentTraitIndex]) === fPheno) matchCount++;
+                    });
+                    rolledData[num].prob = (matchCount / 4) * 100;
+
+                    btnRoll.style.display = "none";
+                    document.getElementById(`roll-num-${num}`).innerText = finalRoll;
+                    document.getElementById(`geno-display-${num}`).innerText = fGeno;
+                    
+                    document.getElementById(`result-${num}`).classList.remove("hidden");
+                    saveGameState();
+                }
+            }, 120); 
+        }
+
+        function focusBox(babyNum, isEntering) {
+            const boxNum = rolledData[babyNum].box;
+            if (boxNum > 0) {
+                const targetSquare = document.getElementById(`sq${boxNum}`);
+                if (isEntering) { targetSquare.classList.add("extreme-highlight"); } 
+                else { targetSquare.classList.remove("extreme-highlight"); }
+            }
+        }
+
+        function checkBabyPheno(num, isResume = false) {
+            const selectedPheno = document.getElementById(`pheno-select-${num}`).value;
+            const feedback = document.getElementById(`feedback-${num}`);
+            const selectEl = document.getElementById(`pheno-select-${num}`);
+
+            feedback.classList.remove("hidden");
+
+            if (selectedPheno === "") {
+                feedback.style.color = "var(--danger)";
+                feedback.innerHTML = "Please select a phenotype!";
+                return;
+            }
+
+            if (selectedPheno === rolledData[num].pheno) {
+                babyChecked[num] = true;
+                feedback.style.color = "var(--success)";
+                feedback.innerHTML = `Correct! It is ${rolledData[num].pheno}.<br><span style="font-size: 0.85em; color: #636e72;">(${rolledData[num].prob}% chance of this trait)</span>`;
+                
+                selectEl.classList.add("correct");
+                document.getElementById(`btn-check-${num}`).style.display = "none";
+                
+                if(num === 1) {
+                    offspring1[currentTraitIndex] = { genotype: rolledData[1].geno, phenotype: rolledData[1].pheno, box: rolledData[1].box };
+                    document.getElementById("block-b2").classList.remove("hidden"); 
+                } else {
+                    offspring2[currentTraitIndex] = { genotype: rolledData[2].geno, phenotype: rolledData[2].pheno, box: rolledData[2].box };
+                    const nextBtn = document.getElementById("btn-next-trait");
+                    nextBtn.classList.remove("hidden");
+                    if (currentTraitIndex >= traits.length - 1) { nextBtn.innerText = "📊 View Family Summary 📊"; }
+                }
+            } else {
+                if(!isResume) userMistakes++;
+                feedback.style.color = "var(--danger)";
+                feedback.innerHTML = "Not quite. Check the key!";
+                selectEl.classList.add("error");
+            }
+            saveGameState();
+        }
+
+        function nextTrait() {
+            if (currentTraitIndex < traits.length - 1) {
+                loadPunnettSquare(currentTraitIndex + 1);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                showSummary();
+            }
+            saveGameState();
+        }
+
+        function toggleFamilyView() {
+            const offView = document.getElementById("offspring-table-view");
+            const parView = document.getElementById("parent-table-view");
+            const pedView = document.getElementById("pedigree-view");
+            const btn = document.getElementById("btn-toggle-family");
+            const pedBtn = document.getElementById("btn-pedigree");
+            const sub = document.getElementById("summary-subtitle");
+
+            // Always hide pedigree and reset its button when toggling family views
+            if (pedView) { pedView.style.display = "none"; }
+            if (pedBtn) { pedBtn.innerHTML = "🧬 View Pedigree"; pedBtn.style.backgroundColor = "#00b894"; }
+
+            if (offView.classList.contains("hidden")) {
+                offView.classList.remove("hidden");
+                parView.classList.add("hidden");
+                btn.innerHTML = "👀 View Original Parents";
+                btn.style.backgroundColor = "#8e44ad";
+                sub.innerText = "Notice how the siblings inherited different traits even though they have the exact same parents!";
+            } else {
+                offView.classList.add("hidden");
+                parView.classList.remove("hidden");
+                btn.innerHTML = "🍼 Back to Babies";
+                btn.style.backgroundColor = "#2980b9";
+                sub.innerText = "Here is the original genetic makeup of the parent monsters.";
+            }
+        }
+
+        function showSummary() {
+            document.getElementById("active-trait-workspace").classList.add("hidden");
+            for(let i=1; i<=9; i++) { document.getElementById(`key-row-${i}`).classList.remove('pulsate'); }
+
+            const summarySection = document.getElementById("summary-section");
+            summarySection.classList.remove("hidden");
+            
+            let html = `<h2 style="text-align:center; color: var(--success); font-size: 2.8em; margin-bottom: 5px;">Family Summary Complete! 👨‍👩‍👧‍👦</h2>`;
+
+            html += `<p style="text-align:center; font-size: 1.2em;" id="summary-subtitle">Notice how the siblings inherited different traits even though they have the exact same parents!</p>`;
+            
+            html += `<div style="text-align: center; margin-bottom: 20px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+                        <button type="button" id="btn-toggle-family" class="btn" style="background-color: #8e44ad; font-size: 1.2em; padding: 10px 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onclick="toggleFamilyView()">
+                            👀 View Original Parents
+                        </button>
+                        <button type="button" id="btn-pedigree" class="btn" style="background-color: #00b894; font-size: 1.2em; padding: 10px 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" onclick="showPedigreeView()">
+                            🧬 View Pedigree
+                        </button>
+                     </div>`;
+
+            // OFFSPRING TABLE VIEW (Default)
+            html += `<div id="offspring-table-view" class="table-responsive">
+                        <table style="margin-top: 0; table-layout: fixed; width: 100%;">
+                            <tr>
+                                <th rowspan="2" style="width: 20%; vertical-align: middle;">Trait Name</th>
+                                <th colspan="2" style="background-color: var(--baby1); width: 40%;">Baby #1</th>
+                                <th colspan="2" style="background-color: var(--baby2); width: 40%;">Baby #2</th>
+                            </tr>
+                            <tr>
+                                <th style="background-color: #2980b9;">Geno</th>
+                                <th style="background-color: #2980b9;">Pheno</th>
+                                <th style="background-color: #8e44ad;">Geno</th>
+                                <th style="background-color: #8e44ad;">Pheno</th>
+                            </tr>`;
+            traits.forEach((t, i) => {
+                html += `<tr>
+                            <td style="font-size: 1.1em; word-wrap: break-word;"><strong>${t.name}</strong></td>
+                            <td style="background-color: #ebf5fb; word-wrap: break-word;"><span class="geno-badge">${offspring1[i].genotype}</span></td>
+                            <td style="background-color: #ebf5fb; color: var(--primary); font-weight: 800; font-size: 1.1em; word-wrap: break-word;">${offspring1[i].phenotype}</td>
+                            <td style="background-color: #f5eef8; word-wrap: break-word;"><span class="geno-badge">${offspring2[i].genotype}</span></td>
+                            <td style="background-color: #f5eef8; color: var(--primary); font-weight: 800; font-size: 1.1em; word-wrap: break-word;">${offspring2[i].phenotype}</td>
+                         </tr>`;
+            });
+            html += `</table></div>`;
+
+            // PARENTS TABLE VIEW (Hidden by default)
+            html += `<div id="parent-table-view" class="table-responsive hidden">
+                        <table style="margin-top: 0; table-layout: fixed; width: 100%;">
+                            <tr>
+                                <th rowspan="2" style="width: 20%; vertical-align: middle;">Trait Name</th>
+                                <th colspan="2" style="background-color: #f39c12; width: 40%;">Monster 1 (Parent)</th>
+                                <th colspan="2" style="background-color: #d35400; width: 40%;">Monster 2 (Parent)</th>
+                            </tr>
+                            <tr>
+                                <th style="background-color: #e67e22;">Geno</th>
+                                <th style="background-color: #e67e22;">Pheno</th>
+                                <th style="background-color: #c0392b;">Geno</th>
+                                <th style="background-color: #c0392b;">Pheno</th>
+                            </tr>`;
+            traits.forEach((t, i) => {
+                let p1Pheno = getPhenotype(parent1[i], t);
+                let p2Pheno = getPhenotype(parent2[i], t);
+                html += `<tr>
+                            <td style="font-size: 1.1em; word-wrap: break-word;"><strong>${t.name}</strong></td>
+                            <td style="background-color: #fdebd0; word-wrap: break-word;"><span class="geno-badge" style="background:#e67e22;">${parent1[i]}</span></td>
+                            <td style="background-color: #fdebd0; color: #d35400; font-weight: 800; font-size: 1.1em; word-wrap: break-word;">${p1Pheno}</td>
+                            <td style="background-color: #fdf2e9; word-wrap: break-word;"><span class="geno-badge" style="background:#c0392b;">${parent2[i]}</span></td>
+                            <td style="background-color: #fdf2e9; color: #d35400; font-weight: 800; font-size: 1.1em; word-wrap: break-word;">${p2Pheno}</td>
+                         </tr>`;
+            });
+            html += `</table></div>`;
+
+            // PEDIGREE VIEW (Hidden by default)
+            html += `<div id="pedigree-view" class="pedigree-view">
+                        <div class="pedigree-controls">
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;">
+                                <label for="ped-trait-select" style="font-weight:800; font-size:1.05em;">Trait:</label>
+                                <select id="ped-trait-select" class="dropdown" style="min-width:160px;" onchange="renderPedigree()">
+                                    <option value="">-- Select Trait --</option>
+                                </select>
+                            </div>
+                            <div id="ped-track-wrap" style="display:none; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;">
+                                <label style="font-weight:800; font-size:1.05em;">Track:</label>
+                                <select id="ped-track-select" class="dropdown" style="min-width:160px;" onchange="renderPedigree()"></select>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; font-weight:800; font-size:0.95em; color:#636e72; border-left: 2px solid var(--light); padding-left:12px;">
+                                <span style="display:flex; align-items:center; gap:5px;">
+                                    <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="none" stroke="#2d3436" stroke-width="2.5"/></svg> Female
+                                </span>
+                                <span style="display:flex; align-items:center; gap:5px;">
+                                    <svg width="18" height="18" viewBox="0 0 18 18"><rect x="1" y="1" width="16" height="16" rx="3" fill="none" stroke="#2d3436" stroke-width="2.5"/></svg> Male
+                                </span>
+                            </div>
+                        </div>
+                        <div id="pedigree-canvas-area"></div>
+                     </div>`;
+
+            html += `<div class="intro-box" style="margin-top: 30px; text-align: center; border-left-color: var(--success); border-left-width: 8px;">
+                        <h3 style="color: var(--success); margin-top: 0; font-size: 1.8em;">🎨 Time to Draw! 🎨</h3>
+                        <p style="margin-bottom: 0; font-size: 1.2em;">Now grab your paper and crayons! Use the phenotypes in the table above to draw Baby #1 and Baby #2 side-by-side.</p>
+                     </div>`;
+
+            html += `<div style="text-align: center; margin-top: 30px;">
+                        <button type="button" class="btn btn-roll" onclick="promptNewFamily()" style="font-size: 1.3em; padding: 15px 40px; box-shadow: 0 5px 15px rgba(211, 84, 0, 0.3);">
+                            🔄 Make a New Family
+                        </button>
+                     </div>`;
+
+            summarySection.innerHTML = html;
+
+            const reviewSelect = document.getElementById("review-trait-select");
+            reviewSelect.innerHTML = `<option value="">-- Select Trait to Review --</option>`;
+            traits.forEach((t, i) => {
+                reviewSelect.innerHTML += `<option value="${i}">#${t.id}: ${t.name}</option>`;
+            });
+
+            document.getElementById("review-container").classList.remove("hidden");
+            saveGameState();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderReviewSquare() {
+            const val = document.getElementById('review-trait-select').value;
+            const area = document.getElementById('review-square-area');
+            
+            if (val === "") { 
+                area.style.display = 'none'; 
+                return; 
+            }
+
+            const i = parseInt(val);
+            const trait = traits[i];
+            const p1Geno = parent1[i];
+            const p2Geno = parent2[i];
+            const b1Box = offspring1[i].box;
+            const b2Box = offspring2[i].box;
+
+            let exp = [
+                sortAlleles(p1Geno[0] + p2Geno[0]), sortAlleles(p1Geno[0] + p2Geno[1]),
+                sortAlleles(p1Geno[1] + p2Geno[0]), sortAlleles(p1Geno[1] + p2Geno[1])
+            ];
+
+            function getReviewBoxClass(boxNum) {
+                if (b1Box === boxNum && b2Box === boxNum) return 'mini-both';
+                if (b1Box === boxNum) return 'mini-b1';
+                if (b2Box === boxNum) return 'mini-b2';
+                return '';
+            }
+
+            area.innerHTML = `
+                <p style="text-align:center; font-size: 1.1em; margin: 10px 0 5px 0;"><strong>${trait.name}</strong><br>M1: ${p1Geno} &nbsp;✖&nbsp; M2: ${p2Geno}</p>
+                <div class="mini-grid">
+                    <div></div>
+                    <div class="mini-cell mini-header">${p2Geno[0]}</div>
+                    <div class="mini-cell mini-header">${p2Geno[1]}</div>
+
+                    <div class="mini-cell mini-header">${p1Geno[0]}</div>
+                    <div class="mini-cell ${getReviewBoxClass(1)}">${exp[0]}</div>
+                    <div class="mini-cell ${getReviewBoxClass(2)}">${exp[1]}</div>
+
+                    <div class="mini-cell mini-header">${p1Geno[1]}</div>
+                    <div class="mini-cell ${getReviewBoxClass(3)}">${exp[2]}</div>
+                    <div class="mini-cell ${getReviewBoxClass(4)}">${exp[3]}</div>
+                </div>
+                <div style="font-size: 1em; margin-top: 15px; text-align: center;">
+                    <span style="color: var(--baby1); font-weight: 800;">■ Baby #1</span> &nbsp;&nbsp;&nbsp;
+                    <span style="color: var(--baby2); font-weight: 800;">■ Baby #2</span>
+                </div>
+            `;
+            area.style.display = 'block';
+        }
+        // --- PEDIGREE VIEW ---
+        function showPedigreeView() {
+            const pedView = document.getElementById("pedigree-view");
+            const offView = document.getElementById("offspring-table-view");
+            const parView = document.getElementById("parent-table-view");
+            const pedBtn  = document.getElementById("btn-pedigree");
+            const togBtn  = document.getElementById("btn-toggle-family");
+            const sub     = document.getElementById("summary-subtitle");
+
+            const isVisible = pedView.style.display === "block";
+
+            if (isVisible) {
+                // Hide pedigree, restore offspring table
+                pedView.style.display = "none";
+                offView.classList.remove("hidden");
+                parView.classList.add("hidden");
+                pedBtn.innerHTML = "🧬 View Pedigree";
+                pedBtn.style.backgroundColor = "#00b894";
+                togBtn.innerHTML = "👀 View Original Parents";
+                togBtn.style.backgroundColor = "#8e44ad";
+                sub.innerText = "Notice how the siblings inherited different traits even though they have the exact same parents!";
+            } else {
+                // Show pedigree, hide both tables
+                offView.classList.add("hidden");
+                parView.classList.add("hidden");
+                pedView.style.display = "block";
+                pedBtn.innerHTML = "🍼 Back to Babies";
+                pedBtn.style.backgroundColor = "#2980b9";
+                togBtn.innerHTML = "👀 View Original Parents";
+                togBtn.style.backgroundColor = "#8e44ad";
+                sub.innerText = "Select a trait below to see how it was passed from parents to offspring.";
+
+                // Populate trait dropdown if empty
+                const sel = document.getElementById("ped-trait-select");
+                if (sel.options.length <= 1) {
+                    traits.forEach((t, i) => {
+                        const opt = document.createElement("option");
+                        opt.value = i;
+                        opt.innerText = `#${t.id}: ${t.name}`;
+                        sel.appendChild(opt);
+                    });
+                }
+            }
+        }
+
+        function renderPedigree() {
+            const traitSel  = document.getElementById("ped-trait-select");
+            const trackWrap = document.getElementById("ped-track-wrap");
+            const trackSel  = document.getElementById("ped-track-select");
+            const area      = document.getElementById("pedigree-canvas-area");
+
+            const traitIdx = traitSel.value;
+            if (traitIdx === "") { area.innerHTML = ""; trackWrap.style.display = "none"; return; }
+
+            const i     = parseInt(traitIdx);
+            const trait = traits[i];
+            const p1g   = parent1[i];
+            const p2g   = parent2[i];
+            const b1g   = offspring1[i].genotype;
+            const b2g   = offspring2[i].genotype;
+
+            // Build / refresh track dropdown for standard traits
+            if (trait.type === "standard") {
+                trackWrap.style.display = "flex";
+                const currentTrack = trackSel.value;
+                trackSel.innerHTML = `
+                    <option value="dom">Dominant — ${trait.traits.dom}</option>
+                    <option value="rec">Recessive — ${trait.traits.rec}</option>
+                `;
+                if (currentTrack) trackSel.value = currentTrack;
+            } else {
+                trackWrap.style.display = "none";
+            }
+
+            // --- Determine fill class for each individual ---
+            function getShapeClass(geno) {
+                if (trait.type === "standard") {
+                    const tracking = trackSel.value || "dom";
+                    const expressed = geno.includes(trait.alleles[0]); // has dominant
+                    if (tracking === "dom") {
+                        return expressed ? "ped-filled" : "ped-unfilled";
+                    } else {
+                        // recessive: only expressed if homozygous recessive
+                        return !expressed ? "ped-filled" : "ped-unfilled";
+                    }
+                } else {
+                    // Blended
+                    const upper = trait.alleles[0] + trait.alleles[0]; // e.g. AA
+                    const lower = trait.alleles[1] + trait.alleles[1]; // e.g. aa
+                    if (geno === upper) return "ped-blend-upper";
+                    if (geno === lower) return "ped-blend-lower";
+                    return "ped-blend-mid";
+                }
+            }
+
+            const p1Class = getShapeClass(p1g);
+            const p2Class = getShapeClass(p2g);
+            const b1Class = getShapeClass(b1g);
+            const b2Class = getShapeClass(b2g);
+
+            // --- Build legend ---
+            function buildLegend() {
+                if (trait.type === "standard") {
+                    const tracking = trackSel.value || "dom";
+                    const trackedLabel   = tracking === "dom" ? trait.traits.dom   : trait.traits.rec;
+                    const untrackedLabel = tracking === "dom" ? trait.traits.rec   : trait.traits.dom;
+                    return `
+                        <div class="ped-legend">
+                            <div class="ped-legend-item"><div class="ped-legend-swatch" style="background:#2d3436;"></div> Expresses <em>${trackedLabel}</em></div>
+                            <div class="ped-legend-item"><div class="ped-legend-swatch" style="background:white;"></div> Expresses <em>${untrackedLabel}</em></div>
+                        </div>`;
+                } else {
+                    return `
+                        <div class="ped-legend">
+                            <div class="ped-legend-item"><div class="ped-legend-swatch" style="background:#1a5276; border-color:#1a5276;"></div> ${trait.traits.homUpper}</div>
+                            <div class="ped-legend-item"><div class="ped-legend-swatch" style="background:#aed6f1; border-color:#7fb3d3;"></div> ${trait.traits.het}</div>
+                            <div class="ped-legend-item"><div class="ped-legend-swatch" style="background:white;"></div> ${trait.traits.homLower}</div>
+                        </div>`;
+                }
+            }
+
+            // Helper: build one individual's HTML block
+            function buildIndividual(shape, fillClass, name, sexLabel, geno) {
+                const el = shape === "circle"
+                    ? `<div class="ped-circle ${fillClass}"></div>`
+                    : `<div class="ped-square ${fillClass}"></div>`;
+                return `
+                    <div class="ped-individual">
+                        <div class="ped-shape-wrap">${el}</div>
+                        <div class="ped-sex-label">${sexLabel}</div>
+                        <div class="ped-name">${name}</div>
+                        <div class="ped-geno">${geno}</div>
+                    </div>`;
+            }
+
+            area.innerHTML = `
+                <div class="pedigree-canvas">
+
+                    <div class="ped-gen-label">Generation 1 — Parents</div>
+
+                    <div class="ped-parents-row">
+                        ${buildIndividual("circle", p1Class, "Monster 1", "♀ Female", p1g)}
+                        <div class="ped-mating-line"></div>
+                        ${buildIndividual("square", p2Class, "Monster 2", "♂ Male", p2g)}
+                    </div>
+
+                    <div class="ped-connector-col">
+                        <div class="ped-vertical-drop"></div>
+                        <div class="ped-sibship-line"></div>
+                    </div>
+
+                    <div class="ped-offspring-row">
+                        <div class="ped-offspring-drop">
+                            <div class="ped-offspring-drop-line"></div>
+                            ${buildIndividual("circle", b1Class, "Baby #1", "♀ Female", b1g)}
+                        </div>
+                        <div class="ped-offspring-drop">
+                            <div class="ped-offspring-drop-line"></div>
+                            ${buildIndividual("square", b2Class, "Baby #2", "♂ Male", b2g)}
+                        </div>
+                    </div>
+
+                </div>
+                ${buildLegend()}
+            `;
+        }
+
+    </script>
+</body>
+</html>
