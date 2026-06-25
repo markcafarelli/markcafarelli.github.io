@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bird Breeder Simulation</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f0f8ff; --ink:#2c3e50; --navy:#34495e; --muted:#7f8c8d;
+    --line:#e0e6ed; --card:#ffffff; --soft:#f3f6fa;
+    --accent:#27ae60; --accent-h:#219653; --danger:#c0392b; --danger-h:#a93226;
+    --blue:#3498db; --green:#2ecc71; --yellow:#f1c40f;
+    --r:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+    background:var(--bg); color:var(--ink); margin:0; padding:12px;
+  }
+  h1,h2,h3{margin:0; font-weight:600;}
+
+  /* ---------- header ---------- */
+  .statusbar{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+    padding:12px 18px; box-shadow:0 1px 3px rgba(0,0,0,.05); flex-wrap:wrap;
+  }
+  .hdr-left{display:flex; align-items:center; gap:16px; min-width:0; flex:1;}
+  .round-badge{
+    background:var(--navy); color:#fff; font-size:1.2em; font-weight:700;
+    padding:9px 18px; border-radius:8px; white-space:nowrap;
+  }
+  .goal-block{display:flex; flex-direction:column; gap:3px; min-width:0;}
+  .goal-eyebrow{font-size:.72em; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:700;}
+  .goal-main{display:flex; align-items:center; gap:12px;}
+  .target-bird{flex-shrink:0; background:#fafcff; border:1px solid var(--line); border-radius:8px; padding:3px 5px; line-height:0;}
+  .target-bird:empty{display:none;}
+  .goal-text{font-size:1.32em; font-weight:700; color:var(--ink); line-height:1.2;}
+  .hdr-right{display:flex; align-items:center; gap:18px; flex-shrink:0;}
+  .progress-big{display:flex; flex-direction:column; align-items:center; line-height:1;}
+  .progress-big .pcount{font-size:2.1em; font-weight:800; color:#d35400;}
+  .progress-big .ptarget{font-size:.82em; color:var(--muted); margin-top:3px; white-space:nowrap;}
+  .hdr-icons{display:flex; align-items:center; gap:8px;}
+  .icon-btn{
+    background:var(--soft); border:1px solid var(--line); color:var(--navy);
+    width:34px; height:34px; border-radius:6px; cursor:pointer; font-size:1em;
+    display:flex; align-items:center; justify-content:center; transition:background .15s;
+  }
+  .icon-btn:hover{background:#e7edf3;}
+  .icon-btn.on{background:var(--navy); color:#fff;}
+  .icon-btn-danger{background:#fdecea; border-color:#f3c7c2; color:var(--danger);}
+  .icon-btn-danger:hover{background:var(--danger); color:#fff;}
+
+  /* ---------- banner ---------- */
+  .banner{
+    margin-top:10px; padding:10px 14px; border-radius:var(--r); font-size:.95em;
+    border-left:5px solid var(--blue); background:#e8f4f8; color:var(--ink); display:none;
+  }
+  .banner.warn{border-left-color:var(--danger); background:#fdecea;}
+
+  /* ---------- menu popover ---------- */
+  .menu-wrap{position:relative;}
+  .menu-popover{
+    position:absolute; right:0; top:42px; z-index:50; background:var(--card);
+    border:1px solid var(--line); border-radius:var(--r); box-shadow:0 6px 20px rgba(0,0,0,.15);
+    padding:10px; width:210px; display:none;
+  }
+  .menu-popover.open{display:block;}
+  .menu-popover .label{font-size:.75em; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:6px 4px 4px;}
+  .menu-popover button{
+    display:block; width:100%; text-align:left; background:none; border:none; color:var(--ink);
+    padding:8px 10px; border-radius:6px; cursor:pointer; font-size:.95em;
+  }
+  .menu-popover button:hover{background:var(--soft);}
+  .menu-popover button.active{background:var(--navy); color:#fff;}
+  .menu-popover .danger{color:var(--danger);}
+  .menu-popover hr{border:none; border-top:1px solid var(--line); margin:8px 0;}
+
+  /* ---------- layout ---------- */
+  .layout{display:flex; gap:14px; margin-top:12px; align-items:stretch;}
+  .aviary{flex:1; min-width:0; display:flex; flex-direction:column; gap:12px;}
+  .data-panel{flex:1.4; min-width:0; display:flex; flex-direction:column; gap:12px;}
+  .panel{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    box-shadow:0 2px 6px rgba(0,0,0,.05); padding:14px;
+  }
+  @media (max-width:880px){ .layout{flex-direction:column;} }
+
+  /* ---------- breeding pen ---------- */
+  .pen-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;}
+  .pen-head h3{color:var(--navy); font-size:1em;}
+  .mode-ind{display:flex; border:1px solid var(--line); border-radius:7px; overflow:hidden; font-size:.74em;}
+  .mode-ind span{padding:4px 10px; color:var(--muted); background:var(--soft);}
+  .mode-ind span.active{background:var(--navy); color:#fff; font-weight:600;}
+
+  .slots{display:flex; gap:10px; justify-content:center; margin-bottom:10px;}
+  .slot{
+    flex:1; max-width:130px; height:96px; border:2px dashed #bdc3c7; border-radius:9px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    background:#fafbfc; text-align:center; padding:5px; cursor:pointer; transition:background .15s;
+    overflow:hidden;
+  }
+  .slot.male{border-color:var(--blue);} .slot.female{border-color:var(--danger);}
+  .slot:hover{background:#f1f4f7;}
+  .slot .ph{font-size:.78em; font-weight:600;}
+  .slot.male .ph{color:var(--blue);} .slot.female .ph{color:var(--danger);}
+  .slot.filled{cursor:pointer;}
+  .pop-note{
+    background:var(--soft); border:1px dashed #bdc3c7; border-radius:9px;
+    padding:12px; text-align:center; color:var(--navy); font-size:.88em; margin-bottom:10px;
+  }
+  .r4-sample-bird{display:inline-flex; padding:3px; background:#fff; border:1px solid var(--line); border-radius:6px;}
+
+  .pen-actions{display:flex; flex-direction:column; gap:7px;}
+  .btn{
+    border:none; border-radius:8px; padding:9px 14px; font-size:.98em; font-weight:700;
+    cursor:pointer; transition:background .15s, opacity .15s; color:#fff; width:100%;
+  }
+  .btn-breed{background:var(--accent);} .btn-breed:hover{background:var(--accent-h);}
+  .btn-reroll{background:#8e44ad;} .btn-reroll:hover{background:#9b59b6;}
+  .btn-hawk{background:var(--danger); animation:pulse 1s infinite alternate;}
+  .btn-hawk:hover{background:var(--danger-h);}
+  .btn:disabled{background:#b8c2cc; cursor:not-allowed; border-color:transparent;}
+  @keyframes pulse{from{transform:scale(1);} to{transform:scale(1.015);}}
+
+  /* ---------- flock ---------- */
+  .flock{flex:1; overflow-y:auto; max-height:62vh;}
+  .flock h3{color:var(--navy); border-bottom:2px solid #eef2f5; padding-bottom:8px; margin-bottom:12px;}
+  .gen-label{font-size:.95em; color:var(--navy); font-weight:600; margin:4px 0 10px;}
+  .gen-label .sub{color:var(--muted); font-weight:400;}
+  .grid{display:flex; flex-wrap:wrap; gap:9px;}
+  .bird{
+    width:90px; border:1px solid var(--line); border-radius:9px; padding:7px; text-align:center;
+    background:#fff; position:relative; cursor:pointer; transition:transform .1s, box-shadow .15s, opacity .2s;
+  }
+  .bird.pick:hover{transform:scale(1.05); border-color:var(--blue);}
+  .bird.sel{border:3px solid var(--accent); background:#eafaf0;}
+  .bird.fam-parent{border:3px solid #e67e22; background:#fff6ec; box-shadow:0 0 0 3px rgba(230,126,34,.18); z-index:2;}
+  .bird.fam-child{border:3px solid #8e44ad; background:#f7f0fb; box-shadow:0 0 0 3px rgba(142,68,173,.15); z-index:2;}
+  .bird.nopick{cursor:default;}
+  .bird.dimmed{opacity:.4; filter:grayscale(100%); border-color:#dfe4e8; cursor:not-allowed;}
+  .bird.dimmed:hover{transform:none;}
+  .bird.dead{opacity:.9; border:2px solid var(--danger); background:#ffe2e2; cursor:default;}
+  .bird.dead svg{filter:grayscale(100%) opacity(.55);}
+  .bird .lbl{font-size:.76em; margin-top:4px; line-height:1.25;}
+  .skull{position:absolute; top:34%; left:50%; transform:translate(-50%,-50%); font-size:34px; z-index:3;}
+  .bird.newborn{animation:popin .35s ease;}
+  @keyframes popin{from{opacity:0; transform:translateY(8px) scale(.9);} to{opacity:1; transform:none;}}
+
+  /* ---------- Round 4: population phenotype bucket cards ---------- */
+  .r4-bucket-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:12px;}
+  .r4-card{
+    position:relative; border:1px solid var(--line); border-radius:11px; padding:12px 10px;
+    background:#fff; text-align:center; transition:opacity .3s, transform .2s;
+  }
+  .r4-card-art{display:flex; justify-content:center; margin-bottom:4px;}
+  .r4-card-name{font-size:.82em; font-weight:600; color:var(--navy); margin-bottom:8px; line-height:1.2;}
+  .r4-card-stats{display:flex; gap:6px; margin-bottom:8px;}
+  .r4-stat{flex:1; border-radius:7px; padding:6px 2px;}
+  .r4-stat-alive{background:#eafaf0;}
+  .r4-stat-eaten{background:#fdecea;}
+  .r4-stat-num{display:block; font-size:1.15em; font-weight:800;}
+  .r4-stat-alive .r4-stat-num{color:var(--accent-h);}
+  .r4-stat-eaten .r4-stat-num{color:var(--danger);}
+  .r4-stat-lbl{display:block; font-size:.68em; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; margin-top:1px;}
+  .r4-bar{height:7px; background:var(--soft); border-radius:99px; overflow:hidden; margin-bottom:5px;}
+  .r4-bar-fill{height:100%; border-radius:99px; transition:width .4s ease;}
+  .r4-pct{font-size:.74em; color:var(--muted);}
+  .r4-card.r4-extinct{opacity:.55;}
+  .r4-card.r4-extinct .r4-card-art svg{filter:grayscale(100%) opacity(.5);}
+  .r4-skull{position:absolute; top:8px; right:8px; font-size:1.4em; z-index:3;}
+  .r4-delta{
+    position:absolute; top:6px; left:50%; transform:translateX(-50%);
+    font-size:.95em; font-weight:800; padding:2px 9px; border-radius:99px; z-index:4;
+    animation:r4DeltaFloat 2.2s ease-out forwards;
+    box-shadow:0 2px 6px rgba(0,0,0,.15);
+  }
+  .r4-delta-up{background:#eafaf0; color:var(--accent-h); border:1.5px solid var(--accent);}
+  .r4-delta-down{background:#fdecea; color:var(--danger); border:1.5px solid var(--danger);}
+  @keyframes r4DeltaFloat{
+    0%{opacity:0; transform:translate(-50%,4px) scale(.8);}
+    12%{opacity:1; transform:translate(-50%,-2px) scale(1.08);}
+    22%{transform:translate(-50%,0) scale(1);}
+    72%{opacity:1; transform:translate(-50%,-10px) scale(1);}
+    100%{opacity:0; transform:translate(-50%,-22px) scale(.95);}
+  }
+
+  .earlier-toggle{
+    margin-top:16px; background:var(--soft); border:1px solid var(--line); border-radius:8px;
+    padding:9px 12px; cursor:pointer; display:flex; align-items:center; justify-content:space-between;
+    color:var(--navy); font-size:.9em; font-weight:600;
+  }
+  .earlier-toggle:hover{background:#e7edf3;}
+  .earlier{margin-top:10px; display:none;}
+  .earlier.open{display:block;}
+  .earlier .gen-block{padding:10px 0; border-bottom:1px dashed #cfd8e0;}
+  .earlier .gen-block:last-child{border-bottom:none;}
+  .mini .bird{width:62px; padding:5px;}
+  .parent-pair{display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;}
+  .parent-pair .tag{font-size:.78em; color:var(--muted); font-weight:600;}
+  .parent-pair .pcard{border:1px solid var(--line); border-radius:7px; padding:3px 5px; background:#fdfdfd; text-align:center; font-size:.7em;}
+
+  /* ---------- data panel ---------- */
+  .data-panel h3{color:var(--navy); margin-bottom:10px; font-size:1.05em;}
+  .data-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px;}
+  .data-head h3{margin:0;}
+  .chart-title-select{
+    appearance:none; -webkit-appearance:none; border:none; background:transparent;
+    color:var(--navy); font-size:1.05em; font-weight:600; font-family:inherit; cursor:pointer;
+    padding:2px 22px 2px 2px; margin:0;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2334495e'><path d='M5.5 7.5L10 12l4.5-4.5z'/></svg>");
+    background-repeat:no-repeat; background-position:right 2px center; background-size:16px;
+  }
+  .chart-title-select:hover{color:var(--accent-h); text-decoration:underline;}
+  .chart-title-select:focus{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px;}
+  .chart-box{height:320px; position:relative;}
+  .demo-scope{margin-bottom:14px;}
+  .demo-scope select{padding:7px 10px; font-size:.95em; border-radius:6px; border:1px solid var(--line); width:100%; background:#fff; color:var(--ink);}
+
+  /* shared trait/combination view toggle */
+  .view-toggle{display:flex; border:1px solid var(--line); border-radius:7px; overflow:hidden; font-size:.78em; flex-shrink:0;}
+  .view-toggle button{border:none; background:var(--soft); color:var(--muted); padding:5px 11px; cursor:pointer; font-weight:600; font-family:inherit;}
+  .view-toggle button.active{background:var(--navy); color:#fff;}
+  .view-toggle button:hover:not(.active){background:#e7edf3;}
+
+  .snap-row{margin-bottom:11px;}
+  .snap-row:last-child{margin-bottom:0;}
+  .snap-head{display:flex; justify-content:space-between; font-size:.92em; color:var(--ink); margin-bottom:4px;}
+  .snap-head .cnt{color:var(--muted); font-size:.88em; font-weight:400;}
+  .snap-head .pct{color:var(--ink); font-weight:700;}
+  .snap-bar{height:12px; background:var(--soft); border-radius:99px; overflow:hidden;}
+  .snap-fill{height:100%; border-radius:99px; transition:width .35s ease;}
+  .snap-divider{height:1px; background:var(--line); margin:14px 0;}
+  .snap-empty{color:var(--muted); font-size:.9em; text-align:center; padding:10px;}
+  .snap-goal{
+    border:1.5px solid #e67e22; border-radius:8px; padding:7px 9px; margin:-1px -3px 11px -3px;
+    background:#fff8ef; animation:goalpulse 1.4s infinite alternate;
+  }
+  @keyframes goalpulse{from{box-shadow:0 0 0 0 rgba(230,126,34,.0);} to{box-shadow:0 0 0 5px rgba(230,126,34,.12);}}
+  .snap-zero-note{font-size:.8em; color:var(--muted); margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); line-height:1.5;}
+  .snap-zero-note{font-size:.82em; color:var(--muted); margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); line-height:1.5;}
+
+  /* goal combination highlight */
+  .snap-row.goal-row{
+    border:1.5px solid #d35400; border-radius:8px; padding:7px 9px; margin:0 -9px 11px -9px;
+    background:#fff8f0; animation:goalpulse 1.6s infinite;
+  }
+  @keyframes goalpulse{
+    0%{box-shadow:0 0 0 0 rgba(211,84,0,.35);}
+    70%{box-shadow:0 0 0 7px rgba(211,84,0,0);}
+    100%{box-shadow:0 0 0 0 rgba(211,84,0,0);}
+  }
+  .goal-tag{font-size:.7em; background:#d35400; color:#fff; padding:1px 6px; border-radius:99px; margin-left:6px; font-weight:700; vertical-align:1px;}
+
+  /* chart maximize */
+  #chart-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:940;}
+  #chart-overlay.open{display:block;}
+  .chart-panel.maximized{position:fixed; inset:4vh 4vw; z-index:950; margin:0; max-width:none; display:flex; flex-direction:column; overflow:hidden;}
+  .chart-panel.maximized .chart-box{height:auto; flex:1;}
+  .chart-zero-note{font-size:.8em; color:var(--muted); margin-top:8px; line-height:1.5;}
+
+  /* ---------- modal ---------- */
+  #overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:900;}
+  #modal{
+    display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    background:#fff; border:4px solid var(--accent); border-radius:16px; padding:32px;
+    text-align:center; z-index:901; max-width:480px; box-shadow:0 12px 40px rgba(0,0,0,.35);
+  }
+  #modal h2{font-size:1.9em; margin-bottom:10px; color:var(--ink);}
+  #modal p{font-size:1.05em; color:var(--navy); margin:8px 0;}
+  #modal .btn{margin-top:16px; background:var(--accent);}
+  #modal .btn-hawk-go{background:var(--danger);}
+  .hawk-intro-icon{font-size:3.5em; margin-bottom:8px;}
+</style>
+</head>
+<body>
+
+  <header class="statusbar">
+    <div class="hdr-left">
+      <div class="round-badge" id="round-badge">Tutorial</div>
+      <div class="goal-block">
+        <div class="goal-eyebrow">Your goal</div>
+        <div class="goal-main">
+          <div class="target-bird" id="target-bird"></div>
+          <div class="goal-text" id="goal-text"></div>
+        </div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="progress-big">
+        <span class="pcount" id="progress-count">0</span>
+        <span class="ptarget">of <span id="progress-target">20</span></span>
+      </div>
+      <div class="hdr-icons">
+        <button class="icon-btn" id="hint-btn" title="Need a hint?">?</button>
+        <button class="icon-btn" id="alleles-btn" title="Show genotypes">🔍</button>
+        <button class="icon-btn icon-btn-danger" id="reset-round-btn" title="Reset this round">↻</button>
+        <div class="menu-wrap">
+          <button class="icon-btn" id="menu-btn" title="Menu">≡</button>
+          <div class="menu-popover" id="menu-popover">
+            <div class="label">Go to round</div>
+            <button data-round="demo">Tutorial</button>
+            <button data-round="round1">Round 1</button>
+            <button data-round="round2">Round 2</button>
+            <button data-round="round3">Round 3</button>
+            <button data-round="round4">Round 4</button>
+            <hr>
+            <button id="restart-all-btn" class="danger">↻ Restart entire game</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <main class="layout">
+
+    <section class="aviary">
+      <div class="panel">
+        <div class="pen-head">
+          <h3>Breeding pen</h3>
+          <div class="mode-ind" id="mode-ind">
+            <span id="mode-you">You choose</span>
+            <span id="mode-nature">Nature chooses</span>
+          </div>
+        </div>
+        <div id="pen-body"></div>
+        <div class="pen-actions">
+          <button class="btn btn-reroll" id="reroll-btn" style="display:none;">🎲 New wild pair</button>
+          <button class="btn btn-breed" id="breed-btn">Breed</button>
+          <button class="btn btn-hawk" id="hawk-btn" style="display:none;">🦅 Hawk attack</button>
+        </div>
+      </div>
+
+      <div class="panel flock">
+        <h3>Your flock</h3>
+        <div id="current-gen"></div>
+        <div class="earlier-toggle" id="earlier-toggle" style="display:none;">
+          <span id="earlier-label">Earlier generations</span><span id="earlier-caret">▸</span>
+        </div>
+        <div class="earlier" id="earlier"></div>
+      </div>
+    </section>
+
+    <aside class="data-panel">
+      <div class="panel chart-panel" id="chart-panel">
+        <div class="data-head">
+          <select id="chart-scope-select" class="chart-title-select"></select>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="view-toggle" id="view-toggle-chart">
+              <button data-view="trait" class="active">By trait</button>
+              <button data-view="combo">By combination</button>
+            </div>
+            <button class="icon-btn" id="chart-max-btn" title="Maximize graph">⤢</button>
+          </div>
+        </div>
+        <div class="chart-box"><canvas id="trendChart"></canvas></div>
+        <div class="chart-zero-note" id="chart-zero-note"></div>
+      </div>
+      <div class="panel">
+        <div class="data-head">
+          <h3>Demographics</h3>
+          <div class="view-toggle" id="view-toggle-table">
+            <button data-view="trait" class="active">By trait</button>
+            <button data-view="combo">By combination</button>
+          </div>
+        </div>
+        <div class="demo-scope">
+          <select id="demo-scope" onchange="renderSnapshot()"></select>
+        </div>
+        <div id="snapshot"></div>
+      </div>
+    </aside>
+
+  </main>
+
+  <div id="chart-overlay"></div>
+
+  <div id="overlay"></div>
+  <div id="modal"></div>
+
+<script>
+/* ============================ CONFIG ============================ */
+const COLOR_HEX = { Blue:'#3498db', Green:'#2ecc71', Yellow:'#f1c40f' };
+const ROUND_ORDER = ['demo','round1','round2','round3','round4'];
+const COLORS = ['Blue','Green','Yellow'];
+const TAILS = ['Long','Medium','Short'];
+const COMBOS = []; // all 9 color+tail combinations, e.g. {color:'Blue', tail:'Long', key:'Blue|Long'}
+COLORS.forEach(c=> TAILS.forEach(t=> COMBOS.push({color:c, tail:t, key:c+'|'+t, label:c+' + '+t+' Tail'})));
+const COMBO_HEX = {
+  'Blue|Long':'#1f6fa8','Blue|Medium':'#3498db','Blue|Short':'#7fc1ea',
+  'Green|Long':'#1e8449','Green|Medium':'#2ecc71','Green|Short':'#82e0aa',
+  'Yellow|Long':'#b7950b','Yellow|Medium':'#f1c40f','Yellow|Short':'#f9e79f'
+};
+
+const ROUNDS = {
+  demo:   { name:'Tutorial', mode:'manual', start:'het4',
+            goalColor:'Yellow', goalTail:'Short', target:20,
+            goal:'Breed 20 yellow, short-tailed birds.',
+            tip:'Males have a gold crown; females don\'t. Click one male and one female, then press Breed to raise a clutch of 10 chicks. Each bird carries two alleles for colour (Blue / Green / Yellow) and two for tail (Long / Medium / Short), and chicks inherit one of each from every parent. Tap 🔍 up top to reveal the hidden genotypes.',
+            hints:["Hidden traits matter: a green bird carries one yellow allele. Breeding two greens can reveal yellow chicks.",
+                   "To get yellow AND short, try breeding two green birds that both have medium tails."] },
+  round1: { name:'Round 1', mode:'manual', start:'het4',
+            goalColor:'Blue', goalTail:'Long', target:20,
+            goal:'Breed 20 blue, long-tailed birds as fast as you can.',
+            tip:'Artificial selection only. Choose the parents whose traits you want to keep.',
+            hints:["A blue, long-tailed bird must be BB and TT. Look for parents with no green or medium showing up in their chicks.",
+                   "If two blue/long parents produce any green or medium chicks, they were not pure — try a different pair."] },
+  round2: { name:'Round 2', mode:'manual', start:'extremes4',
+            goalColor:'Blue', goalTail:'Short', target:20,
+            goal:'Breed 20 blue, short-tailed birds — as fast as you can.',
+            tip:'Artificial selection only. Choose the parents whose traits you want to keep.',
+            hints:["You start with extreme parents. Combine blue from one line with short tails from another.",
+                   "Once you find a pair that breeds blue/short reliably, keep using them to multiply fast."] },
+  round3: { name:'Round 3', mode:'natural', start:'extremes4',
+            goalColor:'Blue', goalTail:'Short', target:20,
+            goal:'Reach 20 blue, short-tailed birds — but nature picks the parents.',
+            tip:'Natural selection: each clutch comes from a random wild pair. You cannot choose.',
+            hints:["Wild birds add random genes every clutch, so traits you want keep slipping away.",
+                   "Watch the graph. Progress is slow and bumpy because you can't lock in good traits."] },
+  round4: { name:'Round 4', mode:'population', start:'random6',
+            goalGenerations:30,
+            goal:'Survive 30 generations under predator pressure.',
+            tip:'You start with 450 birds — exactly 50 of each of the 9 color/tail combinations, as an equal baseline. Press Breed and the population grows by 25%, with new chicks coming from randomly chosen parents (common types are more likely to be picked). Press Hawk Attack and every type takes some losses — long tails and yellow feathers are riskiest, while short-tailed green birds are safest. Breed only adds birds; Hawk Attack is the only thing that removes them.',
+            hints:["Every phenotype has some risk from hawks, but it isn't even — long tails and bright yellow are easiest to spot, while short-tailed green birds are well camouflaged. Watch the Alive counters on each card.",
+                   "You're an observer here. Just keep pressing Breed and Hawk Attack to reach generation 30."] }
+};
+
+/* ============================ STATE ============================ */
+let currentRound = null;
+let flock = [];
+let parentM = null, parentF = null;
+let birdId = 1, maxGen = 1;
+let genParents = {};
+let showAlleles = false;
+let hawkPending = false, gensSinceAttack = 0, r4IntroShown = false, r4HawkIntroShown = false;
+let hintIndex = 0;
+let earlierOpen = false;
+let animatedGen = 0; // tracks which generation has already played its entrance animation
+let completed = { demo:false, round1:false, round2:false, round3:false, round4:false };
+let saved = { demo:null, round1:null, round2:null, round3:null, round4:null };
+
+let trendChart = null;
+const blankChart = () => ({
+  labels:[],       // "Gen N" — used by Generations-over-time (a snapshot of one breeding cycle)
+  yearLabels:[],   // "Year N" — used by Total-population-over-time (the whole population that year)
+  trait:[[],[],[],[],[],[]], combo:{}, seenCombos:new Set(),          // cumulative (total population so far)
+  traitGen:[[],[],[],[],[],[]], comboGen:{}, seenCombosGen:new Set()  // per-generation only (this clutch alone)
+});
+COMBOS.forEach(()=>{}); // (COMBOS defined above)
+let allChart = { demo:blankChart(), round1:blankChart(), round2:blankChart(), round3:blankChart(), round4:blankChart() };
+let viewMode = 'trait'; // 'trait' | 'combo' — shared by graph and table
+let chartScope = 'total'; // 'total' | 'pergen' — graph data scope
+
+/* ============================ ROUND 4: POPULATION BUCKETS ============================
+   Round 4 tracks 450 birds as 9 phenotype buckets (alive + eaten) rather than individual
+   bird objects.
+
+   Breed and Hawk Attack are two completely separate, one-directional events:
+   - Breed (r4Breed) grows the population by exactly 25%: if X birds are alive, 0.25*X new
+     chicks are bred and ADDED on top of the survivors — nobody already alive is removed.
+     Each new chick gets two parents chosen at random, weighted by each phenotype's current
+     share of the population (common types are more likely to be picked as parents), and
+     the chick's color/tail come from combining one random allele from each parent — the
+     same genetics used for individual birds in Rounds 1-3, just sampled at population
+     scale. This introduces natural generation-to-generation variation.
+   - Hawk Attack (r4HawkCull) is the ONLY event that removes birds, culling yellow-colored
+     and/or long-tailed birds.
+   This keeps the two mechanics easy for students to read: numbers only go up after
+   Breed, and only go down after Hawk Attack — never both from the same button. Every
+   phenotype also starts at the same flat count (50) so students have an equal baseline
+   to compare against as the population shifts over generations. */
+const R4_START_PER_COMBO = 50; // every one of the 9 phenotypes starts equal = 450 total
+function blankBuckets(){
+  const b = {};
+  COMBOS.forEach(c=> b[c.key] = { alive: R4_START_PER_COMBO, eaten: 0 });
+  return b;
+}
+let r4Buckets = null;
+let r4Gen = 1;
+let r4PrevAlive = null; // snapshot of alive counts from before the most recent change, for the +/- flash
+let r4History = {}; // { genNumber: {comboKey: aliveCount, ...} } — full bucket snapshot per generation, for the Demographics scope dropdown
+
+function r4Total(){ return Object.values(r4Buckets).reduce((s,b)=> s+b.alive, 0); }
+
+function r4Snapshot(){
+  const snap = {};
+  COMBOS.forEach(c=> snap[c.key] = r4Buckets[c.key].alive);
+  return snap;
+}
+
+// A phenotype fully determines genotype under this incomplete-dominance system:
+// Blue=BB, Green=Bb, Yellow=bb (same logic for Long=TT, Medium=Tt, Short=tt) — so we can
+// always recover the exact alleles a bucket's birds carry from its phenotype alone.
+function comboColorAlleles(color){ return color==='Blue' ? ['B','B'] : color==='Green' ? ['B','b'] : ['b','b']; }
+function comboTailAlleles(tail){ return tail==='Long' ? ['T','T'] : tail==='Medium' ? ['T','t'] : ['t','t']; }
+
+function r4PickWeightedParent(total){
+  // pick a phenotype combo at random, weighted by its current share of the living population
+  let roll = Math.random() * total;
+  for(const c of COMBOS){
+    roll -= r4Buckets[c.key].alive;
+    if(roll <= 0) return c;
+  }
+  return COMBOS[COMBOS.length-1]; // fallback for floating-point edge case
+}
+
+function r4Breed(){
+  r4PrevAlive = r4Snapshot();
+  // Population grows by exactly 25% each generation: if X birds are alive, 0.25*X new
+  // chicks are bred and ADDED on top of the survivors (nobody already alive is removed —
+  // only the hawk attack ever removes birds). Each new chick gets two parents chosen at
+  // random, weighted by each phenotype's current share of the population — so common
+  // phenotypes are more likely to be picked as parents, just like in a real population —
+  // and the chick's color/tail come from combining one random allele from each parent,
+  // exactly like the individual-bird genetics used in Rounds 1-3.
+  const total = r4Total();
+  if(total===0){ r4Gen++; return; }
+  const numNewChicks = Math.round(total * 0.25);
+  const newChicks = {}; // tally of new chick phenotypes this generation
+  COMBOS.forEach(c=> newChicks[c.key] = 0);
+
+  for(let i=0; i<numNewChicks; i++){
+    const parentA = r4PickWeightedParent(total);
+    const parentB = r4PickWeightedParent(total);
+    const aColor = comboColorAlleles(parentA.color), bColor = comboColorAlleles(parentB.color);
+    const aTail  = comboTailAlleles(parentA.tail),  bTail  = comboTailAlleles(parentB.tail);
+    const colorAllele1 = aColor[Math.floor(Math.random()*2)];
+    const colorAllele2 = bColor[Math.floor(Math.random()*2)];
+    const tailAllele1  = aTail[Math.floor(Math.random()*2)];
+    const tailAllele2  = bTail[Math.floor(Math.random()*2)];
+    const bCount = (colorAllele1==='B'?1:0) + (colorAllele2==='B'?1:0);
+    const tCount = (tailAllele1==='T'?1:0) + (tailAllele2==='T'?1:0);
+    const chickColor = bCount===2?'Blue': bCount===1?'Green':'Yellow';
+    const chickTail  = tCount===2?'Long': tCount===1?'Medium':'Short';
+    newChicks[chickColor+'|'+chickTail]++;
+  }
+
+  COMBOS.forEach(c=>{ r4Buckets[c.key].alive += newChicks[c.key]; });
+  r4Gen++;
+}
+
+const HAWK_MIN_KILL = 10; // every hawk attack takes at least this many birds from each phenotype (or its whole remaining count, if smaller), so even low-risk types face some pressure
+
+// Catch-rate ranges per phenotype: [min, max] as a fraction, rolled fresh every attack.
+// Tail length is the dominant risk factor; color is a secondary modifier — green birds
+// are camouflaged in foliage and are hardest to catch regardless of tail length.
+const HAWK_CATCH_RATES = {
+  'Yellow|Long':   [0.75, 0.90],
+  'Yellow|Medium': [0.60, 0.75],
+  'Yellow|Short':  [0.45, 0.60],
+  'Blue|Long':     [0.45, 0.60],
+  'Blue|Medium':   [0.15, 0.30],
+  'Blue|Short':    [0.05, 0.10],
+  'Green|Long':    [0.25, 0.35],
+  'Green|Medium':  [0.05, 0.10],
+  'Green|Short':   [0.00, 0.05]
+};
+
+function r4HawkCull(){
+  r4PrevAlive = r4Snapshot();
+  // Every phenotype has its own realistic catch-rate range (see HAWK_CATCH_RATES above),
+  // randomized fresh each attack so the same type doesn't face an identical rate twice in
+  // a row. A 10-bird floor (or the bucket's full remaining count, whichever is smaller)
+  // ensures every attack has some real impact even on already-small populations.
+  COMBOS.forEach(c=>{
+    const bucket = r4Buckets[c.key];
+    const [lo, hi] = HAWK_CATCH_RATES[c.key];
+    const catchRate = lo + Math.random()*(hi-lo);
+    const pctKill = Math.round(bucket.alive * catchRate);
+    const killed = Math.min(bucket.alive, Math.max(pctKill, HAWK_MIN_KILL));
+    bucket.alive -= killed;
+    bucket.eaten += killed;
+  });
+}
+
+/* ============================ GENETICS ============================ */
+function randPair(dom, rec){
+  return [Math.random()<.5?dom:rec, Math.random()<.5?dom:rec].sort(a=> a===dom?-1:1);
+}
+function pickAllele(arr){ return arr[Math.floor(Math.random()*2)]; }
+
+function createBird(colorAlleles, tailAlleles, generation, gender){
+  const b = colorAlleles.filter(a=>a==='B').length;
+  const t = tailAlleles.filter(a=>a==='T').length;
+  const colorPheno = b===2?'Blue': b===1?'Green':'Yellow';
+  const tailPheno  = t===2?'Long': t===1?'Medium':'Short';
+  if(!gender) gender = Math.random()<.5?'Male':'Female';
+  return {
+    id: birdId++, generation, gender,
+    colorAlleles, tailAlleles,
+    colorPheno, tailPheno, colorHex: COLOR_HEX[colorPheno],
+    dead:false, parent1Id:null, parent2Id:null
+  };
+}
+
+function makeChild(p1, p2, generation, gender){
+  const c = [pickAllele(p1.colorAlleles), pickAllele(p2.colorAlleles)].sort(a=> a==='B'?-1:1);
+  const t = [pickAllele(p1.tailAlleles), pickAllele(p2.tailAlleles)].sort(a=> a==='T'?-1:1);
+  const child = createBird(c, t, generation, gender);
+  child.parent1Id = p1.id; child.parent2Id = p2.id;
+  return child;
+}
+
+function clutchGenders(n){
+  const g = ['Male','Female'];
+  for(let i=2;i<n;i++) g.push(Math.random()<.5?'Male':'Female');
+  return g.sort(()=>Math.random()-.5);
+}
+
+/* ============================ ART ============================ */
+function birdSVG(bird, w=78){
+  let tail;
+  if(bird.tailPheno==='Long')   tail = `<path d="M 68 55 Q 110 52 130 65 Q 95 72 65 65 Z" fill="${bird.colorHex}" stroke="#2c3e50" stroke-width="2"/>`;
+  else if(bird.tailPheno==='Medium') tail = `<path d="M 68 55 Q 95 52 105 62 Q 85 68 65 65 Z" fill="${bird.colorHex}" stroke="#2c3e50" stroke-width="2"/>`;
+  else tail = `<path d="M 68 55 Q 80 52 82 60 Q 75 65 65 65 Z" fill="${bird.colorHex}" stroke="#2c3e50" stroke-width="2"/>`;
+  const crown = bird.gender==='Male' ? `<polygon points="17,31 27,31 29,20 23,25 15,20" fill="#ffc107" stroke="#d35400" stroke-width="1.5"/>` : '';
+  return `<svg width="${w}" height="${w*0.71}" viewBox="0 0 140 100" xmlns="http://www.w3.org/2000/svg">
+    ${tail}
+    <path d="M 45 78 L 45 88 M 45 88 L 40 88 M 45 88 L 48 88" stroke="#2c3e50" stroke-width="2" fill="none"/>
+    <path d="M 38 78 L 35 88 M 35 88 L 30 88 M 35 88 L 38 88" stroke="#2c3e50" stroke-width="2" fill="none"/>
+    <ellipse cx="45" cy="60" rx="28" ry="20" fill="${bird.colorHex}" stroke="#2c3e50" stroke-width="2"/>
+    <circle cx="22" cy="45" r="15" fill="${bird.colorHex}" stroke="#2c3e50" stroke-width="2"/>
+    <polygon points="7,45 13,41 13,49" fill="#e67e22" stroke="#d35400" stroke-width="1.5"/>
+    <circle cx="16" cy="42" r="2.5" fill="black"/>
+    <path d="M 32 52 Q 55 50 62 65 Q 45 70 32 52" fill="${bird.colorHex}" stroke="#2c3e50" stroke-width="2"/>
+    ${crown}
+  </svg>`;
+}
+function birdLabel(bird){
+  if(bird.dead) return `<div class="lbl">☠️ Eaten</div>`;
+  const c = showAlleles ? ` (${bird.colorAlleles.join('')})` : '';
+  const t = showAlleles ? ` (${bird.tailAlleles.join('')})` : '';
+  return `<div class="lbl"><strong>${bird.colorPheno}${c}</strong><br>${bird.tailPheno} tail${t}</div>`;
+}
+
+/* ============================ INITIAL FLOCKS ============================ */
+function buildFlock(kind){
+  const arr = [];
+  if(kind==='het4'){
+    arr.push(createBird(['B','b'],['T','t'],1,'Male'));
+    arr.push(createBird(['B','b'],['T','t'],1,'Female'));
+    arr.push(createBird(randPair('B','b'),randPair('T','t'),1,'Male'));
+    arr.push(createBird(randPair('B','b'),randPair('T','t'),1,'Female'));
+  } else if(kind==='extremes4'){
+    arr.push(createBird(['B','B'],['t','t'],1,'Male'));
+    arr.push(createBird(['b','b'],['T','T'],1,'Female'));
+    arr.push(createBird(randPair('B','b'),randPair('T','t'),1,'Male'));
+    arr.push(createBird(randPair('B','b'),randPair('T','t'),1,'Female'));
+  } else { /* random6 */
+    for(let i=0;i<3;i++){
+      arr.push(createBird(randPair('B','b'),randPair('T','t'),1,'Male'));
+      arr.push(createBird(randPair('B','b'),randPair('T','t'),1,'Female'));
+    }
+  }
+  flock = arr.sort(()=>Math.random()-.5);
+}
+
+/* ============================ ROUND CONTROL ============================ */
+function switchRound(r){
+  saveState();
+  currentRound = r;
+  earlierOpen = false; hintIndex = 0;
+  if(saved[r]) loadState(r); else initRound(r);
+  setupRoundUI();
+  renderAll();
+}
+
+function initRound(r){
+  const cfg = ROUNDS[r];
+  flock = []; genParents = {}; birdId = 1; maxGen = 1;
+  parentM = parentF = null;
+  hawkPending = false; gensSinceAttack = 0;
+  animatedGen = 1; // starting flock never plays the "newborn" animation
+  allChart[r] = blankChart();
+  if(r==='round4'){
+    r4Buckets = blankBuckets();
+    r4Gen = 1;
+    r4PrevAlive = null;
+    r4History = {};
+    recordChartR4(1);
+  } else {
+    buildFlock(cfg.start);
+    recordChart(1);
+    if(cfg.mode==='natural') makeWildPair();
+  }
+}
+
+function setupRoundUI(){
+  const cfg = ROUNDS[currentRound];
+  document.getElementById('round-badge').innerText = cfg.name;
+  document.getElementById('goal-text').innerText = cfg.goal;
+  document.getElementById('progress-target').innerText = cfg.mode==='population' ? cfg.goalGenerations : cfg.target;
+  const tb = document.getElementById('target-bird');
+  if(cfg.goalColor && cfg.goalTail){
+    tb.innerHTML = birdSVG({colorHex:COLOR_HEX[cfg.goalColor], tailPheno:cfg.goalTail, gender:'Female'}, 56);
+  } else {
+    tb.innerHTML = '';
+  }
+
+  populateChartScope();
+
+  // mode indicator
+  const you = document.getElementById('mode-you'), nat = document.getElementById('mode-nature');
+  if(cfg.mode==='population'){
+    you.style.display='none';
+    nat.textContent = 'Population simulation';
+    nat.classList.add('active');
+  } else {
+    you.style.display='';
+    nat.textContent = 'Nature chooses';
+    const manual = cfg.mode==='manual';
+    you.classList.toggle('active', manual);
+    nat.classList.toggle('active', !manual);
+  }
+
+  // pen body + action buttons
+  document.getElementById('reroll-btn').style.display = cfg.mode==='natural' ? 'block' : 'none';
+  document.getElementById('hawk-btn').style.display = 'none';
+  document.getElementById('breed-btn').style.display = 'block';
+
+  // instructions banner (persistent per round)
+  if(currentRound==='round4' && !r4IntroShown){
+    setBanner('<strong>Round 4:</strong> you start with 450 birds — exactly 50 of each of the 9 color/tail combinations. Press Breed and the population grows by 25%, with new chicks bred from randomly chosen parents weighted by how common each type currently is. Press Hawk Attack and yellow or long-tailed birds get eaten. Breed only adds birds; Hawk Attack is the only thing that removes them.', false);
+    r4IntroShown = true;
+  } else {
+    showRoundTip();
+  }
+  closeMenu();
+}
+
+function restartRound(){
+  saved[currentRound] = null;
+  completed[currentRound] = false;
+  if(currentRound==='round4'){ r4IntroShown = false; r4HawkIntroShown = false; }
+  initRound(currentRound);
+  setupRoundUI();
+  renderAll();
+}
+
+/* ============================ SAVE / LOAD ============================ */
+function saveState(){
+  if(!currentRound) return;
+  saved[currentRound] = {
+    flock, parentM, parentF, birdId, maxGen, genParents,
+    hawkPending, gensSinceAttack, animatedGen,
+    r4Buckets: r4Buckets ? JSON.parse(JSON.stringify(r4Buckets)) : null,
+    r4Gen,
+    r4History: JSON.parse(JSON.stringify(r4History))
+  };
+}
+function loadState(r){
+  const s = saved[r];
+  flock=s.flock; parentM=s.parentM; parentF=s.parentF; birdId=s.birdId;
+  maxGen=s.maxGen; genParents=s.genParents; hawkPending=s.hawkPending; gensSinceAttack=s.gensSinceAttack;
+  animatedGen = (s.animatedGen!==undefined) ? s.animatedGen : maxGen;
+  r4Buckets = s.r4Buckets || null;
+  r4Gen = s.r4Gen || 1;
+  r4History = s.r4History || {};
+}
+
+/* ============================ SELECTION (manual) ============================ */
+function selectBird(bird){
+  if(ROUNDS[currentRound].mode!=='manual' || bird.dead) return;
+  if(bird.gender==='Male'){
+    if(parentM && parentM.id===bird.id) parentM = null;   // click selected male to deselect
+    else if(!parentM) parentM = bird;                      // pick a male if none chosen
+    else return;                                           // another male already chosen
+  } else {
+    if(parentF && parentF.id===bird.id) parentF = null;
+    else if(!parentF) parentF = bird;
+    else return;
+  }
+  renderPen(); renderFlock();
+}
+
+/* ============================ WILD PAIR (natural) ============================ */
+function makeWildPair(){
+  parentM = createBird(randPair('B','b'),randPair('T','t'),maxGen,'Male');
+  parentF = createBird(randPair('B','b'),randPair('T','t'),maxGen,'Female');
+  parentM.wild = parentF.wild = true;
+}
+function rerollWild(){ makeWildPair(); renderPen(); }
+
+/* ============================ BREEDING ============================ */
+function breed(){
+  const cfg = ROUNDS[currentRound];
+  if(cfg.mode==='manual'){
+    if(!parentM || !parentF) return;
+    const m = parentM, f = parentF;
+    parentM = parentF = null;
+    breedFromPair(m, f, true);
+  } else if(cfg.mode==='natural'){
+    if(!parentM || !parentF) return;
+    const m = parentM, f = parentF;
+    parentM = parentF = null;
+    breedFromPair(m, f, true);
+    makeWildPair();
+  } else {
+    breedPopulation();
+  }
+}
+
+function breedFromPair(p1, p2, record){
+  const next = maxGen + 1; maxGen = next;
+  genParents[next] = { p1, p2 };
+  const genders = clutchGenders(10);
+  for(let i=0;i<10;i++) flock.push(makeChild(p1, p2, next, genders[i]));
+  if(record) recordChart(next);
+  afterBreed();
+  checkDeadEnd();
+}
+
+function checkDeadEnd(){
+  const cfg = ROUNDS[currentRound];
+  // Only applies to manual-selection rounds with a specific colour+tail goal
+  if(!cfg.goalColor || !cfg.goalTail || cfg.mode!=='manual') return;
+  // Only bother checking once there is at least one non-starting generation
+  if(maxGen < 2) return;
+
+  // Gather all living birds in the current (most recent) generation only
+  const living = flock.filter(b => !b.dead && b.generation === maxGen);
+  if(!living.length) return;
+
+  // Check whether every living bird shares the same phenotype combination
+  const first = living[0].colorPheno + '|' + living[0].tailPheno;
+  const allSame = living.every(b => b.colorPheno + '|' + b.tailPheno === first);
+  if(!allSame) return;
+
+  // That uniform phenotype must not be the goal
+  const [uColor, uTail] = first.split('|');
+  if(uColor === cfg.goalColor && uTail === cfg.goalTail) return;
+
+  // Dead end confirmed — show blocking modal
+  const phenoLabel = `${uColor}, ${uTail.toLowerCase()}-tailed`;
+  const goalLabel  = `${cfg.goalColor}, ${cfg.goalTail.toLowerCase()}-tailed`;
+  document.getElementById('modal').innerHTML = `
+    <h2>🚫 Stuck!</h2>
+    <p>Every bird in your flock is now <strong>${phenoLabel}</strong>.</p>
+    <p>When every bird looks identical, they all carry the same alleles — so no matter which pair you breed, every chick will also be <strong>${phenoLabel}</strong>. You can never reach <strong>${goalLabel}</strong> birds from here.</p>
+    <p>This is a great reminder that <em>genetic diversity</em> matters! You need variation in the population to select for new traits.</p>
+    <button class="btn" style="background:var(--danger);" onclick="closeModal(); restartRound()">↻ Reset this round and try again</button>`;
+  document.getElementById('overlay').style.display = 'block';
+  document.getElementById('modal').style.display = 'block';
+}
+
+function breedPopulation(){
+  r4Breed();
+  gensSinceAttack++;
+  if(r4Gen===2 || gensSinceAttack >= 1 + Math.round(Math.random())){
+    hawkPending = true;
+    document.getElementById('hawk-btn').style.display = 'block';
+    document.getElementById('breed-btn').disabled = true;
+    if(!r4HawkIntroShown){
+      r4HawkIntroShown = true;
+      showHawkIntroModal();
+    } else {
+      setBanner('🦅 Hawks are circling! Yellow birds and long tails are easy targets — press <strong>Hawk Attack</strong> before breeding again.', true);
+    }
+  } else {
+    recordChartR4(r4Gen);
+  }
+  afterBreedR4();
+}
+
+function triggerHawk(){
+  r4HawkCull();
+  hawkPending = false; gensSinceAttack = 0;
+  document.getElementById('hawk-btn').style.display = 'none';
+  document.getElementById('breed-btn').disabled = false;
+  showRoundTip();
+  recordChartR4(r4Gen);
+  renderAll();
+}
+
+function afterBreedR4(){
+  renderAll();
+}
+
+function afterBreed(){
+  renderAll();
+  animatedGen = maxGen; // entrance animation has now played for this generation
+  const wrap = document.querySelector('.flock');
+  setTimeout(()=>{ if(wrap) wrap.scrollTo({top:wrap.scrollHeight, behavior:'smooth'}); }, 60);
+}
+
+/* ============================ CHART ============================ */
+function recordChartR4(gen){
+  const total = r4Total();
+  const pct = (n,d) => d>0 ? Math.round(n/d*100) : 0;
+  const cd = allChart['round4'];
+  cd.labels.push('Year '+gen);       // used by "Generations over time" (a snapshot per breeding cycle)
+  cd.yearLabels.push('Year '+gen);   // Round 4 has no separate "total" concept, both views share this
+
+  // archive this generation's exact bucket counts so the Demographics dropdown can look back
+  const snap = {};
+  COMBOS.forEach(c=> snap[c.key] = r4Buckets[c.key].alive);
+  r4History[gen] = snap;
+
+  const colorAlive = c => COMBOS.filter(x=>x.color===c).reduce((s,x)=> s+r4Buckets[x.key].alive, 0);
+  const tailAlive = t => COMBOS.filter(x=>x.tail===t).reduce((s,x)=> s+r4Buckets[x.key].alive, 0);
+
+  cd.trait[0].push(pct(colorAlive('Blue'), total));
+  cd.trait[1].push(pct(colorAlive('Green'), total));
+  cd.trait[2].push(pct(colorAlive('Yellow'), total));
+  cd.trait[3].push(pct(tailAlive('Long'), total));
+  cd.trait[4].push(pct(tailAlive('Medium'), total));
+  cd.trait[5].push(pct(tailAlive('Short'), total));
+
+  // Round 4 has no separate "cumulative vs per-generation" distinction since population
+  // size and composition is tracked as a single running total, not discrete clutches —
+  // so traitGen simply mirrors trait.
+  cd.traitGen[0].push(cd.trait[0][cd.trait[0].length-1]);
+  cd.traitGen[1].push(cd.trait[1][cd.trait[1].length-1]);
+  cd.traitGen[2].push(cd.trait[2][cd.trait[2].length-1]);
+  cd.traitGen[3].push(cd.trait[3][cd.trait[3].length-1]);
+  cd.traitGen[4].push(cd.trait[4][cd.trait[4].length-1]);
+  cd.traitGen[5].push(cd.trait[5][cd.trait[5].length-1]);
+
+  COMBOS.forEach(c=>{
+    const n = r4Buckets[c.key].alive;
+    const p = pct(n, total);
+    if(n>0){ cd.seenCombos.add(c.key); cd.seenCombosGen.add(c.key); }
+    if(!cd.combo[c.key]) cd.combo[c.key] = [];
+    if(!cd.comboGen[c.key]) cd.comboGen[c.key] = [];
+    while(cd.combo[c.key].length < cd.labels.length-1) cd.combo[c.key].push(0);
+    while(cd.comboGen[c.key].length < cd.labels.length-1) cd.comboGen[c.key].push(0);
+    cd.combo[c.key].push(p);
+    cd.comboGen[c.key].push(p);
+  });
+}
+
+function recordChart(gen){
+  const living = flock.filter(b=>!b.dead);                       // cumulative: everyone alive so far
+  const genOnly = flock.filter(b=>!b.dead && b.generation===gen); // this generation's clutch only
+  const total = living.length; if(!total) return;
+  const pct = (n,d) => d>0 ? Math.round(n/d*100) : 0;
+  const cd = allChart[currentRound];
+  cd.labels.push('Gen '+gen);       // used by "Generations over time" — a snapshot of one breeding cycle
+  cd.yearLabels.push('Year '+gen);  // used by "Total population over time" — the whole population that year
+
+  const gTotal = genOnly.length;
+
+  cd.trait[0].push(pct(living.filter(b=>b.colorPheno==='Blue').length, total));
+  cd.trait[1].push(pct(living.filter(b=>b.colorPheno==='Green').length, total));
+  cd.trait[2].push(pct(living.filter(b=>b.colorPheno==='Yellow').length, total));
+  cd.trait[3].push(pct(living.filter(b=>b.tailPheno==='Long').length, total));
+  cd.trait[4].push(pct(living.filter(b=>b.tailPheno==='Medium').length, total));
+  cd.trait[5].push(pct(living.filter(b=>b.tailPheno==='Short').length, total));
+
+  cd.traitGen[0].push(pct(genOnly.filter(b=>b.colorPheno==='Blue').length, gTotal));
+  cd.traitGen[1].push(pct(genOnly.filter(b=>b.colorPheno==='Green').length, gTotal));
+  cd.traitGen[2].push(pct(genOnly.filter(b=>b.colorPheno==='Yellow').length, gTotal));
+  cd.traitGen[3].push(pct(genOnly.filter(b=>b.tailPheno==='Long').length, gTotal));
+  cd.traitGen[4].push(pct(genOnly.filter(b=>b.tailPheno==='Medium').length, gTotal));
+  cd.traitGen[5].push(pct(genOnly.filter(b=>b.tailPheno==='Short').length, gTotal));
+
+  COMBOS.forEach(c=>{
+    const n = living.filter(b=> b.colorPheno===c.color && b.tailPheno===c.tail).length;
+    if(n>0) cd.seenCombos.add(c.key);
+    if(!cd.combo[c.key]) cd.combo[c.key] = [];
+    while(cd.combo[c.key].length < cd.labels.length-1) cd.combo[c.key].push(0);
+    cd.combo[c.key].push(pct(n, total));
+
+    const ng = genOnly.filter(b=> b.colorPheno===c.color && b.tailPheno===c.tail).length;
+    if(ng>0) cd.seenCombosGen.add(c.key);
+    if(!cd.comboGen[c.key]) cd.comboGen[c.key] = [];
+    while(cd.comboGen[c.key].length < cd.labels.length-1) cd.comboGen[c.key].push(0);
+    cd.comboGen[c.key].push(pct(ng, gTotal));
+  });
+}
+
+function initChart(){
+  if(typeof Chart==='undefined'){ setTimeout(initChart,100); return; }
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  trendChart = new Chart(ctx, {
+    type:'line',
+    data:{ labels:[], datasets:[] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      scales:{ y:{beginAtZero:true,max:100,title:{display:true,text:'% of population'}}, x:{title:{display:true,text:'Year'}} },
+      plugins:{ legend:{labels:{boxWidth:14,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+'%'}} }
+    }
+  });
+  updateChart();
+}
+
+function buildTraitDatasets(cd){
+  const t = chartScope==='pergen' ? cd.traitGen : cd.trait;
+  return [
+    {label:'Blue',borderColor:'#3498db',backgroundColor:'#3498db',data:t[0],tension:.1,fill:false},
+    {label:'Green',borderColor:'#2ecc71',backgroundColor:'#2ecc71',data:t[1],tension:.1,fill:false},
+    {label:'Yellow',borderColor:'#f1c40f',backgroundColor:'#f1c40f',data:t[2],tension:.1,fill:false},
+    {label:'Long tail',borderColor:'#8e44ad',backgroundColor:'#8e44ad',data:t[3],tension:.1,fill:false,borderDash:[5,5]},
+    {label:'Medium tail',borderColor:'#e67e22',backgroundColor:'#e67e22',data:t[4],tension:.1,fill:false,borderDash:[5,5]},
+    {label:'Short tail',borderColor:'#e74c3c',backgroundColor:'#e74c3c',data:t[5],tension:.1,fill:false,borderDash:[5,5]}
+  ];
+}
+
+function buildComboDatasets(cd){
+  const cfg = ROUNDS[currentRound];
+  const goalKey = (cfg.goalColor && cfg.goalTail) ? (cfg.goalColor+'|'+cfg.goalTail) : null;
+  const seen = chartScope==='pergen' ? cd.seenCombosGen : cd.seenCombos;
+  const series = chartScope==='pergen' ? cd.comboGen : cd.combo;
+  return COMBOS.filter(c=> seen.has(c.key)).map(c=>{
+    const isGoal = c.key===goalKey;
+    return {
+      label: c.label + (isGoal ? ' 🎯' : ''),
+      borderColor: COMBO_HEX[c.key],
+      backgroundColor: COMBO_HEX[c.key],
+      data: series[c.key] || [],
+      tension:.1, fill:false,
+      borderWidth: isGoal ? 4 : 2
+    };
+  });
+}
+
+function buildSurvivalRateDatasets(){
+  // Overall survival rate per phenotype: alive / (alive + eaten), as a single bar per type.
+  // This is a different lens than the trend line — a cumulative snapshot of who has
+  // fared best/worst across every hawk attack so far, not population share over time.
+  const labels = COMBOS.map(c=> c.label);
+  const data = COMBOS.map(c=>{
+    const b = r4Buckets[c.key];
+    const total = b.alive + b.eaten;
+    return total>0 ? Math.round(b.alive/total*100) : 100;
+  });
+  const colors = COMBOS.map(c=> COMBO_HEX[c.key]);
+  return { labels, datasets:[{ label:'Survival rate', data, backgroundColor:colors, borderRadius:4 }] };
+}
+
+function updateChart(){
+  const cd = allChart[currentRound];
+  if(!trendChart) return;
+
+  const wantBar = (currentRound==='round4' && chartScope==='survival');
+  const isBar = trendChart.config.type==='bar';
+  if(wantBar !== isBar){
+    // Chart.js needs the instance rebuilt to switch between line and bar cleanly
+    trendChart.destroy();
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    trendChart = new Chart(ctx, {
+      type: wantBar ? 'bar' : 'line',
+      data: { labels:[], datasets:[] },
+      options: { responsive:true, maintainAspectRatio:false,
+        scales:{ y:{beginAtZero:true,max:100,title:{display:true,text:'% of population'}}, x:{title:{display:true,text:'Year'}} },
+        plugins:{ legend:{labels:{boxWidth:14,font:{size:11}}},
+          tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+'%'}} }
+      }
+    });
+  }
+
+  if(wantBar){
+    const { labels, datasets } = buildSurvivalRateDatasets();
+    trendChart.data.labels = labels;
+    trendChart.data.datasets = datasets;
+    trendChart.options.scales.x.title.text = 'Phenotype';
+    trendChart.options.scales.y.title.text = 'Survival rate (% alive of all ever bred)';
+    trendChart.options.plugins.legend.display = false;
+    trendChart.update();
+    renderChartZeroNote(null); // no zero-note in bar mode
+    return;
+  }
+
+  if(!cd) return;
+  // "Total population over time" shows Year N (the whole population that year);
+  // "Generations over time" shows Gen N (a snapshot of one breeding cycle). Round 4 has
+  // no separate Total scope, so it always uses the Year labels regardless.
+  const useYearLabels = (currentRound==='round4') || (chartScope==='total');
+  trendChart.data.labels = useYearLabels ? cd.yearLabels : cd.labels;
+  trendChart.data.datasets = viewMode==='combo' ? buildComboDatasets(cd) : buildTraitDatasets(cd);
+  trendChart.options.scales.x.title.text = useYearLabels ? 'Year' : 'Generation';
+  trendChart.options.plugins.legend.display = true;
+  trendChart.options.scales.y.title.text = currentRound==='round4'
+    ? '% of population that generation'
+    : (chartScope==='pergen' ? '% of that generation\'s clutch' : '% of total population so far');
+  trendChart.update();
+  renderChartZeroNote(cd);
+}
+
+function renderChartZeroNote(cd){
+  const note = document.getElementById('chart-zero-note');
+  if(!note) return;
+  if(!cd || viewMode!=='combo'){ note.innerHTML=''; return; }
+  const seen = chartScope==='pergen' ? cd.seenCombosGen : cd.seenCombos;
+  const unseen = COMBOS.filter(c=> !seen.has(c.key));
+  if(!unseen.length){ note.innerHTML=''; return; }
+  note.innerHTML = '<strong>Not yet seen (0%):</strong> ' + unseen.map(c=>c.label).join(', ');
+}
+
+/* ============================ RENDER ============================ */
+function renderAll(){
+  if(currentRound==='round4'){ renderR4(); return; }
+  renderPen(); renderFlock(); populateScope(); renderSnapshot(); updateChart(); updateProgress();
+}
+
+/* ============================ ROUND 4 RENDERING ============================ */
+function renderR4(){
+  const breedBtn = document.getElementById('breed-btn');
+  const total = r4Total();
+
+  // breeding pen: simple population summary instead of parent slots
+  document.getElementById('pen-body').innerHTML = `
+    <div class="pop-note">
+      <div style="font-weight:600; margin-bottom:4px;">🧬 The whole population breeds at once.</div>
+      <div style="font-size:.85em; color:var(--muted);">Generation ${r4Gen} · <strong>${total}</strong> birds alive</div>
+    </div>`;
+  breedBtn.disabled = hawkPending;
+
+  // flock panel becomes the 9 phenotype bucket cards
+  const cur = document.getElementById('current-gen');
+  cur.innerHTML = `<div class="gen-label">Population by phenotype <span class="sub">(generation ${r4Gen})</span></div>`;
+  const grid = document.createElement('div'); grid.className = 'r4-bucket-grid';
+  COMBOS.forEach(c=>{
+    const bucket = r4Buckets[c.key];
+    const prev = r4PrevAlive ? r4PrevAlive[c.key] : null;
+    grid.appendChild(bucketCard(c, bucket, total, prev));
+  });
+  cur.appendChild(grid);
+  r4PrevAlive = null; // delta badge should only flash once, right after the change that caused it
+
+  // no "earlier generations" concept for Round 4 — hide that control entirely
+  document.getElementById('earlier-toggle').style.display = 'none';
+  document.getElementById('earlier').innerHTML = '';
+
+  populateScope();
+  renderSnapshot();
+  updateChart();
+  updateProgressR4();
+}
+
+function bucketCard(combo, bucket, total, prevAlive){
+  const card = document.createElement('div');
+  const isExtinct = bucket.alive===0;
+  card.className = 'r4-card' + (isExtinct ? ' r4-extinct' : '');
+  const pct = total>0 ? Math.round(bucket.alive/total*100) : 0;
+  const sampleBird = { colorHex: COLOR_HEX[combo.color], tailPheno: combo.tail, gender:'Female' };
+
+  let deltaHTML = '';
+  if(prevAlive!==null && prevAlive!==undefined){
+    const delta = bucket.alive - prevAlive;
+    if(delta!==0){
+      const cls = delta>0 ? 'r4-delta-up' : 'r4-delta-down';
+      const sign = delta>0 ? '+' : '';
+      deltaHTML = `<div class="r4-delta ${cls}">${sign}${delta}</div>`;
+    }
+  }
+
+  card.innerHTML = `
+    ${isExtinct ? '<div class="skull r4-skull">☠️</div>' : ''}
+    ${deltaHTML}
+    <div class="r4-card-art">${birdSVG(sampleBird, 56)}</div>
+    <div class="r4-card-name">${combo.label}</div>
+    <div class="r4-card-stats">
+      <div class="r4-stat r4-stat-alive"><span class="r4-stat-num">${bucket.alive}</span><span class="r4-stat-lbl">Alive</span></div>
+      <div class="r4-stat r4-stat-eaten"><span class="r4-stat-num">${bucket.eaten}</span><span class="r4-stat-lbl">Eaten</span></div>
+    </div>
+    <div class="r4-bar"><div class="r4-bar-fill" style="width:${pct}%; background:${COMBO_HEX[combo.key]};"></div></div>
+    <div class="r4-pct">${pct}% of population</div>`;
+  return card;
+}
+
+function updateProgressR4(){
+  document.getElementById('progress-count').innerText = r4Gen;
+  checkWinR4();
+}
+
+function checkWinR4(){
+  if(completed['round4']) return;
+  if(!(r4Gen>=ROUNDS.round4.goalGenerations && !hawkPending)) return;
+  completed['round4'] = true;
+  document.getElementById('modal').innerHTML = `
+    <h2>🏆 You survived!</h2><p>The flock reached 30 generations.</p>
+    <p>Look at the Demographics cards: which phenotypes still have the most birds Alive, and which have the most Eaten? What does that tell you about which traits the hawks favored?</p>
+    <button class="btn" onclick="closeModal()">Review the population</button>`;
+  document.getElementById('overlay').style.display='block';
+  document.getElementById('modal').style.display='block';
+}
+
+function renderPen(){
+  const cfg = ROUNDS[currentRound];
+  const body = document.getElementById('pen-body');
+  const breedBtn = document.getElementById('breed-btn');
+
+  const slotHTML = (parent, role) => {
+    const cls = role==='male' ? 'male' : 'female';
+    if(parent) return `<div class="slot ${cls} filled" onclick="clearSlot('${role}')">${birdSVG(parent,46)}<div style="font-size:.7em;line-height:1.2;margin-top:2px;">${parent.colorPheno}<br>${parent.tailPheno} tail</div></div>`;
+    const ph = cfg.mode==='natural'
+      ? (role==='male' ? 'Wild male' : 'Wild female')
+      : (role==='male' ? 'Pick a male (crown)' : 'Pick a female (no crown)');
+    return `<div class="slot ${cls}"><span class="ph">${ph}</span></div>`;
+  };
+  body.innerHTML = `<div class="slots">${slotHTML(parentM,'male')}${slotHTML(parentF,'female')}</div>`;
+
+  if(cfg.mode==='manual') breedBtn.disabled = !(parentM && parentF);
+  else breedBtn.disabled = !(parentM && parentF);
+}
+
+function clearSlot(role){
+  if(ROUNDS[currentRound].mode!=='manual') return; // wild pair is fixed; use reroll
+  if(role==='male') parentM = null; else parentF = null;
+  renderPen(); renderFlock();
+}
+
+function renderFlock(){
+  const cfg = ROUNDS[currentRound];
+  const cur = document.getElementById('current-gen');
+  const genBirds = flock.filter(b=> b.generation===maxGen);
+  const title = maxGen===1 ? 'Starting flock' : `Newest clutch · generation ${maxGen}`;
+  cur.innerHTML = `<div class="gen-label">${title} <span class="sub">(${genBirds.filter(b=>!b.dead).length} alive)</span></div>`;
+  const grid = document.createElement('div'); grid.className='grid';
+  genBirds.forEach(b=> grid.appendChild(birdCard(b, cfg, false)));
+  cur.appendChild(grid);
+
+  // earlier generations
+  const toggle = document.getElementById('earlier-toggle');
+  const earlier = document.getElementById('earlier');
+  if(maxGen>1){
+    toggle.style.display='flex';
+    document.getElementById('earlier-label').innerText = `Earlier generations (1–${maxGen-1})`;
+    document.getElementById('earlier-caret').innerText = earlierOpen ? '▾' : '▸';
+    earlier.classList.toggle('open', earlierOpen);
+    if(earlierOpen){
+      earlier.innerHTML='';
+      for(let g=maxGen-1; g>=1; g--){
+        const gb = flock.filter(b=> b.generation===g);
+        if(!gb.length) continue;
+        const block = document.createElement('div'); block.className='gen-block';
+        const name = g===1 ? 'Starting flock' : `Generation ${g}`;
+        block.innerHTML = `<div class="gen-label">${name}</div>`;
+        const wrap = document.createElement('div'); wrap.style.display='flex'; wrap.style.gap='10px'; wrap.style.flexWrap='wrap'; wrap.style.alignItems='center';
+        if(g>1 && genParents[g] && genParents[g].p1){
+          const pp = document.createElement('div'); pp.className='parent-pair';
+          pp.innerHTML = `<span class="tag">Parents</span>
+            <div class="pcard">${birdSVG(genParents[g].p1,46)}</div>
+            <div class="pcard">${birdSVG(genParents[g].p2,46)}</div><span class="tag">→</span>`;
+          wrap.appendChild(pp);
+        }
+        const mini = document.createElement('div'); mini.className='grid mini';
+        gb.forEach(b=> mini.appendChild(birdCard(b, cfg, true)));
+        wrap.appendChild(mini); block.appendChild(wrap); earlier.appendChild(block);
+      }
+    } else { earlier.innerHTML=''; }
+  } else {
+    toggle.style.display='none'; earlier.classList.remove('open'); earlier.innerHTML='';
+  }
+}
+
+function birdCard(bird, cfg, mini){
+  const card = document.createElement('div');
+  const isSel = (parentM && parentM.id===bird.id) || (parentF && parentF.id===bird.id);
+  let dimmed = false;
+  if(cfg.mode==='manual' && !bird.dead && !isSel){
+    if(bird.gender==='Male' && parentM) dimmed = true;
+    if(bird.gender==='Female' && parentF) dimmed = true;
+  }
+  const selectable = cfg.mode==='manual' && !bird.dead && !dimmed;
+  card.className = 'bird' + (selectable?' pick':' nopick') + (bird.dead?' dead':'') + (dimmed?' dimmed':'');
+  if(!bird.dead && bird.generation===maxGen && maxGen>1 && animatedGen!==maxGen) card.classList.add('newborn');
+  if(isSel) card.classList.add('sel');
+  card.dataset.birdId = bird.id;
+  if(bird.parent1Id) card.dataset.p1 = bird.parent1Id;
+  if(bird.parent2Id) card.dataset.p2 = bird.parent2Id;
+  card.innerHTML = (bird.dead?'<div class="skull">☠️</div>':'') + birdSVG(bird, mini?56:78) + birdLabel(bird);
+  if(selectable) card.onclick = ()=> selectBird(bird);
+  // Hover to highlight this bird's parents (above) and children (below), wherever currently visible
+  card.addEventListener('mouseenter', ()=> highlightFamily(bird.id, bird.parent1Id, bird.parent2Id));
+  card.addEventListener('mouseleave', clearFamilyHighlight);
+  return card;
+}
+
+function highlightFamily(birdId, p1Id, p2Id){
+  document.querySelectorAll('.bird[data-bird-id]').forEach(el=>{
+    const id = parseInt(el.dataset.birdId);
+    const isParent = (p1Id && id===p1Id) || (p2Id && id===p2Id);
+    const isChild = (el.dataset.p1 && parseInt(el.dataset.p1)===birdId) || (el.dataset.p2 && parseInt(el.dataset.p2)===birdId);
+    if(isParent) el.classList.add('fam-parent');
+    if(isChild) el.classList.add('fam-child');
+  });
+}
+function clearFamilyHighlight(){
+  document.querySelectorAll('.fam-parent, .fam-child').forEach(el=> el.classList.remove('fam-parent','fam-child'));
+}
+
+function populateScope(){
+  const sel = document.getElementById('demo-scope');
+  if(currentRound==='round4'){
+    sel.disabled = false;
+    const prev = sel.value;
+    let opts = '<option value="all">Entire population (current)</option>';
+    for(let g=r4Gen; g>=1; g--){
+      const name = g===1 ? 'Starting population (gen 1)' : ('Generation '+g);
+      opts += `<option value="${g}">${name}</option>`;
+    }
+    sel.innerHTML = opts;
+    if(prev && (prev==='all' || (r4History[parseInt(prev)] && parseInt(prev)<=r4Gen))) sel.value = prev; else sel.value = 'all';
+    return;
+  }
+  sel.disabled = false;
+  const prev = sel.value;
+  let opts = '<option value="all">Entire population</option>';
+  for(let g=maxGen; g>=1; g--){
+    const name = g===1 ? 'Starting flock (gen 1)' : ('Generation '+g);
+    opts += `<option value="${g}">${name}</option>`;
+  }
+  sel.innerHTML = opts;
+  if(prev && (prev==='all' || parseInt(prev)<=maxGen)) sel.value = prev; else sel.value = 'all';
+}
+
+function renderSnapshot(){
+  let cnt, total;
+  if(currentRound==='round4'){
+    const scopeEl = document.getElementById('demo-scope');
+    const scope = scopeEl ? (scopeEl.value || 'all') : 'all';
+    const buckets = (scope!=='all' && r4History[parseInt(scope)]) ? r4History[parseInt(scope)] : null;
+    const getAlive = key => buckets ? buckets[key] : r4Buckets[key].alive;
+    total = COMBOS.reduce((s,c)=> s+getAlive(c.key), 0);
+    cnt = fn => {
+      // fn expects a {colorPheno, tailPheno} shaped object — reuse against each combo's alive count
+      let sum = 0;
+      COMBOS.forEach(c=>{ if(fn({colorPheno:c.color, tailPheno:c.tail})) sum += getAlive(c.key); });
+      return sum;
+    };
+  } else {
+    const scopeEl = document.getElementById('demo-scope');
+    const scope = scopeEl ? (scopeEl.value || 'all') : 'all';
+    let pool = flock.filter(b=>!b.dead);
+    if(scope!=='all') pool = pool.filter(b=> b.generation===parseInt(scope));
+    total = pool.length;
+    cnt = fn => pool.filter(fn).length;
+  }
+  const box = document.getElementById('snapshot');
+  if(!total){ box.innerHTML = '<div class="snap-empty">No living birds in this selection.</div>'; return; }
+  const pct = n => Math.round(n/total*100);
+
+  if(viewMode==='combo'){
+    const cfg = ROUNDS[currentRound];
+    const goalKey = (cfg.goalColor && cfg.goalTail) ? (cfg.goalColor+'|'+cfg.goalTail) : null;
+    const present = COMBOS.map(c=>({...c, n: cnt(b=> b.colorPheno===c.color && b.tailPheno===c.tail)}))
+                           .filter(c=> c.n>0)
+                           .sort((a,b)=> b.n-a.n);
+    const absent = COMBOS.filter(c=> !present.some(p=>p.key===c.key));
+    let html = present.map(c=>{
+      const p = pct(c.n);
+      const isGoal = c.key===goalKey;
+      return `<div class="snap-row${isGoal?' snap-goal':''}"><div class="snap-head"><span>${c.label}${isGoal?' 🎯':''} <span class="cnt">(${c.n})</span></span><span class="pct">${p}%</span></div>
+        <div class="snap-bar"><div class="snap-fill" style="width:${p}%;background:${COMBO_HEX[c.key]};"></div></div></div>`;
+    }).join('');
+    if(absent.length){
+      html += `<div class="snap-zero-note"><strong>Not yet seen (0%):</strong> ${absent.map(c=>c.label).join(', ')}</div>`;
+    }
+    box.innerHTML = html;
+    return;
+  }
+
+  const rows = [
+    ['Blue', cnt(b=>b.colorPheno==='Blue'), '#3498db'],
+    ['Green', cnt(b=>b.colorPheno==='Green'), '#2ecc71'],
+    ['Yellow', cnt(b=>b.colorPheno==='Yellow'), '#f1c40f'],
+    'div',
+    ['Long tail', cnt(b=>b.tailPheno==='Long'), '#8e44ad'],
+    ['Medium tail', cnt(b=>b.tailPheno==='Medium'), '#e67e22'],
+    ['Short tail', cnt(b=>b.tailPheno==='Short'), '#e74c3c']
+  ];
+  box.innerHTML = rows.map(r=>{
+    if(r==='div') return '<div class="snap-divider"></div>';
+    const p = pct(r[1]);
+    return `<div class="snap-row"><div class="snap-head"><span>${r[0]} <span class="cnt">(${r[1]})</span></span><span class="pct">${p}%</span></div>
+      <div class="snap-bar"><div class="snap-fill" style="width:${p}%;background:${r[2]};"></div></div></div>`;
+  }).join('');
+}
+
+function populateChartScope(){
+  const sel = document.getElementById('chart-scope-select');
+  if(currentRound==='round4'){
+    // "Total population over time" and "Generations over time" are mathematically
+    // identical in Round 4 (population is one running total, not discrete clutches),
+    // so only offer the one meaningful trend option, plus the Survival Rate bar chart.
+    const prev = sel.value;
+    sel.innerHTML = `
+      <option value="pergen">Generations over time</option>
+      <option value="survival">Survival Rate</option>`;
+    sel.value = (prev==='survival') ? 'survival' : 'pergen';
+    chartScope = sel.value;
+    sel.onchange = ()=>{ chartScope = sel.value; updateChart(); };
+    return;
+  }
+  sel.innerHTML = `
+    <option value="total">Total population over time</option>
+    <option value="pergen">Generations over time</option>`;
+  sel.value = (chartScope==='survival') ? 'total' : chartScope;
+  chartScope = sel.value;
+  sel.onchange = ()=>{ chartScope = sel.value; updateChart(); };
+}
+
+function setViewMode(mode){
+  viewMode = mode;
+  document.querySelectorAll('#view-toggle-chart button, #view-toggle-table button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.view===mode);
+  });
+  updateChart();
+  renderSnapshot();
+}
+
+/* ============================ PROGRESS / WIN ============================ */
+function updateProgress(){
+  const cfg = ROUNDS[currentRound];
+  const count = flock.filter(b=> !b.dead && b.colorPheno===cfg.goalColor && b.tailPheno===cfg.goalTail).length;
+  document.getElementById('progress-count').innerText = count;
+  checkWin(count);
+}
+
+function checkWin(count){
+  if(completed[currentRound]) return;
+  const cfg = ROUNDS[currentRound];
+  if(count < cfg.target) return;
+  completed[currentRound] = true;
+  const idx = ROUND_ORDER.indexOf(currentRound);
+  const next = ROUND_ORDER[idx+1];
+  let inner;
+  if(next){
+    inner = `<h2>🏆 ${cfg.name} complete!</h2><button class="btn" onclick="closeModal();switchRound('${next}')">Start ${ROUNDS[next].name}</button>`;
+  } else {
+    inner = `<h2>🏆 ${cfg.name} complete!</h2><button class="btn" onclick="closeModal()">Nice work</button>`;
+  }
+  document.getElementById('modal').innerHTML = inner;
+  document.getElementById('overlay').style.display='block';
+  document.getElementById('modal').style.display='block';
+}
+function showHawkIntroModal(){
+  document.getElementById('modal').innerHTML = `
+    <div class="hawk-intro-icon">🦅</div>
+    <h2>Hawks are hunting!</h2>
+    <p>A hawk has spotted the flock. Every bird has <em>some</em> risk, but it isn't even — long tails are easy to grab in flight, and bright yellow feathers stand out against the trees. Green birds blend into the foliage and are the hardest to catch, especially with a short tail.</p>
+    <p>Each attack, every type faces a randomly rolled chance of being caught — riskier combinations like <strong>yellow + long tail</strong> can lose up to 90%, while <strong>green + short tail</strong> can lose almost none. Every type loses at least a handful of birds (10, or its whole remaining group if smaller), so no population is ever fully safe.</p>
+    <p>Press <em>Hawk Attack</em> to see who survives. This will happen periodically throughout Round 4.</p>
+    <button class="btn btn-hawk-go" onclick="closeModal()">🦅 Understood — show me the attack</button>`;
+  document.getElementById('overlay').style.display='block';
+  document.getElementById('modal').style.display='block';
+}
+function closeModal(){
+  document.getElementById('overlay').style.display='none';
+  document.getElementById('modal').style.display='none';
+}
+
+function confirmResetRound(){
+  const cfg = ROUNDS[currentRound];
+  document.getElementById('modal').innerHTML = `
+    <h2>↻ Reset this round?</h2>
+    <p>This will clear all birds, breeding history, and graph data for <strong>${cfg.name}</strong> and start it over from the beginning.</p>
+    <p>Your progress in other rounds will not be affected.</p>
+    <div style="display:flex; gap:10px; margin-top:18px;">
+      <button class="btn" style="background:#b0bec5;" onclick="closeModal()">Cancel</button>
+      <button class="btn" style="background:var(--danger);" onclick="closeModal(); restartRound();">↻ Reset ${cfg.name}</button>
+    </div>`;
+  document.getElementById('overlay').style.display='block';
+  document.getElementById('modal').style.display='block';
+}
+
+function confirmRestartAllGame(){
+  closeMenu();
+  document.getElementById('modal').innerHTML = `
+    <h2>⚠️ Restart the entire game?</h2>
+    <p>This will clear <strong>every round</strong> — Tutorial, Round 1, Round 2, Round 3, and Round 4 — including all birds, breeding history, graph data, and completion progress.</p>
+    <p>This cannot be undone.</p>
+    <div style="display:flex; gap:10px; margin-top:18px;">
+      <button class="btn" style="background:#b0bec5;" onclick="closeModal()">Cancel</button>
+      <button class="btn" style="background:var(--danger);" onclick="closeModal(); restartAllGame();">⚠️ Restart everything</button>
+    </div>`;
+  document.getElementById('overlay').style.display='block';
+  document.getElementById('modal').style.display='block';
+}
+
+function restartAllGame(){
+  ROUND_ORDER.forEach(r=>{
+    saved[r] = null;
+    completed[r] = false;
+    allChart[r] = blankChart();
+  });
+  r4IntroShown = false; r4HawkIntroShown = false;
+  initRound('demo');
+  currentRound = 'demo';
+  earlierOpen = false; hintIndex = 0;
+  setupRoundUI();
+  renderAll();
+}
+
+/* ============================ MISC UI ============================ */
+function setBanner(text, warn){
+  const el = document.getElementById('banner');
+  if(!text){ el.style.display='none'; el.innerHTML=''; return; }
+  el.className = 'banner' + (warn?' warn':'');
+  el.innerHTML = text; el.style.display='block';
+}
+function showRoundTip(){
+  setBanner('<strong>How to play:</strong> ' + ROUNDS[currentRound].tip, false);
+}
+function showHint(){
+  const hints = ROUNDS[currentRound].hints || [];
+  if(!hints.length) return;
+  setBanner('💡 ' + hints[hintIndex], false);
+  if(hintIndex < hints.length-1) hintIndex++;
+}
+function toggleAlleles(){
+  showAlleles = !showAlleles;
+  document.getElementById('alleles-btn').classList.toggle('on', showAlleles);
+  document.getElementById('alleles-btn').innerText = showAlleles ? '👁️' : '🔍';
+  renderPen(); renderFlock();
+}
+function toggleEarlier(){ earlierOpen = !earlierOpen; renderFlock(); }
+function toggleChartMax(){
+  const panel = document.getElementById('chart-panel');
+  const max = !panel.classList.contains('maximized');
+  panel.classList.toggle('maximized', max);
+  document.getElementById('chart-overlay').classList.toggle('open', max);
+  const btn = document.getElementById('chart-max-btn');
+  btn.innerText = max ? '⤡' : '⤢';
+  btn.title = max ? 'Minimize graph' : 'Maximize graph';
+  setTimeout(()=>{ if(trendChart) trendChart.resize(); }, 60);
+}
+function closeMenu(){ document.getElementById('menu-popover').classList.remove('open'); }
+
+/* ============================ WIRING ============================ */
+document.getElementById('breed-btn').onclick = breed;
+document.getElementById('reroll-btn').onclick = rerollWild;
+document.getElementById('hawk-btn').onclick = triggerHawk;
+document.getElementById('hint-btn').onclick = showHint;
+document.getElementById('alleles-btn').onclick = toggleAlleles;
+document.getElementById('earlier-toggle').onclick = toggleEarlier;
+document.getElementById('chart-max-btn').onclick = toggleChartMax;
+document.querySelectorAll('#view-toggle-chart button, #view-toggle-table button').forEach(b=>{
+  b.onclick = ()=> setViewMode(b.dataset.view);
+});
+document.getElementById('chart-overlay').onclick = toggleChartMax;
+document.getElementById('restart-all-btn').onclick = confirmRestartAllGame;
+document.getElementById('reset-round-btn').onclick = confirmResetRound;
+document.getElementById('menu-btn').onclick = (e)=>{ e.stopPropagation(); document.getElementById('menu-popover').classList.toggle('open'); };
+document.querySelectorAll('.menu-popover [data-round]').forEach(b=>{
+  b.onclick = ()=> switchRound(b.dataset.round);
+});
+document.addEventListener('click', closeMenu);
+document.getElementById('menu-popover').addEventListener('click', e=>e.stopPropagation());
+
+function boot(){ initChart(); switchRound('demo'); }
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
+</script>
+</body>
+</html>
