@@ -16,12 +16,10 @@
       --shadow:      0 1px 4px rgba(0,0,0,.07), 0 2px 12px rgba(0,0,0,.05);
       --shadow-hover:0 6px 24px rgba(0,0,0,.13);
       --radius:      12px;
-
       --physical:    #4361EE;
       --life:        #2DC653;
       --earth:       #F77F00;
       --tech:        #9B5DE5;
-
       --filter-active-bg: #1A1A2E;
       --filter-active-text: #FFFFFF;
     }
@@ -55,7 +53,7 @@
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 18px 32px;
+      padding: 14px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -87,46 +85,79 @@
       font-weight: 400;
     }
 
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+    /* ── Gear button & settings panel ──────────────────────── */
+    .gear-wrap {
+      position: relative;
     }
 
-    /* ── Dark mode toggle ───────────────────────────────────── */
-    .theme-toggle {
-      background: none;
+    .gear-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
       border: 1.5px solid var(--border);
-      border-radius: 20px;
-      padding: 5px 12px;
-      cursor: pointer;
-      font-size: .8rem;
-      font-family: 'Inter', sans-serif;
+      background: var(--surface);
       color: var(--text-muted);
+      cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 5px;
-      transition: border-color .2s, color .2s;
-      white-space: nowrap;
+      justify-content: center;
+      transition: border-color .2s, color .2s, transform .4s;
     }
-    .theme-toggle:hover { border-color: var(--text-muted); color: var(--text); }
+    .gear-btn:hover { border-color: var(--text-muted); color: var(--text); }
+    .gear-btn.open { 
+      border-color: var(--text);
+      color: var(--text);
+      transform: rotate(45deg);
+    }
 
-    /* ── Controls bar ───────────────────────────────────────── */
-    .controls {
-      padding: 20px 32px 0;
+    .settings-panel {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      width: 340px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-hover);
+      padding: 16px;
       display: flex;
       flex-direction: column;
       gap: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-6px);
+      transition: opacity .18s, transform .18s;
+      z-index: 200;
+    }
+    .settings-panel.visible {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
     }
 
+    .settings-label {
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .settings-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* Search inside panel */
     .search-wrap {
       position: relative;
-      max-width: 480px;
     }
 
     .search-icon {
       position: absolute;
-      left: 14px;
+      left: 12px;
       top: 50%;
       transform: translateY(-50%);
       color: var(--text-muted);
@@ -135,23 +166,78 @@
 
     #search {
       width: 100%;
-      padding: 10px 16px 10px 40px;
+      padding: 9px 14px 9px 36px;
       border: 1.5px solid var(--border);
       border-radius: 8px;
-      background: var(--surface);
+      background: var(--bg);
       color: var(--text);
       font-family: 'Inter', sans-serif;
-      font-size: .9rem;
+      font-size: .85rem;
       transition: border-color .2s, background .25s;
       outline: none;
     }
     #search:focus { border-color: var(--physical); }
     #search::placeholder { color: var(--text-muted); }
 
+    /* Theme toggle inside panel */
+    .theme-toggle {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: .85rem;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: border-color .2s, color .2s;
+      width: 100%;
+      text-align: left;
+    }
+    .theme-toggle:hover { border-color: var(--text-muted); color: var(--text); }
+
+    /* Reviewed buttons inside panel */
+    .rev-group {
+      display: flex;
+      gap: 4px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 3px;
+    }
+    .rev-btn {
+      flex: 1;
+      padding: 6px 6px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Inter', sans-serif;
+      font-size: .72rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      text-align: center;
+    }
+    .rev-btn:hover { color: var(--text); }
+    .rev-btn.active {
+      background: var(--filter-active-bg);
+      color: var(--filter-active-text);
+    }
+
+    /* ── Controls bar (category filters only) ───────────────── */
+    .controls {
+      padding: 12px 24px 0;
+    }
+
     .filters {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
+      align-items: center;
     }
 
     .filter-btn {
@@ -180,15 +266,15 @@
 
     /* ── Results count ──────────────────────────────────────── */
     .results-bar {
-      padding: 14px 32px 0;
+      padding: 10px 24px 0;
       font-size: .8rem;
       color: var(--text-muted);
-      min-height: 28px;
+      min-height: 26px;
     }
 
     /* ── Grid ───────────────────────────────────────────────── */
     .grid {
-      padding: 16px 32px 48px;
+      padding: 14px 24px 48px;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-auto-rows: 1fr;
@@ -214,7 +300,7 @@
       box-shadow: var(--shadow-hover);
     }
 
-    /* Reviewed state — full grayscale, clearly "done" */
+    /* Reviewed state — full grayscale */
     .card.reviewed {
       filter: grayscale(1);
       opacity: .55;
@@ -224,48 +310,19 @@
       opacity: .75;
     }
 
-    /* ── Reviewed filter button group ───────────────────────── */
-    .reviewed-filters {
-      display: flex;
-      gap: 4px;
-      margin-left: auto;
-      background: var(--bg);
-      border: 1.5px solid var(--border);
-      border-radius: 20px;
-      padding: 3px;
-    }
-    .rev-btn {
-      padding: 4px 12px;
-      border-radius: 16px;
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      font-family: 'Inter', sans-serif;
-      font-size: .78rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all .15s;
-      white-space: nowrap;
-    }
-    .rev-btn:hover { color: var(--text); }
-    .rev-btn.active {
-      background: var(--filter-active-bg);
-      color: var(--filter-active-text);
-    }
-
     .card[data-cat="Physical Science"]          { border-top-color: var(--physical); }
     .card[data-cat="Life Science"]               { border-top-color: var(--life); }
     .card[data-cat="Earth & Space Science"]      { border-top-color: var(--earth); }
     .card[data-cat="Technology & Engineering"]   { border-top-color: var(--tech); }
 
-    /* ── Thumbnail wrapper (for overlays) ───────────────────── */
+    /* ── Thumbnail wrapper ──────────────────────────────────── */
     .card-thumb-wrap {
       position: relative;
       width: 100%;
       aspect-ratio: 16 / 9;
       flex-shrink: 0;
       background: var(--border);
-      overflow: hidden; /* prevents portrait images from breaking out of the box */
+      overflow: hidden;
     }
 
     .card-thumb {
@@ -274,7 +331,7 @@
       object-fit: cover;
       object-position: center;
       display: block;
-      position: absolute; /* pins image inside the aspect-ratio box */
+      position: absolute;
       top: 0;
       left: 0;
     }
@@ -289,7 +346,7 @@
       font-size: 2rem;
     }
 
-    /* Video play badge — centered over thumbnail */
+    /* Video play badge — centered */
     .video-badge {
       position: absolute;
       top: 50%;
@@ -307,15 +364,13 @@
       user-select: none;
       transition: background .2s;
     }
-    .card:hover .video-badge {
-      background: rgba(0,0,0,.80);
-    }
-    .video-badge svg { 
+    .card:hover .video-badge { background: rgba(0,0,0,.80); }
+    .video-badge svg {
       flex-shrink: 0;
-      margin-left: 4px; /* optical center for play triangle */
+      margin-left: 4px;
     }
 
-    /* Reviewed checkmark — top-right corner of card */
+    /* Reviewed checkmark — top-right corner */
     .check-btn {
       position: absolute;
       top: 8px;
@@ -340,16 +395,10 @@
       transform: scale(1.1);
     }
     .check-btn svg { width: 14px; height: 14px; stroke: #fff; stroke-width: 2.5; fill: none; }
+    .card.reviewed .check-btn { background: #22c55e; border-color: #22c55e; }
+    .card.reviewed .check-btn:hover { background: #16a34a; border-color: #16a34a; }
 
-    .card.reviewed .check-btn {
-      background: #22c55e;
-      border-color: #22c55e;
-    }
-    .card.reviewed .check-btn:hover {
-      background: #16a34a;
-      border-color: #16a34a;
-    }
-
+    /* ── Card body ──────────────────────────────────────────── */
     .card-body {
       padding: 14px 16px 16px;
       display: flex;
@@ -446,11 +495,12 @@
       .grid { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 600px) {
-      header { padding: 14px 16px; }
+      header { padding: 12px 16px; }
       .site-subtitle { display: none; }
-      .controls { padding: 16px 16px 0; }
-      .results-bar { padding: 12px 16px 0; }
+      .controls { padding: 12px 16px 0; }
+      .results-bar { padding: 10px 16px 0; }
       .grid { padding: 12px 16px 40px; grid-template-columns: 1fr; }
+      .settings-panel { width: 260px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -466,30 +516,58 @@
       <span class="site-title">Mr. Caf's Science News</span>
       <span class="site-subtitle">Curated reads &amp; videos</span>
     </div>
-    <div class="header-right">
-      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-        <span id="themeIcon">🌙</span>
-        <span id="themeLabel">Dark</span>
+
+    <!-- Gear button + settings panel -->
+    <div class="gear-wrap" id="gearWrap">
+      <button class="gear-btn" id="gearBtn" aria-label="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
       </button>
+
+      <div class="settings-panel" id="settingsPanel">
+
+        <!-- Search -->
+        <div class="settings-section">
+          <div class="settings-label">Search</div>
+          <div class="search-wrap">
+            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="search" placeholder="Articles, videos, topics…" autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Reviewed filter -->
+        <div class="settings-section">
+          <div class="settings-label">Filter by status</div>
+          <div class="rev-group">
+            <button class="rev-btn active" data-rev="all">Show All</button>
+            <button class="rev-btn" data-rev="hide">Hide Reviewed</button>
+            <button class="rev-btn" data-rev="only">Reviewed Only</button>
+          </div>
+        </div>
+
+        <!-- Theme -->
+        <div class="settings-section">
+          <div class="settings-label">Appearance</div>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+            <span id="themeIcon">☀️</span>
+            <span id="themeLabel">Switch to Light Mode</span>
+          </button>
+        </div>
+
+      </div>
     </div>
   </header>
 
+  <!-- Category filters — always visible below header -->
   <div class="controls">
-    <div class="search-wrap">
-      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="search" id="search" placeholder="Search articles, videos, topics…" autocomplete="off" />
-    </div>
     <div class="filters">
       <button class="filter-btn active" data-cat="All">All</button>
       <button class="filter-btn" data-cat="Physical Science">Physical Science</button>
       <button class="filter-btn" data-cat="Life Science">Life Science</button>
       <button class="filter-btn" data-cat="Earth & Space Science">Earth &amp; Space Science</button>
       <button class="filter-btn" data-cat="Technology & Engineering">Technology &amp; Engineering</button>
-      <div class="reviewed-filters">
-        <button class="rev-btn active" data-rev="all">Show All</button>
-        <button class="rev-btn" data-rev="hide">Hide Reviewed</button>
-        <button class="rev-btn" data-rev="only">Reviewed Only</button>
-      </div>
     </div>
   </div>
 
@@ -503,36 +581,31 @@
   </main>
 
   <script>
-    // ── Config ────────────────────────────────────────────────
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT4iP3G0C8-XPeT2puch308IS6ubR13pQplXZc8TBsZE5zIbZ8Z6YzoWEfeLO8geQdd0yF3RmJZKeFi/pub?output=csv';
 
     // ── State ─────────────────────────────────────────────────
-    let allPosts      = [];
-    let activeFilter  = 'All';
-    let searchQuery   = '';
-    let reviewedMode  = 'all'; // 'all' | 'hide' | 'only' 
+    let allPosts     = [];
+    let activeFilter = 'All';
+    let searchQuery  = '';
+    let reviewedMode = 'all';
 
-    // ── Reviewed set (persisted in localStorage) ──────────────
+    // ── Reviewed set ──────────────────────────────────────────
     const STORAGE_KEY = 'cafBlogReviewed';
-
     function loadReviewed() {
       try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')); }
       catch { return new Set(); }
     }
-
     function saveReviewed(set) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
     }
-
     let reviewedSet = loadReviewed();
-
     function toggleReviewed(link) {
       if (reviewedSet.has(link)) reviewedSet.delete(link);
       else reviewedSet.add(link);
       saveReviewed(reviewedSet);
     }
 
-    // ── Theme ─────────────────────────────────────────────────
+    // ── Theme — dark by default ───────────────────────────────
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon   = document.getElementById('themeIcon');
     const themeLabel  = document.getElementById('themeLabel');
@@ -540,17 +613,61 @@
     function applyTheme(dark) {
       document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
       themeIcon.textContent  = dark ? '☀️' : '🌙';
-      themeLabel.textContent = dark ? 'Light' : 'Dark';
+      themeLabel.textContent = dark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
       localStorage.setItem('cafBlogTheme', dark ? 'dark' : 'light');
     }
 
+    // Dark is the default — only override if the user has explicitly saved a preference
     const savedTheme = localStorage.getItem('cafBlogTheme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    applyTheme(savedTheme ? savedTheme === 'dark' : prefersDark);
+    applyTheme(savedTheme ? savedTheme === 'dark' : true);
 
     themeToggle.addEventListener('click', () => {
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       applyTheme(!isDark);
+    });
+
+    // ── Gear panel — hover + click ────────────────────────────
+    const gearWrap     = document.getElementById('gearWrap');
+    const gearBtn      = document.getElementById('gearBtn');
+    const settingsPanel = document.getElementById('settingsPanel');
+    let panelPinnedOpen = false;
+    let hoverTimer;
+
+    function openPanel() {
+      clearTimeout(hoverTimer);
+      settingsPanel.classList.add('visible');
+      gearBtn.classList.add('open');
+    }
+
+    function closePanel() {
+      if (panelPinnedOpen) return;
+      settingsPanel.classList.remove('visible');
+      gearBtn.classList.remove('open');
+    }
+
+    function scheduleClose() {
+      hoverTimer = setTimeout(closePanel, 200);
+    }
+
+    gearWrap.addEventListener('mouseenter', openPanel);
+    gearWrap.addEventListener('mouseleave', scheduleClose);
+
+    gearBtn.addEventListener('click', () => {
+      panelPinnedOpen = !panelPinnedOpen;
+      if (panelPinnedOpen) openPanel();
+      else {
+        settingsPanel.classList.remove('visible');
+        gearBtn.classList.remove('open');
+      }
+    });
+
+    // Click outside to unpin
+    document.addEventListener('click', e => {
+      if (!gearWrap.contains(e.target)) {
+        panelPinnedOpen = false;
+        settingsPanel.classList.remove('visible');
+        gearBtn.classList.remove('open');
+      }
     });
 
     // ── CSV parser ────────────────────────────────────────────
@@ -577,9 +694,7 @@
           else inQuotes = !inQuotes;
         } else if (ch === ',' && !inQuotes) {
           result.push(cur); cur = '';
-        } else {
-          cur += ch;
-        }
+        } else { cur += ch; }
       }
       result.push(cur);
       return result;
@@ -590,17 +705,12 @@
       try { return new URL(url).hostname.replace(/^www\./, ''); }
       catch { return url; }
     }
-
     function formatDate(ts) {
       const d = new Date(ts);
       if (isNaN(d)) return '';
       return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
-
-    function isYouTube(url) {
-      return /youtube\.com|youtu\.be/.test(url);
-    }
-
+    function isYouTube(url) { return /youtube\.com|youtu\.be/.test(url); }
     function escHtml(str) {
       return String(str)
         .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -626,7 +736,6 @@
         return matchesCat && matchesSearch;
       });
 
-      // Results count
       if (allPosts.length > 0) {
         const reviewedCount = [...reviewedSet].filter(l => allPosts.some(p => p['Link'] === l)).length;
         const reviewedNote  = reviewedCount > 0 ? ` · ${reviewedCount} reviewed` : '';
@@ -654,20 +763,15 @@
         const isRev    = reviewedSet.has(link);
         const safeLink = escHtml(link);
 
-        // Thumbnail area
         const thumbImg = thumb
           ? `<img class="card-thumb" src="${escHtml(thumb)}" alt="" loading="lazy"
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
           : '';
         const thumbPlaceholder = `<div class="card-thumb-placeholder" style="${thumb ? 'display:none' : ''}">${isYT ? '▶' : '🔗'}</div>`;
-
-        // Video badge (only for YouTube) — large centered play button
         const videoBadge = isYT ? `
           <div class="video-badge">
             <svg width="22" height="22" viewBox="0 0 22 22" fill="white"><polygon points="6,3 19,11 6,19"/></svg>
           </div>` : '';
-
-        // Checkmark button (SVG checkmark, filled green when reviewed)
         const checkBtn = `
           <button class="check-btn" aria-label="${isRev ? 'Mark as unreviewed' : 'Mark as reviewed'}"
             onclick="event.stopPropagation(); handleReview(this, '${safeLink}')">
@@ -698,20 +802,18 @@
       }).join('');
     }
 
-    // ── Handle review toggle (called from card button) ────────
+    // ── Handle review toggle ──────────────────────────────────
     function handleReview(btn, link) {
       toggleReviewed(link);
       const card = btn.closest('.card');
       const isNowReviewed = reviewedSet.has(link);
       card.classList.toggle('reviewed', isNowReviewed);
       btn.setAttribute('aria-label', isNowReviewed ? 'Mark as unreviewed' : 'Mark as reviewed');
-      // Update results bar count without full re-render
       const reviewedCount = [...reviewedSet].filter(l => allPosts.some(p => p['Link'] === l)).length;
       const total = allPosts.length;
       const reviewedNote = reviewedCount > 0 ? ` · ${reviewedCount} reviewed` : '';
       document.getElementById('resultsBar').textContent =
         `${total} post${total !== 1 ? 's' : ''}${reviewedNote}`;
-      // If in a mode that should hide this card now, fade it out
       if ((reviewedMode === 'hide' && isNowReviewed) || (reviewedMode === 'only' && !isNowReviewed)) {
         card.style.transition = 'opacity .3s';
         card.style.opacity = '0';
@@ -743,7 +845,7 @@
       });
     });
 
-    // ── Reviewed mode buttons (Show All / Hide Reviewed / Reviewed Only) ──
+    // ── Reviewed mode buttons ─────────────────────────────────
     document.querySelectorAll('.rev-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.rev-btn').forEach(b => b.classList.remove('active'));
