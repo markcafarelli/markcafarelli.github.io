@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mr. Caf's Science News</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     /* ── Tokens ─────────────────────────────────────────────── */
     :root {
@@ -74,10 +74,10 @@
     }
 
     .site-title {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 1.25rem;
-      font-weight: 700;
-      letter-spacing: -.02em;
+      font-family: 'Boogaloo', cursive;
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: .01em;
       color: var(--text);
     }
 
@@ -289,26 +289,31 @@
       font-size: 2rem;
     }
 
-    /* Video play badge — bottom-left of thumbnail */
+    /* Video play badge — centered over thumbnail */
     .video-badge {
       position: absolute;
-      bottom: 8px;
-      left: 8px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 56px;
+      height: 56px;
       background: rgba(0,0,0,.62);
       backdrop-filter: blur(4px);
-      border-radius: 6px;
-      padding: 3px 8px 3px 6px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
-      gap: 4px;
-      font-size: .7rem;
-      font-weight: 600;
-      color: #fff;
-      letter-spacing: .02em;
+      justify-content: center;
       pointer-events: none;
       user-select: none;
+      transition: background .2s;
     }
-    .video-badge svg { flex-shrink: 0; }
+    .card:hover .video-badge {
+      background: rgba(0,0,0,.80);
+    }
+    .video-badge svg { 
+      flex-shrink: 0;
+      margin-left: 4px; /* optical center for play triangle */
+    }
 
     /* Reviewed checkmark — top-right corner of card */
     .check-btn {
@@ -656,11 +661,10 @@
           : '';
         const thumbPlaceholder = `<div class="card-thumb-placeholder" style="${thumb ? 'display:none' : ''}">${isYT ? '▶' : '🔗'}</div>`;
 
-        // Video badge (only for YouTube)
+        // Video badge (only for YouTube) — large centered play button
         const videoBadge = isYT ? `
           <div class="video-badge">
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="white"><polygon points="2,1 9,5 2,9"/></svg>
-            VIDEO
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="white"><polygon points="6,3 19,11 6,19"/></svg>
           </div>` : '';
 
         // Checkmark button (SVG checkmark, filled green when reviewed)
