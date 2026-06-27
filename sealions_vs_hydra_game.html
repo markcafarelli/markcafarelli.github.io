@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Version 1.5: Sea Lion vs. Hydra (Responsive CSS)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- RESPONSIVE CSS FIX --- */
+        :root {
+            font-size: 16px; /* Base size for laptops/desktops */
+        }
+        
+        /* Step down size for Chromebooks and smaller laptops */
+        @media (max-width: 1366px), (max-height: 800px) {
+            :root { font-size: 13.5px; }
+            .modal-content { padding: 25px !important; }
+            #introScreen { padding: 25px !important; margin: 10px auto !important; }
+            .demo-screen { height: 200px !important; }
+            .allele-dot { width: 48px !important; height: 48px !important; font-size: 24px !important; }
+            .allele-dot-wrap { width: 48px !important; height: 48px !important; }
+            .pop-col-headers, .allele-row { grid-template-columns: 56px 1fr 1fr !important; }
+            .game-header-bar h1 { font-size: 1.1em !important; }
+        }
+
+        /* Step down further for very small screens */
+        @media (max-width: 1024px), (max-height: 650px) {
+            :root { font-size: 11.5px; }
+            .modal-content { padding: 15px !important; }
+            .dot { width: 50px !important; height: 50px !important; font-size: 30px !important; border-width: 5px !important;}
+            .dice-box { width: 45px !important; height: 45px !important; font-size: 26px !important; }
+            .allele-dot { width: 38px !important; height: 38px !important; font-size: 18px !important; border-width: 5px !important; }
+            .allele-dot-wrap { width: 38px !important; height: 38px !important; }
+            .pop-col-headers, .allele-row { grid-template-columns: 46px 1fr 1fr !important; }
+            .game-left-row { flex-direction: column !important; }
+            .game-header-bar h1 { font-size: 1em !important; }
+        }
+
+        /* Base Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+            overflow-x: hidden; /* Prevent horizontal scrollbars */
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        
+        /* Intro Screen Styles */
+        #introScreen {
+            max-width: 1000px; margin: 20px auto; background: white; padding: 40px;
+            border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+        .intro-header { text-align: center; }
+        .intro-subtitle { font-size: 1.2em; color: #7f8c8d; margin-bottom: 25px; }
+        .prompt-box {
+            background-color: #fff3cd; border-left: 6px solid #ffc107; padding: 20px;
+            margin-bottom: 30px; text-align: left; font-size: 1.2em;
+            border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); line-height: 1.5;
+        }
+
+        /* Animation Demo Section */
+        .demo-section {
+            background-color: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px;
+            padding: 25px; margin-bottom: 30px;
+        }
+        .demo-section h3 { text-align: center; margin-top: 0; color: #2c3e50; font-size: 1.5em; }
+        .demo-grid { display: flex; gap: 25px; }
+        .demo-card {
+            flex: 1; background: white; padding: 20px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;
+        }
+        .demo-card h4 { font-size: 1.5em; color: #2c3e50; margin-top: 0; margin-bottom: 15px; }
+        .demo-card p { font-size: 1.05em; color: #555; height: 45px; }
+        .demo-screen {
+            height: 260px; background: #ecf0f1; border-radius: 8px; margin-top: 20px;
+            position: relative; overflow: hidden; border: 1px solid #bdc3c7;
+        }
+        
+        .cell { position: absolute; border-radius: 50%; opacity: 0; }
+        .egg-cell { width: 24px; height: 24px; background: #ff9ff3; border: 3px solid #f368e0; }
+        .sperm-cell { width: 18px; height: 18px; background: #48dbfb; border: 3px solid #0abde3; border-bottom-right-radius: 0; transform: rotate(-45deg); }
+        .demo-caption { position: absolute; bottom: 15px; width: 100%; text-align: center; font-weight: bold; font-size: 1.2em; color: #27ae60; opacity: 0; }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes dropMergeLeft { 0% { opacity: 0; transform: translate(0, 0); } 20% { opacity: 1; transform: translate(0, 40px); } 80% { opacity: 1; transform: translate(110px, 60px); } 100% { opacity: 0; transform: translate(110px, 60px); } }
+        @keyframes dropMergeRight { 0% { opacity: 0; transform: translate(0, 0) rotate(-45deg); } 20% { opacity: 1; transform: translate(0, 40px) rotate(-45deg); } 80% { opacity: 1; transform: translate(-110px, 60px) rotate(-45deg); } 100% { opacity: 0; transform: translate(-110px, 60px) rotate(-45deg); } }
+        @keyframes popReveal { 0% { opacity: 0; transform: scale(0.2); } 70% { opacity: 1; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes budGrow { 0% { opacity: 0; transform: scale(0.2); } 30% { opacity: 1; transform: scale(0.5); left: 60%; } 80% { opacity: 1; transform: scale(0.8); left: 75%; top: 20px;} 100% { opacity: 0; } }
+
+        .run-sex .p1 { animation: fadeIn 0.5s forwards; left: 15%; top: 20px; }
+        .run-sex .p2 { animation: fadeIn 0.5s forwards; right: 15%; top: 20px; }
+        .run-sex .egg-cell { animation: dropMergeLeft 2s 0.8s forwards; left: 25%; top: 90px; }
+        .run-sex .sperm-cell { animation: dropMergeRight 2s 0.8s forwards; right: 25%; top: 90px; }
+        .run-sex .off1 { animation: popReveal 0.6s 2.8s forwards; left: 20%; bottom: 45px; }
+        .run-sex .off2 { animation: popReveal 0.6s 3.0s forwards; right: 20%; bottom: 45px; }
+        .run-sex .cap-sex { animation: fadeIn 0.5s 3.5s forwards; }
+
+        .run-asex .a-p1 { animation: fadeIn 0.5s forwards; left: 50%; top: 20px; transform: translateX(-50%); }
+        .run-asex .bud-cell { animation: budGrow 2.5s 0.8s forwards; left: 50%; top: 50px; border-color: #9b59b6; }
+        .run-asex .a-off { animation: popReveal 0.5s 3.2s forwards; right: 20%; top: 20px; }
+        .run-asex .cap-asex { animation: fadeIn 0.5s 3.5s forwards; }
+
+        .demo-screen .dot { position: absolute; width: 60px; height: 60px; font-size: 34px; border-width: 6px; opacity: 0; }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 40px; border-radius: 12px; max-width: 900px;
+            width: 90%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+            max-height: 85vh; /* Locks height to fit in screen */
+            overflow-y: auto; /* Adds scrollbar inside modal if content is long */
+            box-sizing: border-box;
+        }
+        .modal-content h2 { margin-top: 0; color: #2c3e50; font-size: 2.2em; } 
+        .modal-content p { font-size: 1.3em; margin-bottom: 20px; line-height: 1.5; } 
+        .event-stats { background: #f8f9fa; border: 2px solid #e74c3c; border-radius: 8px; padding: 20px; margin-bottom: 25px; font-size: 1.4em; line-height: 1.5; } 
+        .scale-note { background-color: #fcf3cf; padding: 15px; border-radius: 6px; font-weight: bold; margin-bottom: 20px; border: 1px solid #f1c40f; font-size: 1.2em;} 
+
+        /* Conclusion Questions Specific Styles */
+        .modal-header-bar {
+            display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 2px solid #ecf0f1; padding-bottom: 15px; margin-bottom: 20px;
+        }
+        .window-control-btn {
+            background: transparent; color: #7f8c8d; font-size: 1.8em; font-weight: bold; 
+            border: none; cursor: pointer; padding: 0 10px; box-shadow: none; transition: color 0.2s;
+        }
+        .window-control-btn:hover { color: #2c3e50; background: transparent; transform: none; }
+        .window-control-btn.close-btn:hover { color: #e74c3c; background: transparent;}
+        
+        .question-block {
+            background: #f8f9fa; border-left: 6px solid #3498db; padding: 20px;
+            margin-bottom: 15px; text-align: left; font-size: 1.2em;
+            line-height: 1.6; border-radius: 4px; color: #2c3e50;
+            transition: border-color 0.3s;
+        }
+        .question-block em { color: #7f8c8d; display: block; margin-top: 8px; font-size: 0.9em; }
+        .question-block select, .question-block textarea {
+            font-size: 1em; padding: 8px; margin: 5px 0; border-radius: 4px; border: 1px solid #bdc3c7; width: 100%; box-sizing: border-box;
+        }
+        .question-block select { width: auto; display: inline-block; margin: 0 10px; }
+        .mcq-option { margin: 8px 0; display: block; cursor: pointer; }
+        .mcq-option input { margin-right: 10px; transform: scale(1.3); cursor: pointer; }
+        .feedback-text { margin-top: 10px; font-weight: bold; font-size: 0.95em; min-height: 20px; }
+        
+        .pinpoint-btn {
+            background-color: #9b59b6; color: white; padding: 8px 15px; border-radius: 6px;
+            border: none; cursor: pointer; font-weight: bold; font-size: 0.9em; margin-left: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: background 0.2s; display: inline-block;
+        }
+        .pinpoint-btn:hover { background-color: #8e44ad; transform: translateY(-2px); }
+        
+        #pinpointBanner {
+            display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #f39c12; color: white; padding: 15px 30px; font-size: 1.3em; font-weight: bold;
+            border-radius: 30px; z-index: 2000; box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-align: center;
+        }
+
+        /* Custom Popup Tooltip for Graph Selection */
+        #customGraphTooltip {
+            display: none; position: fixed; pointer-events: none;
+            background: rgba(30, 40, 50, 0.95); color: white;
+            padding: 15px 20px; border-radius: 10px; font-size: 1.2em; font-weight: bold;
+            z-index: 9999; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            border: 2px solid #ecf0f1; line-height: 1.4; transition: opacity 0.1s;
+        }
+
+        /* Drag and Drop Styles (Question 6) */
+        .drag-bank {
+            display: flex; flex-wrap: wrap; gap: 10px; background: #e8f4f8; padding: 15px; 
+            border-radius: 8px; border: 2px dashed #3498db; margin-bottom: 15px; min-height: 50px;
+            align-items: center; justify-content: center;
+        }
+        .draggable-item {
+            background: #3498db; color: white; padding: 8px 12px; border-radius: 20px; 
+            font-size: 0.9em; font-weight: bold; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+            user-select: none; text-align: center; z-index: 10;
+            word-break: break-word; max-width: 140px; line-height: 1.3;
+        }
+        .draggable-item:active { cursor: grabbing; transform: scale(0.95); }
+        
+        .dnd-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; table-layout: fixed; }
+        .dnd-table th, .dnd-table td { border: 1px solid #bdc3c7; padding: 0; text-align: center; width: 33%; height: 1px; }
+        .dnd-table th { background-color: #ecf0f1; color: #2c3e50; font-size: 1em; padding: 10px; height: auto; }
+        
+        /* Drop zone fills entire cell at all times */
+        .drop-zone { 
+            background: #fdfdfd; 
+            height: 100%;
+            min-height: 90px;
+            width: 100%;
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            align-items: center; 
+            justify-content: flex-start; 
+            padding: 10px 8px; 
+            box-sizing: border-box;
+            border: 2px dashed #bdc3c7;
+        }
+
+        /* Quiz Option Styles */
+        .quiz-option {
+            display: block; width: 100%; padding: 20px; margin-bottom: 12px;
+            background: #f8f9fa; border: 2px solid #bdc3c7; border-radius: 8px;
+            font-size: 1.2em; cursor: pointer; transition: all 0.2s; text-align: left;
+            color: #2c3e50; font-weight: bold; box-sizing: border-box;
+        }
+        .quiz-option:hover { background: #e8f4f8; border-color: #3498db; }
+        .quiz-option.selected-wrong { background: #ffebee; border-color: #e74c3c; color: #c0392b; }
+        .quiz-option.selected-correct { background: #e8f8f5; border-color: #27ae60; color: #1e8449; }
+        #quizFeedback { min-height: 30px; margin-top: 15px; font-size: 1.3em; }
+
+        /* Floating Collapsible Rules Overlay */
+        .collapsible-rules {
+            display: none; position: absolute; top: 110px; left: 0; right: 0; margin: 0 auto;
+            max-width: 1160px; background-color: #e8f4f8; border: 2px solid #3498db;
+            border-radius: 8px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); z-index: 500;
+        }
+        .rules-grid { display: flex; justify-content: center; gap: 40px; font-size: 1.3em; margin-top: 15px; }
+        .rules-grid div { background: white; padding: 15px; border-radius: 6px; border: 1px solid #bdc3c7; width: 45%; text-align: center; line-height: 1.6; }
+
+        /* SINGLE SCREEN GAME LAYOUT */
+        #gameInterface { display: none; height: calc(100vh - 30px); flex-direction: column; position: relative; max-width: 1600px; margin: 0 auto;}
+        .game-main { display: flex; gap: 15px; flex: 1; min-height: 0; }
+
+        /* Header bar: title + dice + rules all on one line */
+        .game-header-bar {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 6px; flex-wrap: wrap;
+        }
+        .game-header-bar h1 {
+            margin: 0; text-align: left; font-size: 1.15em; flex: 1; min-width: 200px;
+            color: #2c3e50;
+        }
+        .header-controls {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        }
+        .header-dice-group {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .header-dice-wrapper {
+            display: flex; flex-direction: column; align-items: center;
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .header-dice-wrapper:hover { transform: scale(1.08); }
+        .header-sim-btn {
+            background-color: #3498db; color: white; border: none;
+            padding: 8px 16px; font-size: 0.95em; font-weight: bold;
+            border-radius: 8px; cursor: pointer; white-space: nowrap;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+            transition: background 0.2s, transform 0.1s;
+            animation: pulse-blue 1.8s ease-in-out infinite;
+        }
+        @keyframes pulse-blue {
+            0%, 100% { box-shadow: 0 3px 5px rgba(0,0,0,0.2), 0 0 0 0 rgba(52,152,219,0.5); }
+            50%       { box-shadow: 0 3px 5px rgba(0,0,0,0.2), 0 0 0 8px rgba(52,152,219,0); }
+        }
+        .header-sim-btn:hover { background-color: #2980b9; transform: translateY(-1px); }
+        .header-sim-btn:disabled { background-color: #95a5a6; cursor: not-allowed; transform: none; animation: none; }
+        .header-reset-btn { background-color: #e74c3c !important; animation: none !important; }
+        .header-reset-btn:hover { background-color: #c0392b !important; }
+        .header-event-log {
+            color: #e74c3c; font-weight: bold; font-size: 0.9em;
+            max-width: 160px; text-align: center; line-height: 1.3;
+        }
+        .toggle-btn-container { text-align: center; margin-bottom: 10px; }
+        .toggle-rules-btn { background-color: #f39c12; padding: 7px 12px; font-size: 0.9em; font-weight: bold; white-space: nowrap; }
+        .toggle-rules-btn:hover { background-color: #e67e22; }
+
+        /* Left Side: conclusion spans full width, then controls+population side by side */
+        .game-left { flex: 1; display: flex; flex-direction: column; min-width: 0; gap: 0; }
+        .game-left-row { display: flex; gap: 12px; flex: 1; min-height: 0; align-items: stretch; }
+
+        .collapsible-panel {
+            background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 12px; flex: 0 0 auto; display: flex; flex-direction: column;
+        }
+        /* panels inside the row should fill height */
+        .game-left-row .collapsible-panel {
+            margin-bottom: 0; flex: 1; display: flex; flex-direction: column;
+        }
+        .game-left-row .panel-content {
+            flex: 1; display: flex; flex-direction: column;
+        }
+
+        .panel-header {
+            background: #2c3e50; color: white; padding: 12px 16px; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;
+            transition: border-radius 0.2s; flex-shrink: 0;
+        }
+        .panel-header.expanded { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        .panel-header h3 { margin: 0; font-size: 1.1em; display: flex; align-items: center; gap: 8px;}
+        .toggle-icon { font-size: 1.2em; font-weight: bold; }
+        .panel-content { padding: 16px; }
+
+        /* Right Side: Data Dashboard — gets more space */
+        .game-right {
+            flex: 1.8; background: white; padding: 16px; border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; flex-direction: column; min-width: 0;
+            position: relative;
+        }
+
+        .controls { text-align: center; }
+        .dice-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 12px; flex-wrap: wrap; }
+        .dice-group { display: flex; align-items: center; gap: 8px; }
+        .dice-wrapper { cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; align-items: center; }
+        .dice-wrapper:hover { transform: scale(1.05); }
+        .dice-box {
+            width: 52px; height: 52px; background: white; border: 3px solid #34495e; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; font-size: 34px;
+            color: #2c3e50; box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+        .dice-box.rolling { animation: diceShake 0.08s infinite; }
+        @keyframes diceShake {
+            0%   { transform: rotate(-6deg) scale(1.05); }
+            50%  { transform: rotate(6deg) scale(0.97); }
+            100% { transform: rotate(-6deg) scale(1.05); }
+        }
+        .dice-label { font-weight: bold; color: #7f8c8d; font-size: 0.75em; margin-bottom: 2px; }
+
+        button {
+            background-color: #3498db; color: white; border: none; padding: 12px 24px; font-size: 1em;
+            font-weight: bold; border-radius: 8px; cursor: pointer; transition: background 0.3s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2); margin: 0 5px;
+        }
+        button:hover { background-color: #2980b9; transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+        button:disabled { background-color: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        .pulsating-shock, .header-sim-btn.pulsating-shock { background-color: #e74c3c !important; animation: pulse-red 1.5s infinite !important; }
+        @keyframes pulse-red {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+
+        .status-board { display: flex; gap: 15px; flex: 1; min-height: 0; }
+        .status-card { background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; display: flex; flex-direction: column; border: 1px solid #ecf0f1; }
+        .status-card h3 { font-size: 1.4em; margin: 0 0 5px 0; color: #2c3e50; text-align: center; }
+        .pop-text { font-size: 1.3em; margin: 5px 0; text-align: center; }
+        .pop-subtext { font-size: 1em; color: #7f8c8d; font-weight: bold; text-align: center; margin-bottom: 10px;}
+        
+        .population-dots {
+            display: flex; flex-wrap: wrap; gap: 12px; flex: 1; overflow-y: auto; max-height: 300px;
+            justify-content: center; align-content: flex-start; padding: 10px; background: white; border: 1px solid #bdc3c7; border-radius: 6px;
+        }
+        
+        .dot {
+            width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 42px; background-color: #ffffff; border: 8px solid; box-shadow: 2px 4px 8px rgba(0,0,0,0.2); transition: transform 0.2s; box-sizing: border-box;
+        }
+        .dot:hover { transform: scale(1.15); }
+        
+        .view-toggle { display: flex; justify-content: center; margin-bottom: 15px; gap: 15px; flex: 0 0 auto;}
+        .view-toggle button { background-color: #bdc3c7; color: #2c3e50; box-shadow: none; padding: 10px 20px;}
+        .view-toggle button.active-toggle { background-color: #27ae60; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+
+        #graphView { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative;}
+        #tableView { display: none; flex: 1; overflow-y: auto; min-height: 0; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 1.1em; }
+        th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: center; }
+        th { background-color: #34495e; color: white; position: sticky; top: 0; z-index: 10; }
+        .alert { color: #e74c3c; font-weight: bold; font-size: 1.2em; margin-top: 10px;}
+        .shock-row { background-color: #ffebee; }
+
+        /* Conclusion Carousel & Layout */
+        .question-slide { display: none; }
+        .question-slide.active { display: block; animation: slideFade 0.4s ease; }
+        @keyframes slideFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .locked-radio-group { pointer-events: none; opacity: 0.9; margin-top: 10px; }
+        .locked-radio-group label { color: #7f8c8d; display: flex; align-items: center; }
+        .locked-radio-group input:checked + span { font-weight: bold; color: #2c3e50; }
+        
+        .carousel-controls { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ecf0f1; }
+        .step-indicator { font-weight: bold; color: #7f8c8d; font-size: 1.1em; }
+
+        /* Physical Graph Label Markers (A, B, C, D) */
+        .graph-label-marker {
+            position: absolute; width: 35px; height: 35px; color: white; border-radius: 50%; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px;
+            transform: translate(-50%, -100%); margin-top: -12px; z-index: 100;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 3px solid white;
+            transition: transform 0.1s, background 0.2s, color 0.2s; display: none; 
+        }
+        .graph-label-marker::after {
+            content: ''; position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%);
+            border-width: 12px 8px 0; border-style: solid; border-color: white transparent transparent transparent; z-index: -1;
+        }
+        .graph-label-marker::before {
+            content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+            border-width: 9px 5px 0; border-style: solid; border-color: inherit transparent transparent transparent; z-index: 1; transition: border-color 0.2s;
+        }
+
+        #marker-A { background: #34495e; border-bottom-color: #34495e; }
+        #marker-B { background: #34495e; border-bottom-color: #34495e; }
+        #marker-C { background: #34495e; border-bottom-color: #34495e; }
+        #marker-D { background: #34495e; border-bottom-color: #34495e; }
+
+        .graph-label-marker.hovered-sl-grow { background: rgb(0, 216, 214) !important; border-bottom-color: rgb(0, 216, 214) !important; color: black; transform: translate(-50%, -100%) scale(1.2); }
+        .graph-label-marker.hovered-sl-drop { background: rgb(255, 94, 87) !important; border-bottom-color: rgb(255, 94, 87) !important; color: white; transform: translate(-50%, -100%) scale(1.2); }
+        .graph-label-marker.hovered-h-grow { background: rgb(11, 232, 129) !important; border-bottom-color: rgb(11, 232, 129) !important; color: black; transform: translate(-50%, -100%) scale(1.2); }
+        .graph-label-marker.hovered-h-drop { background: rgb(255, 168, 1) !important; border-bottom-color: rgb(255, 168, 1) !important; color: black; transform: translate(-50%, -100%) scale(1.2); }
+
+        /* Review Mode Overrides */
+        .review-mode .question-slide { display: block; margin-bottom: 20px; animation: none; }
+        .review-mode .carousel-controls { display: none; }
+        .review-mode .feedback-text { display: block; }
+
+        /* Compact Population Panel */
+        .pop-compact-grid { display: flex; flex-direction: column; gap: 14px; flex: 1; }
+        .pop-compact-section { flex: 1; min-width: 0; }
+        .pop-compact-title {
+            font-weight: bold; font-size: 1em; margin-bottom: 6px;
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        }
+        .pop-total-badge {
+            font-size: 0.78em; background: #ecf0f1; color: #7f8c8d;
+            padding: 2px 7px; border-radius: 10px; font-weight: normal;
+        }
+        .pop-col-headers {
+            display: grid; grid-template-columns: 68px 1fr 1fr;
+            font-size: 0.75em; color: #7f8c8d; font-weight: bold;
+            text-transform: uppercase; letter-spacing: 0.04em;
+            padding: 0 4px 4px 4px; border-bottom: 1px solid #ecf0f1;
+            margin-bottom: 4px;
+        }
+        .pop-col-headers span { text-align: center; }
+        .pop-col-headers span:first-child { text-align: left; }
+
+        .allele-row {
+            display: grid; grid-template-columns: 68px 1fr 1fr;
+            align-items: center; padding: 6px 4px;
+            border-radius: 6px; margin-bottom: 4px;
+            background: #f8f9fa; transition: opacity 0.4s;
+            position: relative; overflow: visible;
+        }
+        .allele-row.extinct { opacity: 0.4; }
+        .allele-row.pop-in { animation: popIn 0.35s ease; }
+        @keyframes popIn { from { opacity:0; transform: scale(0.7); } to { opacity:1; transform: scale(1); } }
+
+        .allele-dot {
+            width: 58px; height: 58px; border-radius: 50%;
+            border: 7px solid; background: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px; box-sizing: border-box;
+        }
+
+        /* Delta flash — anchored to allele-row, floats up from between Alive and Deaths */
+        .allele-dot-wrap {
+            position: relative;
+            width: 58px; height: 58px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .allele-count {
+            text-align: center; font-size: 1.25em; font-weight: bold;
+            color: #2c3e50;
+        }
+        .allele-deaths {
+            text-align: center; font-size: 1.25em; font-weight: bold;
+            color: #e74c3c;
+        }
+        .allele-count {
+            text-align: center; font-size: 1.25em; font-weight: bold;
+            color: #2c3e50;
+        }
+        .allele-deaths {
+            text-align: center; font-size: 1.25em; font-weight: bold;
+            color: #e74c3c;
+        }
+        .delta-flash {
+            position: absolute;
+            left: 62.5%; top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2em; font-weight: bold; pointer-events: none;
+            animation: deltaFade 1.8s ease forwards; white-space: nowrap; z-index: 50;
+            border-radius: 8px; padding: 2px 10px; line-height: 1.5;
+        }
+        .delta-flash.positive { color: #27ae60; background: rgba(39,174,96,0.15); border: 1px solid rgba(39,174,96,0.3); }
+        .delta-flash.negative { color: #e74c3c; background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.3); }
+        @keyframes deltaFade {
+            0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            20%  { opacity: 1; transform: translate(-50%, -60%) scale(1.15); }
+            65%  { opacity: 1; transform: translate(-50%, -75%); }
+            100% { opacity: 0; transform: translate(-50%, -95%); }
+        }
+
+        /* Touch Drag-and-Drop override for Q6 */
+        .draggable-item.touch-dragging {
+            position: fixed; z-index: 9999; opacity: 0.85;
+            pointer-events: none; box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            transform: scale(1.05);
+        }
+        .drop-zone.drag-over { background: #d6eaf8; border: 2px dashed #2980b9; }
+
+        /* localStorage Resume Modal */
+        #resumeModal .modal-content { max-width: 500px; }
+
+        /* ── Floating Conclusion Window ── */
+        #conclusionPanel {
+            position: fixed;
+            top: 20px; left: 20px;
+            width: 620px; max-width: calc(100vw - 40px);
+            height: 520px; max-height: calc(100vh - 60px);
+            min-width: 340px; min-height: 200px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+            border: 2px solid #27ae60;
+            z-index: 1000;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            resize: both;
+        }
+        .conclusion-titlebar {
+            background: #27ae60; color: white;
+            padding: 10px 14px;
+            display: flex; align-items: center; justify-content: space-between;
+            cursor: grab; user-select: none; flex-shrink: 0;
+            border-radius: 8px 8px 0 0;
+        }
+        .conclusion-titlebar:active { cursor: grabbing; }
+        .conclusion-title { font-weight: bold; font-size: 1em; }
+        .conclusion-titlebar-btns { display: flex; gap: 6px; align-items: center; }
+        .conclusion-size-btn {
+            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4);
+            color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75em;
+            cursor: pointer; font-weight: bold; white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .conclusion-size-btn:hover { background: rgba(255,255,255,0.4); }
+        .conclusion-min-btn {
+            background: rgba(255,255,255,0.25); border: none; color: white;
+            width: 26px; height: 26px; border-radius: 50%; font-size: 1.1em;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; line-height: 1; transition: background 0.2s;
+        }
+        .conclusion-min-btn:hover { background: rgba(255,255,255,0.45); }
+        .conclusion-body {
+            overflow-y: auto; padding: 16px;
+            flex: 1; min-height: 0;
+        }
+        #conclusionPanel.minimized .conclusion-body { display: none; }
+        #conclusionPanel.minimized { max-height: none; height: auto !important; resize: none; }
+        #conclusionPanel.minimized .conclusion-titlebar { border-radius: 8px; }
+        /* Resize handle hint */
+        #conclusionPanel::after {
+            content: '⤡';
+            position: absolute; bottom: 4px; right: 6px;
+            font-size: 14px; color: #bdc3c7; pointer-events: none;
+            line-height: 1;
+        }
+        #conclusionPanel.minimized::after { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="customGraphTooltip"></div>
+
+    <div id="pinpointBanner">
+        📍 <strong>Analysis Mode:</strong> Hover over the lines to highlight them, then click to select your evidence!<br>
+        <button onclick="cancelPinpoint()" style="margin-top:10px; background:white; color:#f39c12; border:none; padding:8px 20px; font-size:0.8em; font-weight:bold; cursor:pointer; border-radius:20px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">Cancel Selection</button>
+    </div>
+
+    <div id="quizModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 800px;">
+            <h2 style="color: #2980b9;">📝 Quick Knowledge Check!</h2>
+            <p>Before we start the simulation, let's make sure we understand the model.<br><br><strong>What do the different colored rings on the tokens represent?</strong></p>
+            
+            <button class="quiz-option" onclick="handleQuizAnswer(this, false)">A) Different species of animals competing for food.</button>
+            <button class="quiz-option" onclick="handleQuizAnswer(this, true)">B) Different alleles (versions of a gene), showing genetic variation.</button>
+            <button class="quiz-option" onclick="handleQuizAnswer(this, false)">C) The age of the organism (e.g., green means they are older).</button>
+            <button class="quiz-option" onclick="handleQuizAnswer(this, false)">D) Whether the organism is male or female.</button>
+
+            <div id="quizFeedback"></div>
+            
+            <div style="margin-top: 20px;">
+                <button id="proceedToGameBtn" style="display: none; padding: 18px 36px; font-size: 1.5em; background-color: #27ae60;" onclick="proceedFromQuiz()">Correct! Enter Simulation ➔</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="rulesModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>📋 Game Rules</h2>
+            <div class="scale-note">
+                🔬 <strong>Scale Note:</strong> To show realistic population growth in nature, each 🦭 token equals <strong>1 Family Pod (100 Sea Lions)</strong>, and each 🦑 token equals <strong>1 Colony (10,000 Hydras)</strong>!
+            </div>
+            <p>Every dice roll represents the number of new populations produced for that year.</p>
+            <div class="rules-grid" style="margin-bottom: 30px;">
+                <div>
+                    <strong>🦭 Sea Lions (Sexual Reproducer)</strong><br><br>
+                    Roll <strong>1, 2, or 3</strong> = Add 1 Pod <em>(100)</em><br>
+                    <em>(Random Allele Color)</em><br><br>
+                    Roll <strong>4, 5, or 6</strong> = Add 2 Pods <em>(200)</em><br>
+                    <em>(Random Allele Color)</em>
+                </div>
+                <div>
+                    <strong>🦑 Hydras (Asexual Reproducer)</strong><br><br>
+                    Roll <strong>1</strong> = Add 2 Colonies <em>(20,000)</em><br>
+                    <em>(Same Purple Clone)</em><br><br>
+                    Roll <strong>2, 3, 4, 5, or 6</strong> = Add 4 Colonies <em>(40,000)</em><br>
+                    <em>(Same Purple Clone)</em>
+                </div>
+            </div>
+            <button style="padding: 20px 40px; font-size: 1.5em; background-color: #27ae60;" onclick="startGameFromModal()">I've read the rules, let's play!</button>
+        </div>
+    </div>
+
+    <div id="eventModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="eventModalTitle" style="color: #e74c3c;">🚨 DISEASE OUTBREAK! 🚨</h2>
+            <p id="eventModalText"></p>
+            <div class="event-stats" id="eventModalStats"></div>
+            <button style="padding: 18px 36px; font-size: 1.5em;" onclick="closeEventModal()">Acknowledge & Continue</button>
+        </div>
+    </div>
+
+    <div id="resumeModal" class="modal-overlay">
+        <div class="modal-content" style="max-width:500px;">
+            <h2 style="color:#2c3e50;">⏸️ Resume Simulation?</h2>
+            <p>It looks like you have a simulation in progress (Year <span id="resumeYearLabel"></span> of 10). Would you like to pick up where you left off, or start fresh?</p>
+            <div style="display:flex; gap:15px; justify-content:center; margin-top:10px;">
+                <button style="background:#27ae60; padding:14px 28px; font-size:1.1em;" onclick="resumeGame()">▶ Resume</button>
+                <button style="background:#e74c3c; padding:14px 28px; font-size:1.1em;" onclick="startFresh()">🗑️ Start Fresh</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="introScreen">
+        <div class="intro-header">
+            <h1>Welcome to the Population Simulator!</h1>
+            <p class="intro-subtitle">Before we track our species, let's look at how they reproduce.</p>
+        </div>
+
+        <div class="prompt-box">
+            <strong>🕵️ Observation Check: Genes and Alleles</strong><br><br>
+            Just like we've modeled genes using letters in Punnett squares, in this game we are modeling genes found on chromosomes using <strong>colors</strong>. Each different color represents a different <strong>allele</strong> (a version of a gene). <br><br>
+            It doesn't matter what specific trait the color stands for—what matters is that the different colors visually show us genetic variation!<br><br>
+            Look at the animations below. Notice how the Sea Lion offspring inherit different alleles (colored rings) than their parents, but the Hydra offspring has the exact same allele as its single parent. Keep this in mind as we begin the 10-year simulation!
+        </div>
+        
+        <div class="demo-section">
+            <h3>Reproduction Mechanics</h3>
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h4>Species A: Sea Lion 🦭</h4>
+                    <p><strong>Sexual Reproduction:</strong> Combines a sperm and egg cell from two parents.</p>
+                    <button onclick="playSexDemo()">Play Animation</button>
+                    <div class="demo-screen" id="screenSex">
+                        <div class="dot p1" style="border-color: #e74c3c;">🦭</div>
+                        <div class="dot p2" style="border-color: #3498db;">🦭</div>
+                        <div class="cell egg-cell"></div>
+                        <div class="cell sperm-cell"></div>
+                        <div class="dot off1" style="border-color: #2ecc71;">🦭</div>
+                        <div class="dot off2" style="border-color: #9b59b6;">🦭</div>
+                        <div class="demo-caption cap-sex">Genetically Varied Offspring!</div>
+                    </div>
+                </div>
+                
+                <div class="demo-card">
+                    <h4>Species B: Hydra 🦑</h4>
+                    <p><strong>Asexual Reproduction:</strong> One parent creates an exact genetic copy (a clone) of itself.</p>
+                    <button onclick="playAsexDemo()">Play Animation</button>
+                    <div class="demo-screen" id="screenAsex">
+                        <div class="dot a-p1" style="border-color: #9b59b6;">🦑</div>
+                        <div class="dot bud-cell dot">🦑</div>
+                        <div class="dot a-off" style="border-color: #9b59b6;">🦑</div>
+                        <div class="demo-caption cap-asex">Exact Genetic Clone!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button style="padding: 18px 36px; font-size: 1.3em;" onclick="showQuizModal()">I understand. Let's begin the simulation!</button>
+        </div>
+    </div>
+
+    <div id="gameInterface">
+        
+        <div class="game-header-bar">
+            <h1>Level 1: Sexual vs. Asexual Reproduction Simulator</h1>
+            <div class="header-controls">
+                <div class="header-dice-group">
+                    <div class="header-dice-wrapper" onclick="handleMainButton()">
+                        <div class="dice-label">Sea Lion</div>
+                        <div class="dice-box" id="slDice">🎲</div>
+                    </div>
+                    <div class="header-dice-wrapper" onclick="handleMainButton()">
+                        <div class="dice-label">Hydra</div>
+                        <div class="dice-box" id="hDice">🎲</div>
+                    </div>
+                </div>
+                <button id="simBtn" onclick="handleMainButton()" class="header-sim-btn">Roll Dice — Year <span id="yearDisplay">1</span>/10</button>
+                <button id="resetBtn" onclick="resetGame()" style="display:none;" class="header-sim-btn header-reset-btn">🔄 Start Over</button>
+                <div id="eventLog" class="header-event-log"></div>
+            </div>
+            <button class="toggle-rules-btn" onclick="toggleRules()">📋 Rules</button>
+        </div>
+
+        <div id="collapsibleRules" class="collapsible-rules">
+            <div class="scale-note" style="text-align: center; margin-bottom: 10px;">
+                🔬 <strong>Scale Note:</strong> 1 🦭 = <strong>1 Pod (100 Sea Lions)</strong> | 1 🦑 = <strong>1 Colony (10,000 Hydras)</strong>
+            </div>
+            <p style="text-align: center; font-size: 1.1em; margin-top: 0;">Every dice roll represents the number of new populations produced for that year.</p>
+            <div class="rules-grid">
+                <div>
+                    <strong>🦭 Sea Lions (Sexual Reproducer)</strong><br><br>
+                    Roll <strong>1, 2, or 3</strong> = Add 1 Pod <em>(100)</em><br>
+                    <em>(Random Allele Color)</em><br><br>
+                    Roll <strong>4, 5, or 6</strong> = Add 2 Pods <em>(200)</em><br>
+                    <em>(Random Allele Color)</em>
+                </div>
+                <div>
+                    <strong>🦑 Hydras (Asexual Reproducer)</strong><br><br>
+                    Roll <strong>1</strong> = Add 2 Colonies <em>(20,000)</em><br>
+                    <em>(Same Purple Clone)</em><br><br>
+                    Roll <strong>2, 3, 4, 5, or 6</strong> = Add 4 Colonies <em>(40,000)</em><br>
+                    <em>(Same Purple Clone)</em>
+                </div>
+            </div>
+        </div>
+        
+        <div class="game-main">
+            <div class="game-left">
+                
+                <div class="game-left-row">
+
+                <div class="collapsible-panel" id="populationPanel" style="flex:1; min-width:0;">
+                    <div class="panel-header expanded" onclick="togglePanel('populationContent', this)">
+                        <h3>🦭 🦑 Live Populations</h3>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div class="panel-content" id="populationContent" style="padding: 10px 12px;">
+                        <div class="pop-compact-grid">
+                            <!-- Sea Lions -->
+                            <div class="pop-compact-section">
+                                <div class="pop-compact-title" style="color:#3498db;">🦭 Sea Lions <span class="pop-total-badge" id="slTotalBadge">400 indiv.</span></div>
+                                <div class="pop-col-headers"><span>Allele</span><span>Alive</span><span>Deaths</span></div>
+                                <div id="slAlleleRows"></div>
+                            </div>
+                            <!-- Hydras -->
+                            <div class="pop-compact-section">
+                                <div class="pop-compact-title" style="color:#9b59b6;">🦑 Hydras <span class="pop-total-badge" id="hTotalBadge">40,000 indiv.</span></div>
+                                <div class="pop-col-headers"><span>Allele</span><span>Alive</span><span>Deaths</span></div>
+                                <div id="hAlleleRows"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                </div><!-- end .game-left-row -->
+            </div><!-- end .game-left -->
+
+            <div class="game-right">
+                <div class="view-toggle">
+                    <button id="viewGraphBtn" class="active-toggle" onclick="showGraph()">📈 View Live Graph</button>
+                    <button id="viewTableBtn" onclick="showTable()">📊 View Data Table</button>
+                </div>
+
+                <div id="graphView">
+                    <div id="marker-A" class="graph-label-marker" onmouseenter="isHoveringMarker=true; setHover('sl-grow')" onmouseleave="isHoveringMarker=false; setHover(null)" onclick="selectSegment('sl-grow')">A</div>
+                    <div id="marker-B" class="graph-label-marker" onmouseenter="isHoveringMarker=true; setHover('sl-drop')" onmouseleave="isHoveringMarker=false; setHover(null)" onclick="selectSegment('sl-drop')">B</div>
+                    <div id="marker-C" class="graph-label-marker" onmouseenter="isHoveringMarker=true; setHover('h-grow')" onmouseleave="isHoveringMarker=false; setHover(null)" onclick="selectSegment('h-grow')">C</div>
+                    <div id="marker-D" class="graph-label-marker" onmouseenter="isHoveringMarker=true; setHover('h-drop')" onmouseleave="isHoveringMarker=false; setHover(null)" onclick="selectSegment('h-drop')">D</div>
+
+                    <canvas id="popChart"></canvas> 
+                </div>
+
+                <div id="tableView">
+                    <table id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>Event/Year</th>
+                                <th>Sea Lion Pop<br><small>(Total Pods)</small></th>
+                                <th>Hydra Pop<br><small>(Total Colonies)</small></th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── Collapsible Panel Logic ──────────────────────────────────────────
+        function togglePanel(contentId, headerEl) {
+            const content = document.getElementById(contentId);
+            const icon = headerEl.querySelector('.toggle-icon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.innerText = '▼';
+                headerEl.classList.add('expanded');
+            } else {
+                content.style.display = 'none';
+                icon.innerText = '▶';
+                headerEl.classList.remove('expanded');
+            }
+        }
+
+        // ── Touch-enabled Drag and Drop for Question 6 ──────────────────────
+        let touchDragEl = null;
+        let touchClone = null;
+        let touchOffsetX = 0, touchOffsetY = 0;
+
+        function allowDrop(ev) { ev.preventDefault(); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+        function drop(ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var item = document.getElementById(data);
+            let target = ev.target.closest('.drop-zone, #dragBank');
+            if (target) target.appendChild(item);
+        }
+
+        // Pointer-events touch drag
+        function initTouchDrag() {
+            document.querySelectorAll('.draggable-item').forEach(el => {
+                el.addEventListener('touchstart', onTouchStart, { passive: false });
+            });
+        }
+
+        function onTouchStart(e) {
+            if (e.touches.length !== 1) return;
+            e.preventDefault();
+            touchDragEl = e.currentTarget;
+            const touch = e.touches[0];
+            const rect = touchDragEl.getBoundingClientRect();
+            touchOffsetX = touch.clientX - rect.left;
+            touchOffsetY = touch.clientY - rect.top;
+
+            touchClone = touchDragEl.cloneNode(true);
+            touchClone.classList.add('touch-dragging');
+            touchClone.style.width = rect.width + 'px';
+            touchClone.style.left = (touch.clientX - touchOffsetX) + 'px';
+            touchClone.style.top  = (touch.clientY - touchOffsetY) + 'px';
+            document.body.appendChild(touchClone);
+
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+            document.addEventListener('touchend', onTouchEnd);
+        }
+
+        function onTouchMove(e) {
+            if (!touchClone) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            touchClone.style.left = (touch.clientX - touchOffsetX) + 'px';
+            touchClone.style.top  = (touch.clientY - touchOffsetY) + 'px';
+
+            document.querySelectorAll('.drop-zone, #dragBank').forEach(z => z.classList.remove('drag-over'));
+            touchClone.style.display = 'none';
+            const under = document.elementFromPoint(touch.clientX, touch.clientY);
+            touchClone.style.display = '';
+            if (under) {
+                let el = under;
+                while (el && el !== document.body) {
+                    if (el.classList && (el.classList.contains('drop-zone') || el.id === 'dragBank')) {
+                        el.classList.add('drag-over');
+                        break;
+                    }
+                    el = el.parentElement;
+                }
+            }
+        }
+
+        function onTouchEnd(e) {
+            document.removeEventListener('touchmove', onTouchMove);
+            document.removeEventListener('touchend', onTouchEnd);
+            document.querySelectorAll('.drop-zone, #dragBank').forEach(z => z.classList.remove('drag-over'));
+
+            if (touchClone) { touchClone.remove(); touchClone = null; }
+            if (!touchDragEl) return;
+
+            const touch = e.changedTouches[0];
+            // Temporarily hide the clone so elementFromPoint can see what's underneath
+            let under = document.elementFromPoint(touch.clientX, touch.clientY);
+
+            // Walk up from whatever element we hit to find a valid drop target
+            // This handles: text nodes inside chips, the chip itself, padding area of zone
+            let zone = null;
+            let el = under;
+            while (el && el !== document.body) {
+                if (el.classList && (el.classList.contains('drop-zone') || el.id === 'dragBank')) {
+                    zone = el;
+                    break;
+                }
+                // If we land on a draggable-item already in a zone, use its parent zone
+                if (el.classList && el.classList.contains('draggable-item') && el !== touchDragEl) {
+                    const parent = el.parentElement;
+                    if (parent && (parent.classList.contains('drop-zone') || parent.id === 'dragBank')) {
+                        zone = parent;
+                        break;
+                    }
+                }
+                el = el.parentElement;
+            }
+
+            if (zone) zone.appendChild(touchDragEl);
+            touchDragEl = null;
+        }
+
+        // Conclusion Carousel Logic
+        let currentQ = 1;
+        const totalQ = 6;
+        let attempts = 0; 
+
+        function updateCarousel() {
+            document.querySelectorAll('.question-slide').forEach((el, index) => {
+                if(index + 1 === currentQ) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+            document.getElementById('prevBtn').disabled = (currentQ === 1);
+            if (currentQ === totalQ) {
+                document.getElementById('nextBtn').style.display = 'none';
+                document.getElementById('submitBtn').style.display = 'inline-block';
+            } else {
+                document.getElementById('nextBtn').style.display = 'inline-block';
+                document.getElementById('submitBtn').style.display = 'none';
+            }
+            document.getElementById('stepIndicator').innerText = `${currentQ} / ${totalQ}`;
+        }
+        function nextQuestion() { if(currentQ < totalQ) { currentQ++; updateCarousel(); } }
+        function prevQuestion() { if(currentQ > 1) { currentQ--; updateCarousel(); } }
+
+        function submitConclusion() {
+            if (!document.getElementById('conclusionCarousel').classList.contains('review-mode')) {
+                document.getElementById('conclusionCarousel').classList.add('review-mode');
+            }
+            attempts++;
+            let allCorrect = true;
+
+            // Grade Q1 (Graph Selection)
+            const q1Org = document.getElementById('q1-org').value;
+            const q1Ev = document.querySelector('input[name="q1-ev"]:checked')?.value;
+            const fb1 = document.getElementById('q1-feedback');
+            if (q1Org === 'hydra' && q1Ev === 'h-grow') {
+                document.getElementById('q1-block').style.borderColor = '#27ae60';
+                fb1.innerHTML = '<span style="color:#27ae60; background:#e8f8f5;">✅ Correct! Hydras grow exponentially because every clone reproduces. The steep slope proves this!</span>';
+            } else if (q1Org === 'hydra' && q1Ev !== 'h-grow') {
+                allCorrect = false;
+                document.getElementById('q1-block').style.borderColor = '#e74c3c';
+                fb1.innerHTML = '<span style="color:#e74c3c; background:#ffebee;">❌ You identified the right organism — Hydra did grow faster! But check your graph evidence again. Which line segment shows the Hydra growing? Use the 📍 button to explore.</span>';
+            } else if (q1Org !== 'hydra' && q1Ev === 'h-grow') {
+                allCorrect = false;
+                document.getElementById('q1-block').style.borderColor = '#e74c3c';
+                fb1.innerHTML = '<span style="color:#e74c3c; background:#ffebee;">❌ You selected the right line segment (Hydra\'s rapid growth), but reconsider which organism that segment belongs to. Which species does the orange line represent?</span>';
+            } else {
+                allCorrect = false;
+                document.getElementById('q1-block').style.borderColor = '#e74c3c';
+                fb1.innerHTML = '<span style="color:#e74c3c; background:#ffebee;">❌ Try again. Look at the graph — which organism\'s line grew more steeply? Use the 📍 button to select your evidence.</span>';
+            }
+
+            // Grade Q2 (Slope Reasoning)
+            const q2Val = document.querySelector('input[name="q2"]:checked')?.value;
+            const fb2 = document.getElementById('q2-feedback');
+            if (q2Val === 'A') {
+                document.getElementById('q2-block').style.borderColor = '#27ae60';
+                fb2.innerHTML = '<span style="color:#27ae60; background:#e8f8f5;">✅ Correct! A steeper slope means the population is changing very quickly.</span>';
+            } else {
+                allCorrect = false;
+                document.getElementById('q2-block').style.borderColor = '#e74c3c';
+                fb2.innerHTML = '<span style="color:#e74c3c; background:#ffebee;">❌ Try again. Think about what the Y-axis (Population) and X-axis (Timeline) measure together.</span>';
+            }
+            
+            // Grade Q3 (Old Q2 - Disease Survival)
+            const q3Val = document.querySelector('input[name="q3"]:checked')?.value;
+            const fb3 = document.getElementById('q3-feedback');
+            if (q3Val === 'B') {
+                document.getElementById('q3-block').style.borderColor = '#27ae60';
+                fb3.innerHTML = '<span style="color:#27ae60; background:#e8f8f5;">✅ Correct! Genetic variation acts like a shield for the overall population.</span>';
+            } else {
+                allCorrect = false;
+                document.getElementById('q3-block').style.borderColor = '#e74c3c';
+                fb3.innerHTML = '<span style="color:#e74c3c; background:#ffebee;">❌ Try again. Think about what the different colors represent.</span>';
+            }
+
+            // Grade Q4 (Old Q3 - Year 8 Decline)
+            const q4Org = document.getElementById('q4-org').value;
+            const q4Val = document.querySelector('input[name="q4-reason"]:checked')?.value;
+            const fb4 = document.getElementById('q4-feedback');
+            if (q4Org === 'hydra' && q4Val === 'A') {
+                document.getElementById('q4-block').style.borderColor = '#27ae60';
+                fb4.innerHTML = '<span style="color:#27ae60; background:#e8f8f5;">✅ Correct! Because they are identical clones, an illness that kills one kills almost all of them.</span>';
+            } else if (q4Org === 'hydra' && q4Val !== 'A') {
+                allCorrect = false;
+                document.getElementById('q4-block').style.borderColor = '#e74c3c';
+                fb4.innerHTML = '<span style="color:#e74c3c; background:#ffebee;">❌ You identified the right population — Hydras did decline more! But think about <em>why</em>. Since every Hydra is an identical clone, what happens when a disease targets their shared allele?</span>';
+            } else if (q4Org !== 'hydra' && q4Val === 'A') {
+                allCorrect = false;
+                document.getElementById('q4-block').style.borderColor = '#e74c3c';
+                fb4.innerHTML = '<span style="color:#e74c3c; background:#ffebee;">❌ Your reasoning is correct — lack of genetic variation is the key! But which population actually lost more at Year 8? Check the data table for the Year 8 Drop row.</span>';
+            } else {
+                allCorrect = false;
+                document.getElementById('q4-block').style.borderColor = '#e74c3c';
+                fb4.innerHTML = '<span style="color:#e74c3c; background:#ffebee;">❌ Try again. Look at the data table for the Year 8 Drop row to see who lost more. Then think about what clones all have in common.</span>';
+            }
+
+            // Grade Q5 (Old Q4 - Genetic Variation)
+            const q5Org = document.getElementById('q5-org').value;
+            const q5Val = document.querySelector('input[name="q5-ev"]:checked')?.value;
+            const fb5 = document.getElementById('q5-feedback');
+            if (q5Org === 'sealion' && q5Val === 'B') {
+                document.getElementById('q5-block').style.borderColor = '#27ae60';
+                fb5.innerHTML = '<span style="color:#27ae60; background:#e8f8f5;">✅ Correct! The different colors visualize the genetic diversity.</span>';
+            } else {
+                allCorrect = false;
+                document.getElementById('q5-block').style.borderColor = '#e74c3c';
+                fb5.innerHTML = '<span style="color:#e74c3c; background:#ffebee;">❌ Try again. Remember what the tokens represent.</span>';
+            }
+
+            // Grade Q6 (Drag and Drop Grid)
+            const asexAdv = Array.from(document.getElementById('asex-adv').children).map(el => el.id);
+            const asexDis = Array.from(document.getElementById('asex-dis').children).map(el => el.id);
+            const sexAdv = Array.from(document.getElementById('sex-adv').children).map(el => el.id);
+            const sexDis = Array.from(document.getElementById('sex-dis').children).map(el => el.id);
+
+            const q6Correct = 
+                asexAdv.includes('item-fast') && asexAdv.includes('item-nomate') && asexAdv.length === 2 &&
+                asexDis.includes('item-clones') && asexDis.length === 1 &&
+                sexAdv.includes('item-var') && sexAdv.length === 1 &&
+                sexDis.includes('item-slow') && sexDis.includes('item-mate') && sexDis.length === 2;
+
+            const fb6 = document.getElementById('q6-feedback');
+            if (q6Correct) {
+                document.getElementById('q6-block').style.borderColor = '#27ae60';
+                fb6.innerHTML = '<span style="color:#27ae60; background:#e8f8f5;">✅ Perfect! You correctly categorized the trade-offs of each reproductive strategy.</span>';
+            } else {
+                allCorrect = false;
+                document.getElementById('q6-block').style.borderColor = '#e74c3c';
+                fb6.innerHTML = '<span style="color:#e74c3c; background:#ffebee;">❌ Try again. Make sure all items are dragged out of the bank and placed into their correct categories! Think about what happened during the disease shocks.</span>';
+            }
+
+            // Display Summary Banner
+            const summary = document.getElementById('conclusionSummary');
+            summary.style.display = 'block';
+            const retryBtn = document.getElementById('retryBtn');
+
+            if (allCorrect) {
+                summary.style.backgroundColor = '#e8f8f5';
+                summary.style.color = '#27ae60';
+                summary.style.border = '2px solid #27ae60';
+                summary.innerHTML = `🎉 Congratulations! You got all questions correct in ${attempts} attempt${attempts > 1 ? 's' : ''}!`;
+                retryBtn.style.display = 'none';
+            } else {
+                summary.style.backgroundColor = '#ffebee';
+                summary.style.color = '#e74c3c';
+                summary.style.border = '2px solid #e74c3c';
+                summary.innerHTML = `You have made ${attempts} attempt${attempts > 1 ? 's' : ''}. Some answers are still incorrect. Please review the feedback, update your answers, and try again!`;
+                retryBtn.style.display = 'inline-block';
+            }
+
+            // Scroll conclusion body back to top to show summary
+            document.getElementById('conclusionBody').scrollTop = 0;
+        }
+
+        // Intro Animations
+        function playSexDemo() {
+            const screen = document.getElementById('screenSex');
+            screen.classList.remove('run-sex');
+            void screen.offsetWidth; 
+            screen.classList.add('run-sex');
+        }
+        function playAsexDemo() {
+            const screen = document.getElementById('screenAsex');
+            screen.classList.remove('run-asex');
+            void screen.offsetWidth; 
+            screen.classList.add('run-asex');
+        }
+
+        // Quiz Modal Logic
+        function showQuizModal() { document.getElementById('quizModal').style.display = 'flex'; }
+        function handleQuizAnswer(btn, isCorrect) {
+            const options = document.querySelectorAll('#quizModal .quiz-option');
+            options.forEach(opt => {
+                opt.classList.remove('selected-wrong');
+                opt.classList.remove('selected-correct');
+            });
+            const feedback = document.getElementById('quizFeedback');
+            if (isCorrect) {
+                btn.classList.add('selected-correct');
+                feedback.innerHTML = '<span style="color:#27ae60;">Correct! The colors represent genetic variation through different alleles. You may now enter the simulation.</span>';
+                document.getElementById('proceedToGameBtn').style.display = 'inline-block';
+            } else {
+                btn.classList.add('selected-wrong');
+                feedback.innerHTML = '<span style="color:#e74c3c;">Not quite! Re-read the "Observation Check" on the main screen and try again!</span>';
+                document.getElementById('proceedToGameBtn').style.display = 'none';
+            }
+        }
+        function proceedFromQuiz() {
+            document.getElementById('quizModal').style.display = 'none';
+            transitionToGame();
+        }
+
+        // ── State Variables ──────────────────────────────────────────────────
+        const SAVE_KEY = 'sealion_hydra_sim_v1';
+        let year = 1;
+        const colors = ['#e74c3c', '#3498db', '#2ecc71', '#9b59b6'];
+        const colorNames = { '#e74c3c': 'Red', '#3498db': 'Blue', '#2ecc71': 'Green', '#9b59b6': 'Purple' };
+        let seaLions = [];
+        let hydras = [];
+        let isRolling = false;
+        let pendingShock = 0;
+        let pendingFlash = null;
+        // cumulative death tracking per allele color
+        let slDeaths = { '#e74c3c': 0, '#3498db': 0, '#2ecc71': 0, '#9b59b6': 0 };
+        let hDeaths   = { '#9b59b6': 0 };
+        // previous counts for delta flash
+        let prevSlCounts = {};
+        let prevHCount = 0;
+
+        let popChart;
+        let chartData = {
+            labels: ['Start'],
+            datasets: [
+                { label: 'Sea Lion Pods', borderColor: '#3498db', backgroundColor: '#3498db', data: [4], tension: 0.1, fill: false },
+                { label: 'Hydra Colonies', borderColor: '#e67e22', backgroundColor: '#e67e22', data: [4], tension: 0.1, fill: false }
+            ]
+        };
+
+        // ── localStorage Save / Resume ───────────────────────────────────────
+        function saveState() {
+            const tableHTML = document.getElementById('tableBody').innerHTML;
+            const state = {
+                year, seaLions, hydras, pendingShock,
+                slDeaths, hDeaths,
+                chartLabels: chartData.labels,
+                chartSL: chartData.datasets[0].data,
+                chartH:  chartData.datasets[1].data,
+                tableHTML
+            };
+            try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e) {}
+        }
+
+        function clearSave() {
+            try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+        }
+
+        function loadSavedState() {
+            try {
+                const raw = localStorage.getItem(SAVE_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch(e) { return null; }
+        }
+
+        function resumeGame() {
+            document.getElementById('resumeModal').style.display = 'none';
+            const state = loadSavedState();
+            if (!state) { startFresh(); return; }
+
+            year        = state.year;
+            seaLions    = state.seaLions;
+            hydras      = state.hydras;
+            pendingShock = state.pendingShock;
+            slDeaths    = state.slDeaths || { '#e74c3c':0,'#3498db':0,'#2ecc71':0,'#9b59b6':0 };
+            hDeaths     = state.hDeaths  || { '#9b59b6':0 };
+            chartData.labels           = state.chartLabels;
+            chartData.datasets[0].data = state.chartSL;
+            chartData.datasets[1].data = state.chartH;
+
+            document.getElementById('introScreen').style.display = 'none';
+            document.getElementById('gameInterface').style.display = 'flex';
+            window.scrollTo(0, 0);
+
+            document.getElementById('tableBody').innerHTML = state.tableHTML || '';
+            document.getElementById('slDice').innerText = "🎲";
+            document.getElementById('hDice').innerText  = "🎲";
+            document.getElementById('eventLog').innerText = "";
+            document.getElementById('conclusionPanel').style.display = 'none';
+
+            updateUI(false);
+            initChart();
+            updateButtonState();
+        }
+
+        function startFresh() {
+            document.getElementById('resumeModal').style.display = 'none';
+            clearSave();
+            document.getElementById('introScreen').style.display = 'block';
+            document.getElementById('gameInterface').style.display = 'none';
+        }
+
+        // ── UI Toggles ───────────────────────────────────────────────────────
+        function showGraph() {
+            document.getElementById('graphView').style.display = 'flex';
+            document.getElementById('tableView').style.display = 'none';
+            document.getElementById('viewGraphBtn').classList.add('active-toggle');
+            document.getElementById('viewTableBtn').classList.remove('active-toggle');
+        }
+        function showTable() {
+            document.getElementById('graphView').style.display = 'none';
+            document.getElementById('tableView').style.display = 'block';
+            document.getElementById('viewGraphBtn').classList.remove('active-toggle');
+            document.getElementById('viewTableBtn').classList.add('active-toggle');
+        }
+        function transitionToGame() {
+            document.getElementById('introScreen').style.display = 'none';
+            document.getElementById('gameInterface').style.display = 'flex';
+            window.scrollTo(0, 0);
+            document.getElementById('rulesModal').style.display = 'flex';
+        }
+        function startGameFromModal() {
+            document.getElementById('rulesModal').style.display = 'none';
+            initGame();
+        }
+        function toggleRules() {
+            const rulesDiv = document.getElementById('collapsibleRules');
+            if (rulesDiv.style.display === 'none' || rulesDiv.style.display === '') rulesDiv.style.display = 'block';
+            else rulesDiv.style.display = 'none';
+        }
+        function showEventModal(yearNum, slDied, hDied) {
+            const modal = document.getElementById('eventModal');
+            const stats = document.getElementById('eventModalStats');
+            const text  = document.getElementById('eventModalText');
+            const realSlDied = (slDied * 100).toLocaleString();
+            const realHDied  = (hDied * 10000).toLocaleString();
+            if (yearNum === 4) {
+                text.innerHTML = `A deadly disease hit the environment! It specifically targeted populations with <strong>Blue or Green alleles</strong>, eliminating about <strong>50%</strong> of them!<br><br><strong>Why did this happen?</strong> Because the Hydras reproduce asexually, they are exact clones with the Purple allele, so the disease didn't affect them at all! The Sea Lions use sexual reproduction, meaning their population has genetic variation. While half of the Blue and Green pods perished, the Red and Purple pods were completely immune!`;
+            } else if (yearNum === 8) {
+                text.innerHTML = `Another deadly disease hit! This one specifically targeted populations with the <strong>Purple allele</strong>. It was highly lethal, meaning <strong>only about 5%</strong> of the individuals with this trait survived the outbreak!<br><br><strong>Why did this happen?</strong> Because the Hydras are exact clones, their entire population shared the same weakness and was almost completely wiped out! The Sea Lions' genetic variation helped protect their overall population, since those with Red, Blue, or Green alleles were completely immune to this disease.`;
+            }
+            stats.innerHTML = `<strong>📉 Outbreak Results:</strong><br><br><strong>Sea Lions lost:</strong> ${realSlDied} individuals (${slDied} Pods)<br><strong>Hydras lost:</strong> ${realHDied} individuals (${hDied} Colonies)`;
+            modal.style.display = 'flex';
+        }
+        function closeEventModal() {
+            document.getElementById('eventModal').style.display = 'none';
+            if (pendingFlash) { pendingFlash(); pendingFlash = null; }
+        }
+
+
+        // NEW GRAPH PINPOINT & HOVER LOGIC 
+        let isPinpointing = false;
+        let activeHoverSegment = null;
+        let isHoveringMarker = false;
+
+        const customTip = document.getElementById('customGraphTooltip');
+
+        // Make Tooltip follow mouse when pinpointing
+        window.addEventListener('mousemove', (e) => {
+            if (isPinpointing && activeHoverSegment) {
+                customTip.style.display = 'block';
+                customTip.style.left = (e.clientX + 20) + 'px';
+                customTip.style.top = (e.clientY + 20) + 'px';
+
+                let content = "🔍 <strong>Click to Select:</strong><br>";
+                if (activeHoverSegment === 'sl-grow') content += "<span style='color: rgb(0, 216, 214);'>A) Sea Lion (Start to Year 4)</span>";
+                if (activeHoverSegment === 'sl-drop') content += "<span style='color: rgb(255, 94, 87);'>B) Sea Lion (Year 4 to Year 5)</span>";
+                if (activeHoverSegment === 'h-grow') content += "<span style='color: rgb(11, 232, 129);'>C) Hydra (Start to Year 8)</span>";
+                if (activeHoverSegment === 'h-drop') content += "<span style='color: rgb(255, 168, 1);'>D) Hydra (Year 8 to Year 10)</span>";
+                
+                customTip.innerHTML = content;
+            } else {
+                customTip.style.display = 'none';
+            }
+        });
+
+        // Start Pulsing Animation Engine for the lines
+        let pulseTime = 0;
+        function animatePulse() {
+            if (isPinpointing && activeHoverSegment && popChart) {
+                pulseTime += 0.15;
+                popChart.update('none'); 
+            }
+            requestAnimationFrame(animatePulse);
+        }
+        requestAnimationFrame(animatePulse);
+
+        function startPinpoint() {
+            isPinpointing = true;
+            document.getElementById('pinpointBanner').style.display = 'block';
+            showGraph(); 
+            // Show HTML Markers
+            document.getElementById('marker-A').style.display = 'flex';
+            document.getElementById('marker-B').style.display = 'flex';
+            document.getElementById('marker-C').style.display = 'flex';
+            document.getElementById('marker-D').style.display = 'flex';
+            popChart.update(); 
+        }
+
+        function cancelPinpoint() {
+            isPinpointing = false;
+            activeHoverSegment = null;
+            isHoveringMarker = false;
+            document.getElementById('pinpointBanner').style.display = 'none';
+            customTip.style.display = 'none'; 
+            // Hide HTML Markers
+            document.getElementById('marker-A').style.display = 'none';
+            document.getElementById('marker-B').style.display = 'none';
+            document.getElementById('marker-C').style.display = 'none';
+            document.getElementById('marker-D').style.display = 'none';
+            popChart.update(); 
+        }
+
+        function setHover(segType) {
+            if (!isPinpointing) return;
+            activeHoverSegment = segType;
+            
+            // Toggle hover classes on HTML markers
+            const mkrA = document.getElementById('marker-A');
+            const mkrB = document.getElementById('marker-B');
+            const mkrC = document.getElementById('marker-C');
+            const mkrD = document.getElementById('marker-D');
+            
+            mkrA.className = 'graph-label-marker' + (segType === 'sl-grow' ? ' hovered-sl-grow' : '');
+            mkrB.className = 'graph-label-marker' + (segType === 'sl-drop' ? ' hovered-sl-drop' : '');
+            mkrC.className = 'graph-label-marker' + (segType === 'h-grow' ? ' hovered-h-grow' : '');
+            mkrD.className = 'graph-label-marker' + (segType === 'h-drop' ? ' hovered-h-drop' : '');
+            
+            pulseTime = 0; 
+            popChart.update(); 
+        }
+
+        function selectSegment(segType) {
+            if (!isPinpointing) return;
+            
+            // Auto select the corresponding radio button
+            const radio = document.querySelector(`input[name="q1-ev"][value="${segType}"]`);
+            if(radio) {
+                radio.checked = true;
+            }
+            cancelPinpoint();
+        }
+
+        // ── Sim Execution ────────────────────────────────────────────────────
+        function getDiverseSeaLions(count) {
+            let arr = [];
+            for(let i=0; i<count; i++) arr.push(getRandomColor());
+            while(new Set(arr).size < 2 && count >= 2) { arr[0] = getRandomColor(); }
+            return arr;
+        }
+
+        function initGame() {
+            seaLions     = getDiverseSeaLions(4);
+            hydras       = ['#9b59b6', '#9b59b6', '#9b59b6', '#9b59b6'];
+            pendingShock = 0;
+            slDeaths     = { '#e74c3c':0, '#3498db':0, '#2ecc71':0, '#9b59b6':0 };
+            hDeaths      = { '#9b59b6':0 };
+            prevSlCounts = {};
+            prevHCount   = 4;
+
+            chartData.labels           = ['Start'];
+            chartData.datasets[0].data = [4];
+            chartData.datasets[1].data = [4];
+
+            document.getElementById('tableBody').innerHTML = "";
+            document.getElementById('slDice').innerText   = "🎲";
+            document.getElementById('hDice').innerText    = "🎲";
+            document.getElementById('eventLog').innerText = "";
+            document.getElementById('conclusionPanel').style.display = 'none';
+
+            // Clear rows so they rebuild fresh
+            document.getElementById('slAlleleRows').innerHTML = '';
+            document.getElementById('hAlleleRows').innerHTML  = '';
+
+            updateUI(false);
+            logData("Start of simulation", "Start");
+            initChart();
+            updateButtonState();
+            saveState();
+            initTouchDrag();
+        }
+
+        function getRandomColor() { return colors[Math.floor(Math.random() * colors.length)]; }
+        function getDiceRoll()    { return Math.floor(Math.random() * 6) + 1; }
+        const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+        function diceFace(n) { return DICE_FACES[n - 1]; }
+
+        function handleMainButton() {
+            if (isRolling) return;
+            if (pendingShock > 0) executeShock(pendingShock);
+            else executeYear();
+        }
+
+        function updateButtonState() {
+            const btn = document.getElementById('simBtn');
+            if (year > 10 && pendingShock === 0) {
+                btn.style.display = 'none';
+                document.getElementById('resetBtn').style.display = 'inline-block';
+                document.getElementById('eventLog').innerText = "Simulation Complete!";
+                const panel = document.getElementById('conclusionPanel');
+                panel.style.display = 'flex';
+                panel.classList.remove('minimized');
+                document.getElementById('conclusionMinBtn').textContent = '—';
+                clearSave();
+                updateCarousel();
+                return;
+            }
+            if (pendingShock > 0) {
+                btn.innerHTML = "🚨 CLICK — ENVIRONMENTAL SHOCK 🚨";
+                btn.classList.add('pulsating-shock');
+                document.getElementById('eventLog').innerText = "Shock pending!";
+            } else {
+                btn.innerHTML = `Roll Dice — Year <span id="yearDisplay">${year}</span>/10`;
+                btn.classList.remove('pulsating-shock');
+                document.getElementById('eventLog').innerText = "";
+            }
+        }
+
+        function executeYear() {
+            isRolling = true;
+            document.getElementById('simBtn').disabled = true;
+            document.getElementById('eventLog').innerText = "Rolling...";
+            document.getElementById('collapsibleRules').style.display = 'none';
+
+            const slDiceEl = document.getElementById('slDice');
+            const hDiceEl  = document.getElementById('hDice');
+            slDiceEl.classList.add('rolling');
+            hDiceEl.classList.add('rolling');
+
+            const finalSlRoll = getDiceRoll();
+            const finalHRoll  = getDiceRoll();
+            let rollCount = 0;
+            const rollInterval = setInterval(() => {
+                slDiceEl.innerText = diceFace(getDiceRoll());
+                hDiceEl.innerText  = diceFace(getDiceRoll());
+                rollCount++;
+                if (rollCount >= 10) {
+                    clearInterval(rollInterval);
+                    slDiceEl.classList.remove('rolling');
+                    hDiceEl.classList.remove('rolling');
+                    slDiceEl.innerText = diceFace(finalSlRoll);
+                    hDiceEl.innerText  = diceFace(finalHRoll);
+                    processYearResults(finalSlRoll, finalHRoll);
+                    isRolling = false;
+                    document.getElementById('simBtn').disabled = false;
+                }
+            }, 80);
+        }
+
+        function processYearResults(slRoll, hRoll) {
+            prevSlCounts = countByColor(seaLions);
+            prevHCount   = hydras.length;
+
+            const slOffspring = slRoll <= 3 ? 1 : 2;
+            for(let i=0; i<slOffspring; i++) seaLions.push(getRandomColor());
+            if (new Set(seaLions).size < 2 && seaLions.length >= 2) {
+                let currentColors   = Array.from(new Set(seaLions));
+                let availableColors = colors.filter(c => !currentColors.includes(c));
+                seaLions[seaLions.length - 1] = availableColors[Math.floor(Math.random() * availableColors.length)];
+            }
+
+            const hOffspring = hRoll === 1 ? 2 : 4;
+            for(let i=0; i<hOffspring; i++) hydras.push('#9b59b6');
+
+            updateUI(true);
+            logData("", year);
+            updateChart(`Year ${year}`);
+            year++;
+            if (year === 5) pendingShock = 4;
+            else if (year === 9) pendingShock = 8;
+            updateButtonState();
+            saveState();
+        }
+
+        function executeShock(shockYear) {
+            prevSlCounts = countByColor(seaLions);
+            prevHCount   = hydras.length;
+
+            let note = "";
+            const initialSL = seaLions.length;
+            const initialH  = hydras.length;
+
+            if (shockYear === 4) {
+                note = "Disease Hits! (~50% of Blue/Green alleles die)";
+                let slTargets = seaLions.filter(c => c === '#3498db' || c === '#2ecc71');
+                let slSafe    = seaLions.filter(c => c !== '#3498db' && c !== '#2ecc71');
+                if (slTargets.length > 0) slTargets = slTargets.slice(0, Math.ceil(slTargets.length * 0.5));
+                seaLions = slSafe.concat(slTargets);
+                // Hydras are all Purple — unaffected by this disease
+            } else if (shockYear === 8) {
+                note = "Disease Hits! (~95% of Purple alleles die)";
+                let slPurples = seaLions.filter(c => c === '#9b59b6');
+                let slOthers  = seaLions.filter(c => c !== '#9b59b6');
+                if (slPurples.length > 0) slPurples = slPurples.slice(0, Math.ceil(slPurples.length * 0.05));
+                seaLions = slOthers.concat(slPurples);
+                let hPurples = hydras.filter(c => c === '#9b59b6');
+                if (hPurples.length > 0) hPurples = hPurples.slice(0, Math.ceil(hPurples.length * 0.05));
+                hydras = hPurples;
+            }
+
+            // Accumulate deaths into cumulative trackers
+            const afterSL = countByColor(seaLions);
+            colors.forEach(c => {
+                const lost = (prevSlCounts[c] || 0) - (afterSL[c] || 0);
+                if (lost > 0) slDeaths[c] = (slDeaths[c] || 0) + lost;
+            });
+            const hLost = prevHCount - hydras.length;
+            if (hLost > 0) hDeaths['#9b59b6'] = (hDeaths['#9b59b6'] || 0) + hLost;
+
+            const seaLionDied = initialSL - seaLions.length;
+            const hydraDied   = initialH  - hydras.length;
+
+            updateUI(false);  // update numbers silently — badges fire after modal is dismissed
+
+            // Queue flash animations to run once student closes the modal
+            const snapPrevSL = { ...prevSlCounts };
+            const snapPrevH  = prevHCount;
+            pendingFlash = () => fireShockFlashes(snapPrevSL, snapPrevH);
+
+            const tbody = document.getElementById('tableBody');
+            const row = document.createElement('tr');
+            row.className = "shock-row";
+            row.innerHTML = `
+                <td><strong>Yr ${shockYear} Drop</strong></td>
+                <td>${seaLions.length}<br><small style="color:#7f8c8d;">(${(seaLions.length * 100).toLocaleString()})</small></td>
+                <td>${hydras.length}<br><small style="color:#7f8c8d;">(${(hydras.length * 10000).toLocaleString()})</small></td>
+                <td class="alert">${note}</td>
+            `;
+            tbody.insertBefore(row, tbody.firstChild);
+
+            updateChart(`Yr ${shockYear} Drop`);
+            showEventModal(shockYear, seaLionDied, hydraDied);
+            document.getElementById('slDice').innerText = "🎲";
+            document.getElementById('hDice').innerText  = "🎲";
+            pendingShock = 0;
+            updateButtonState();
+            saveState();
+        }
+
+        // ── Population Panel (compact allele rows + delta flash) ─────────────
+
+        // Fires the badge animations after the shock modal is dismissed
+        function fireShockFlashes(snapPrevSL, snapPrevH) {
+            const slCounts = countByColor(seaLions);
+
+            colors.forEach(c => {
+                const safeId = c.replace('#','');
+                const row = document.getElementById('sl-row-' + safeId);
+                if (!row) return;
+
+                // During shocks only show the death badge — alive drop is implied
+                const prevDeaths = parseInt(document.getElementById('sl-dead-' + safeId).dataset.prev || 0);
+                const nowDeaths  = slDeaths[c] || 0;
+                const deathDelta = nowDeaths - prevDeaths;
+                if (deathDelta > 0) flashDeathDelta(row, deathDelta);
+                document.getElementById('sl-dead-' + safeId).dataset.prev = nowDeaths;
+            });
+
+            const hRow = document.getElementById('h-row-purple');
+            if (hRow) {
+                const prevHD = parseInt(document.getElementById('h-dead-purple').dataset.prev || 0);
+                const nowHD  = hDeaths['#9b59b6'] || 0;
+                const hDeathDelta = nowHD - prevHD;
+                if (hDeathDelta > 0) flashDeathDelta(hRow, hDeathDelta);
+                document.getElementById('h-dead-purple').dataset.prev = nowHD;
+            }
+        }
+        function countByColor(arr) {
+            const counts = {};
+            arr.forEach(c => counts[c] = (counts[c] || 0) + 1);
+            return counts;
+        }
+
+        function flashDelta(rowEl, delta) {
+            if (!delta) return;
+            const badge = document.createElement('span');
+            badge.className = 'delta-flash ' + (delta > 0 ? 'positive' : 'negative');
+            badge.textContent = (delta > 0 ? '+' : '') + delta;
+            rowEl.appendChild(badge);
+            setTimeout(() => badge.remove(), 1900);
+        }
+
+        function flashDeathDelta(rowEl, delta) {
+            if (!delta) return;
+            const badge = document.createElement('span');
+            badge.className = 'delta-flash negative';
+            badge.textContent = '-' + delta;
+            rowEl.appendChild(badge);
+            setTimeout(() => badge.remove(), 1900);
+        }
+
+        function updateUI(animate) {
+            const slCounts = countByColor(seaLions);
+            const slTotal  = seaLions.length;
+            const hTotal   = hydras.length;
+
+            document.getElementById('slTotalBadge').textContent = (slTotal * 100).toLocaleString() + ' indiv.';
+            document.getElementById('hTotalBadge').textContent  = (hTotal * 10000).toLocaleString() + ' indiv.';
+
+            // Sea Lion rows — one per color
+            colors.forEach(c => {
+                const alive  = slCounts[c] || 0;
+                const deaths = slDeaths[c] || 0;
+                const safeId = c.replace('#','');
+                let row = document.getElementById('sl-row-' + safeId);
+
+                if (!row) {
+                    row = document.createElement('div');
+                    row.className = 'allele-row' + (animate ? ' pop-in' : '');
+                    row.id = 'sl-row-' + safeId;
+                    row.innerHTML = `
+                        <div class="allele-dot-wrap" id="sl-dotwrap-${safeId}">
+                            <div class="allele-dot" style="border-color:${c};">🦭</div>
+                        </div>
+                        <div class="allele-count" id="sl-alive-${safeId}">0</div>
+                        <div class="allele-deaths" id="sl-dead-${safeId}">0</div>`;
+                    document.getElementById('slAlleleRows').appendChild(row);
+                }
+
+                // Update numbers first so textContent doesn't wipe any badge
+                const prevAlive  = parseInt(prevSlCounts[c] || 0);
+                const prevDeaths = parseInt(document.getElementById('sl-dead-' + safeId).dataset.prev || 0);
+                document.getElementById('sl-alive-' + safeId).textContent = alive;
+                document.getElementById('sl-dead-'  + safeId).textContent = deaths;
+                // Only update dataset.prev here for normal years; shock flashes handle their own update
+                if (animate) document.getElementById('sl-dead-' + safeId).dataset.prev = deaths;
+                row.classList.toggle('extinct', alive === 0);
+
+                if (animate) {
+                    const aliveDelta = alive - prevAlive;
+                    if (aliveDelta !== 0) flashDelta(row, aliveDelta);
+                    const deathDelta = deaths - prevDeaths;
+                    if (deathDelta > 0) flashDeathDelta(row, deathDelta);
+                }
+            });
+
+            // Hydra row
+            let hRow = document.getElementById('h-row-purple');
+            if (!hRow) {
+                hRow = document.createElement('div');
+                hRow.className = 'allele-row';
+                hRow.id = 'h-row-purple';
+                hRow.innerHTML = `
+                    <div class="allele-dot-wrap" id="h-dotwrap-purple">
+                        <div class="allele-dot" style="border-color:#9b59b6;">🦑</div>
+                    </div>
+                    <div class="allele-count" id="h-alive-purple">0</div>
+                    <div class="allele-deaths" id="h-dead-purple">0</div>`;
+                document.getElementById('hAlleleRows').appendChild(hRow);
+            }
+
+            const prevHD = parseInt(document.getElementById('h-dead-purple').dataset.prev || 0);
+            document.getElementById('h-alive-purple').textContent = hTotal;
+            document.getElementById('h-dead-purple').textContent  = hDeaths['#9b59b6'] || 0;
+            if (animate) document.getElementById('h-dead-purple').dataset.prev = hDeaths['#9b59b6'] || 0;
+
+            if (animate) {
+                const hDelta = hTotal - prevHCount;
+                if (hDelta !== 0) flashDelta(hRow, hDelta);
+                const hDeathDelta = (hDeaths['#9b59b6'] || 0) - prevHD;
+                if (hDeathDelta > 0) flashDeathDelta(hRow, hDeathDelta);
+            }
+        }
+
+        function logData(note, displayYear) {
+            const tbody = document.getElementById('tableBody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${displayYear === 'Start' ? displayYear : 'Year ' + displayYear}</td>
+                <td>${seaLions.length}<br><small style="color:#7f8c8d;">(${(seaLions.length * 100).toLocaleString()})</small></td>
+                <td>${hydras.length}<br><small style="color:#7f8c8d;">(${(hydras.length * 10000).toLocaleString()})</small></td>
+                <td class="${note ? 'alert' : ''}">${note}</td>
+            `;
+            tbody.insertBefore(row, tbody.firstChild);
+        }
+
+        function initChart() {
+            if (popChart) { popChart.destroy(); }
+            const ctx = document.getElementById('popChart').getContext('2d');
+            
+            const getSegType = (datasetIndex, p0, p1) => {
+                if (datasetIndex === 0) {
+                    if (p0 >= 0 && p1 <= 4) return 'sl-grow';
+                    if (p0 === 4 && p1 === 5) return 'sl-drop';
+                } else if (datasetIndex === 1) {
+                    if (p0 >= 0 && p1 <= 9) return 'h-grow';
+                    if (p0 === 9 && p1 === 10) return 'h-drop';
+                }
+                return null;
+            };
+
+            const rgbColors = {
+                'sl-grow': '0, 216, 214',     
+                'sl-drop': '255, 94, 87',     
+                'h-grow': '11, 232, 129',     
+                'h-drop': '255, 168, 1'       
+            };
+
+            const markerPlugin = {
+                id: 'markerPlugin',
+                afterDraw: (chart) => {
+                    if (!isPinpointing) return;
+                    
+                    const metaSL = chart.getDatasetMeta(0);
+                    const metaH = chart.getDatasetMeta(1);
+                    
+                    const positionMarker = (markerId, meta, p1, p2) => {
+                        if (!meta.data[p1] || !meta.data[p2]) return;
+                        const el = document.getElementById(markerId);
+                        if(el) {
+                            let midX = (meta.data[p1].x + meta.data[p2].x) / 2;
+                            let midY = (meta.data[p1].y + meta.data[p2].y) / 2;
+                            el.style.left = midX + 'px';
+                            el.style.top = midY + 'px';
+                        }
+                    };
+
+                    positionMarker('marker-A', metaSL, 0, 4);  
+                    positionMarker('marker-B', metaSL, 4, 5);  
+                    positionMarker('marker-C', metaH, 0, 9);   
+                    positionMarker('marker-D', metaH, 9, 10);  
+                }
+            };
+
+            popChart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                plugins: [markerPlugin],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: { filter: function(tooltipItem) { return !isPinpointing; } }
+                    },
+                    interaction: { mode: 'nearest', intersect: false, axis: 'xy' }, 
+                    onHover: (e, elements, chart) => {
+                        if (!isPinpointing) return;
+                        if (isHoveringMarker) return; 
+                        
+                        let newHover = null;
+                        if (elements.length > 0) {
+                            const datasetIndex = elements[0].datasetIndex;
+                            const dataIndex = elements[0].index;
+                            if (datasetIndex === 0) {
+                                if (dataIndex <= 4) newHover = 'sl-grow';
+                                else if (dataIndex === 5) newHover = 'sl-drop';
+                            } else if (datasetIndex === 1) {
+                                if (dataIndex <= 9) newHover = 'h-grow';
+                                else if (dataIndex === 10) newHover = 'h-drop';
+                            }
+                        }
+                        if (activeHoverSegment !== newHover) setHover(newHover);
+                    },
+                    onClick: (e, elements, chart) => {
+                        if (isPinpointing && activeHoverSegment) {
+                            selectSegment(activeHoverSegment);
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Tokens (Pods/Colonies)' } },
+                        x: { title: { display: true, text: 'Timeline' } }
+                    }
+                }
+            });
+
+            popChart.data.datasets[0].pointHitRadius = 150; 
+            popChart.data.datasets[0].segment = {
+                borderColor: ctx => {
+                    if (!isPinpointing) return '#3498db';
+                    const segType = getSegType(0, ctx.p0DataIndex, ctx.p1DataIndex);
+                    if (!segType) return 'rgba(189, 195, 199, 0.2)';
+                    
+                    const baseColor = rgbColors[segType];
+                    if (activeHoverSegment === segType) {
+                        const alpha = 0.7 + Math.abs(Math.sin(pulseTime)) * 0.3; 
+                        return `rgba(${baseColor}, ${alpha})`;
+                    }
+                    return `rgba(${baseColor}, 0.5)`;
+                },
+                borderWidth: ctx => {
+                    if (!isPinpointing) return 3;
+                    const segType = getSegType(0, ctx.p0DataIndex, ctx.p1DataIndex);
+                    if (!segType) return 2;
+                    return (activeHoverSegment === segType) ? (12 + Math.abs(Math.sin(pulseTime)) * 6) : 6;
+                }
+            };
+            popChart.data.datasets[0].pointRadius = ctx => isPinpointing ? 0 : 3;
+            popChart.data.datasets[0].pointHoverRadius = ctx => isPinpointing ? 0 : 6;
+
+            popChart.data.datasets[1].pointHitRadius = 150; 
+            popChart.data.datasets[1].segment = {
+                borderColor: ctx => {
+                    if (!isPinpointing) return '#e67e22';
+                    const segType = getSegType(1, ctx.p0DataIndex, ctx.p1DataIndex);
+                    if (!segType) return 'rgba(189, 195, 199, 0.2)';
+                    
+                    const baseColor = rgbColors[segType];
+                    if (activeHoverSegment === segType) {
+                        const alpha = 0.7 + Math.abs(Math.sin(pulseTime)) * 0.3; 
+                        return `rgba(${baseColor}, ${alpha})`;
+                    }
+                    return `rgba(${baseColor}, 0.5)`;
+                },
+                borderWidth: ctx => {
+                    if (!isPinpointing) return 3;
+                    const segType = getSegType(1, ctx.p0DataIndex, ctx.p1DataIndex);
+                    if (!segType) return 2;
+                    return (activeHoverSegment === segType) ? (12 + Math.abs(Math.sin(pulseTime)) * 6) : 6;
+                }
+            };
+            popChart.data.datasets[1].pointRadius = ctx => isPinpointing ? 0 : 3;
+            popChart.data.datasets[1].pointHoverRadius = ctx => isPinpointing ? 0 : 6;
+            
+            popChart.update();
+        }
+
+        function updateChart(labelString) {
+            chartData.labels.push(labelString);
+            chartData.datasets[0].data.push(seaLions.length);
+            chartData.datasets[1].data.push(hydras.length);
+            popChart.update();
+        }
+
+        function resetGame() {
+            year = 1;
+            attempts = 0;
+            document.getElementById('simBtn').style.display = 'inline-block';
+            document.getElementById('resetBtn').style.display = 'none';
+            document.getElementById('tableBody').innerHTML = "";
+            document.getElementById('pinpointBanner').style.display = 'none';
+            isPinpointing = false;
+            activeHoverSegment = null;
+            isHoveringMarker = false;
+
+            document.getElementById('marker-A').style.display = 'none';
+            document.getElementById('marker-B').style.display = 'none';
+            document.getElementById('marker-C').style.display = 'none';
+            document.getElementById('marker-D').style.display = 'none';
+            customTip.style.display = 'none';
+
+            chartData.labels           = ['Start'];
+            chartData.datasets[0].data = [4];
+            chartData.datasets[1].data = [4];
+
+            document.getElementById('conclusionCarousel').classList.remove('review-mode');
+            currentQ = 1;
+            document.querySelectorAll('.question-block select, .question-block input[type="text"], .question-block textarea').forEach(el => el.value = '');
+            document.querySelectorAll('input[type="radio"]').forEach(el => el.checked = false);
+            document.querySelectorAll('.question-block').forEach(el => el.style.borderColor = '#3498db');
+            document.querySelectorAll('.feedback-text').forEach(el => el.innerHTML = '');
+            document.getElementById('conclusionSummary').style.display = 'none';
+            document.getElementById('retryBtn').style.display = 'none';
+            const panel = document.getElementById('conclusionPanel');
+            panel.style.display = 'none';
+            panel.classList.remove('minimized');
+
+            // Reset Drag and Drop for Q6
+            const bank = document.getElementById('dragBank');
+            ['item-fast','item-nomate','item-var','item-clones','item-slow','item-mate'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) bank.appendChild(el);
+            });
+
+            clearSave();
+            initGame();
+        }
+
+        // ── Floating Conclusion Window: drag + minimize + resize ─────────────
+        function toggleConclusionMinimize() {
+            const panel = document.getElementById('conclusionPanel');
+            const btn   = document.getElementById('conclusionMinBtn');
+            panel.classList.toggle('minimized');
+            btn.textContent = panel.classList.contains('minimized') ? '□' : '—';
+        }
+
+        function resizeConclusion(size) {
+            const panel = document.getElementById('conclusionPanel');
+            panel.classList.remove('minimized');
+            document.getElementById('conclusionMinBtn').textContent = '—';
+            const sizes = {
+                sm: { width: '420px',  height: '400px' },
+                md: { width: '620px',  height: '520px' },
+                lg: { width: '820px',  height: '700px' },
+            };
+            const s = sizes[size];
+            panel.style.width  = s.width;
+            panel.style.height = s.height;
+        }
+
+        function initConclusionDrag() {
+            const panel    = document.getElementById('conclusionPanel');
+            const titlebar = document.getElementById('conclusionTitlebar');
+            let dragging = false, startX, startY, startLeft, startTop;
+
+            // Ensure position is expressed as top/left before dragging
+            function toTopLeft() {
+                const rect = panel.getBoundingClientRect();
+                panel.style.top    = rect.top  + 'px';
+                panel.style.left   = rect.left + 'px';
+                panel.style.bottom = 'auto';
+                panel.style.right  = 'auto';
+            }
+
+            // Mouse drag
+            titlebar.addEventListener('mousedown', e => {
+                if (e.target.closest('button')) return;
+                dragging = true;
+                toTopLeft();
+                startX    = e.clientX;
+                startY    = e.clientY;
+                startLeft = parseInt(panel.style.left);
+                startTop  = parseInt(panel.style.top);
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                panel.style.left = Math.max(0, startLeft + e.clientX - startX) + 'px';
+                panel.style.top  = Math.max(0, startTop  + e.clientY - startY) + 'px';
+            });
+            document.addEventListener('mouseup', () => { dragging = false; });
+
+            // Touch drag
+            titlebar.addEventListener('touchstart', e => {
+                if (e.target.closest('button')) return;
+                toTopLeft();
+                const t = e.touches[0];
+                startX    = t.clientX;
+                startY    = t.clientY;
+                startLeft = parseInt(panel.style.left);
+                startTop  = parseInt(panel.style.top);
+            }, { passive: true });
+            titlebar.addEventListener('touchmove', e => {
+                const t = e.touches[0];
+                panel.style.left = Math.max(0, startLeft + t.clientX - startX) + 'px';
+                panel.style.top  = Math.max(0, startTop  + t.clientY - startY) + 'px';
+            }, { passive: true });
+        }
+
+        // ── Page Load: check for saved state ────────────────────────────────
+        window.addEventListener('load', () => {
+            const saved = loadSavedState();
+            if (saved && saved.year > 1) {
+                document.getElementById('resumeYearLabel').textContent = Math.min(saved.year, 10);
+                document.getElementById('resumeModal').style.display = 'flex';
+            }
+            initTouchDrag();
+            initConclusionDrag();
+        });
+    </script>
+    <!-- Floating Draggable Conclusion Window -->
+    <div id="conclusionPanel" style="display:none;">
+        <div class="conclusion-titlebar" id="conclusionTitlebar">
+            <span class="conclusion-title">🎯 Simulation Complete: Conclusions</span>
+            <div class="conclusion-titlebar-btns">
+                <button class="conclusion-size-btn" onclick="resizeConclusion('sm')" title="Small">S</button>
+                <button class="conclusion-size-btn" onclick="resizeConclusion('md')" title="Medium">M</button>
+                <button class="conclusion-size-btn" onclick="resizeConclusion('lg')" title="Large">L</button>
+                <button class="conclusion-min-btn" id="conclusionMinBtn" onclick="toggleConclusionMinimize()" title="Minimize">—</button>
+            </div>
+        </div>
+        <div class="conclusion-body" id="conclusionBody">
+            <div id="conclusionSummary" style="display: none; text-align: center; margin-bottom: 15px; font-size: 1.1em; font-weight: bold; padding: 12px; border-radius: 8px;"></div>
+
+            <div id="conclusionCarousel">
+                <div class="question-slide active" id="slide-1">
+                    <div class="question-block" id="q1-block">
+                        <strong>Question 1 of 6</strong><br><br>
+                        <strong>Fill in the blank:</strong> The population of 
+                        <select id="q1-org">
+                            <option value="">-- Select --</option>
+                            <option value="hydra">Hydra</option>
+                            <option value="sealion">Sea Lion</option>
+                        </select>
+                        grew more quickly over the course of the 10 years.<br>
+                        <em style="margin-top: 15px; color: #2c3e50; font-weight: bold;">What evidence from the game supports your answer?</em>
+                        <div style="background: #e8f4f8; padding: 12px; border-radius: 8px; margin-top: 10px; border: 2px dashed #3498db;">
+                            <p style="margin-top: 0; font-weight: bold; color: #2980b9;">🛑 You must use the live graph to answer this!</p>
+                            <button class="pinpoint-btn" style="margin-left: 0; margin-bottom: 12px;" onclick="startPinpoint()">📍 Click to Select Evidence on Graph</button>
+                            <div class="locked-radio-group">
+                                <label class="mcq-option"><input type="radio" name="q1-ev" value="sl-grow" disabled> <span>A) Sea Lion (Start to Year 4)</span></label>
+                                <label class="mcq-option"><input type="radio" name="q1-ev" value="sl-drop" disabled> <span>B) Sea Lion (Year 4 to Year 5)</span></label>
+                                <label class="mcq-option"><input type="radio" name="q1-ev" value="h-grow" disabled> <span>C) Hydra (Start to Year 8)</span></label>
+                                <label class="mcq-option"><input type="radio" name="q1-ev" value="h-drop" disabled> <span>D) Hydra (Year 8 to Year 10)</span></label>
+                            </div>
+                        </div>
+                        <div class="feedback-text" id="q1-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="question-slide" id="slide-2">
+                    <div class="question-block" id="q2-block">
+                        <strong>Question 2 of 6</strong><br><br>
+                        <strong>Scientific Reasoning:</strong> In the previous question, you selected a line segment as evidence. What does the <strong>slope</strong> (steepness) of the population line tell you?<br>
+                        <label class="mcq-option"><input type="radio" name="q2" value="A"> A) How fast the population size is changing over time.</label>
+                        <label class="mcq-option"><input type="radio" name="q2" value="B"> B) The exact number of genetic mutations in the population.</label>
+                        <label class="mcq-option"><input type="radio" name="q2" value="C"> C) The age of the oldest individuals in the population.</label>
+                        <div class="feedback-text" id="q2-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="question-slide" id="slide-3">
+                    <div class="question-block" id="q3-block">
+                        <strong>Question 3 of 6</strong><br><br>
+                        What factor about the Sea Lion population prevented some of them from dying from the disease that occurred at the end of Year 4?<br>
+                        <label class="mcq-option"><input type="radio" name="q3" value="A"> A) They reproduce faster than the Hydras.</label>
+                        <label class="mcq-option"><input type="radio" name="q3" value="B"> B) Genetic variation (multiple allele colors) meant some were immune to the specific disease.</label>
+                        <label class="mcq-option"><input type="radio" name="q3" value="C"> C) They reproduce asexually, ensuring perfect clones survived.</label>
+                        <div class="feedback-text" id="q3-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="question-slide" id="slide-4">
+                    <div class="question-block" id="q4-block">
+                        <strong>Question 4 of 6</strong><br><br>
+                        Describe what happened at the end of Year 8. Which population declined more?<br>
+                        <select id="q4-org" style="margin-left: 0; margin-bottom: 10px;">
+                            <option value="">-- Select which declined more --</option>
+                            <option value="hydra">Hydra population</option>
+                            <option value="sealion">Sea Lion population</option>
+                        </select><br>
+                        <strong>Why do you think this happened?</strong>
+                        <label class="mcq-option"><input type="radio" name="q4-reason" value="A"> A) Because they lack genetic variation, the identical clones shared the exact same weakness.</label>
+                        <label class="mcq-option"><input type="radio" name="q4-reason" value="B"> B) Because they mutated too fast and destroyed their own population.</label>
+                        <div class="feedback-text" id="q4-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="question-slide" id="slide-5">
+                    <div class="question-block" id="q5-block">
+                        <strong>Question 5 of 6</strong><br><br>
+                        <strong>Fill in the blank:</strong> There is more genetic variation in the population of 
+                        <select id="q5-org">
+                            <option value="">-- Select --</option>
+                            <option value="hydra">Hydra</option>
+                            <option value="sealion">Sea Lion</option>
+                        </select>.<br>
+                        <em style="margin-top: 15px; color: #2c3e50; font-weight: bold;">What evidence from the game supports your answer?</em>
+                        <label class="mcq-option"><input type="radio" name="q5-ev" value="A"> A) All the tokens were identical in color.</label>
+                        <label class="mcq-option"><input type="radio" name="q5-ev" value="B"> B) The tokens displayed multiple different colored rings (alleles).</label>
+                        <div class="feedback-text" id="q5-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="question-slide" id="slide-6">
+                    <div class="question-block" id="q6-block">
+                        <strong>Question 6 of 6 (Challenge)</strong><br><br>
+                        Compare the advantages and disadvantages of each reproduction strategy. Drag and drop all the traits from the word bank into the correct boxes in the table below.
+                        <div class="drag-bank" id="dragBank" ondrop="drop(event)" ondragover="allowDrop(event)">
+                            <div class="draggable-item" draggable="true" id="item-fast" ondragstart="drag(event)">Fast process</div>
+                            <div class="draggable-item" draggable="true" id="item-nomate" ondragstart="drag(event)">No need to find a mate</div>
+                            <div class="draggable-item" draggable="true" id="item-var" ondragstart="drag(event)">Leads to genetic variation</div>
+                            <div class="draggable-item" draggable="true" id="item-clones" ondragstart="drag(event)">All offspring are clones</div>
+                            <div class="draggable-item" draggable="true" id="item-slow" ondragstart="drag(event)">Slow process</div>
+                            <div class="draggable-item" draggable="true" id="item-mate" ondragstart="drag(event)">Need to find a mate</div>
+                        </div>
+                        <table class="dnd-table">
+                            <thead><tr><th>Strategy</th><th>Advantages</th><th>Disadvantages</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Hydra (Asexual)</strong></td>
+                                    <td><div class="drop-zone" id="asex-adv" ondrop="drop(event)" ondragover="allowDrop(event)"></div></td>
+                                    <td><div class="drop-zone" id="asex-dis" ondrop="drop(event)" ondragover="allowDrop(event)"></div></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Sea Lion (Sexual)</strong></td>
+                                    <td><div class="drop-zone" id="sex-adv" ondrop="drop(event)" ondragover="allowDrop(event)"></div></td>
+                                    <td><div class="drop-zone" id="sex-dis" ondrop="drop(event)" ondragover="allowDrop(event)"></div></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="feedback-text" id="q6-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="carousel-controls">
+                    <button id="prevBtn" onclick="prevQuestion()" disabled style="background:#7f8c8d;">◀ Previous</button>
+                    <span class="step-indicator" id="stepIndicator">1 / 6</span>
+                    <button id="nextBtn" onclick="nextQuestion()">Next ▶</button>
+                    <button id="submitBtn" onclick="submitConclusion()" style="display:none; background:#27ae60;">Submit Answers</button>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 15px;">
+                <button id="retryBtn" style="display: none; padding: 12px 24px; font-size: 1.1em; background-color: #f39c12;" onclick="submitConclusion()">Check Answers Again</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
