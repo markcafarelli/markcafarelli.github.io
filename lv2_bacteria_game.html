@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level 2: The Superbug</title>
+    <style>
+        /* ── TOKENS ─────────────────────────────────────────── */
+        :root {
+            --bg:           #f0f4f8;
+            --surface:      #ffffff;
+            --border:       #d1dce8;
+
+            --green-bug:    #2ecc71;
+            --green-dark:   #27ae60;
+            --gold-bug:     #f1c40f;
+            --gold-dark:    #e67e22;
+            --dead:         #95a5a6;
+
+            --ink:          #1a2332;
+            --ink-mid:      #4a5568;
+            --ink-light:    #718096;
+
+            --purple:       #7c3aed;
+            --purple-light: #ede9fe;
+            --red:          #e74c3c;
+            --blue:         #2563eb;
+            --amber:        #d97706;
+            --teal:         #0d9488;
+
+            --radius:       10px;
+            --shadow:       0 2px 8px rgba(0,0,0,0.08);
+            --shadow-lg:    0 6px 20px rgba(0,0,0,0.12);
+        }
+
+        /* ── RESET & BASE ───────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            padding: 16px 20px 30px;
+            min-height: 100vh;
+        }
+
+        /* ── HEADER ─────────────────────────────────────────── */
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .level-badge {
+            display: inline-block;
+            background: var(--purple);
+            color: white;
+            font-size: 0.75em;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+        }
+        .game-header h1 {
+            font-size: 2em;
+            font-weight: 800;
+            color: var(--ink);
+            line-height: 1.1;
+        }
+        .game-header h1 span { color: var(--purple); }
+        .game-header p {
+            color: var(--ink-mid);
+            font-size: 1em;
+            max-width: 640px;
+            margin: 6px auto 0;
+            line-height: 1.5;
+        }
+
+        /* ── LAYOUT ─────────────────────────────────────────── */
+        .game-main {
+            display: flex;
+            gap: 20px;
+            max-width: 1380px;
+            margin: 0 auto;
+            height: 800px;
+            align-items: stretch;
+        }
+        .game-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            padding-right: 4px;
+            min-width: 0;
+        }
+        .game-right {
+            flex: 1.55;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            padding: 18px;
+        }
+
+        /* ── PANELS ─────────────────────────────────────────── */
+        .panel {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 13px 18px;
+            cursor: pointer;
+            user-select: none;
+            background: var(--ink);
+            color: white;
+        }
+        .panel-header h3 {
+            font-size: 1em;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .panel-toggle {
+            font-size: 0.85em;
+            opacity: 0.7;
+            transition: transform 0.2s;
+        }
+        .panel-toggle.open { transform: rotate(90deg); }
+        .panel-body { padding: 16px 18px; }
+        .panel-body.hidden { display: none; }
+
+        /* ── PHASE STEPPER ──────────────────────────────────── */
+        .phase-stepper {
+            display: flex;
+            gap: 0;
+            padding: 0;
+            list-style: none;
+        }
+        .phase-step {
+            flex: 1;
+            text-align: center;
+            padding: 6px 4px;
+            font-size: 0.72em;
+            font-weight: 600;
+            color: var(--ink-light);
+            border-bottom: 3px solid var(--border);
+            transition: color 0.3s, border-color 0.3s;
+            position: relative;
+        }
+        .phase-step.done  { color: var(--teal);   border-color: var(--teal); }
+        .phase-step.active{ color: var(--purple);  border-color: var(--purple); }
+
+        /* ── NARRATIVE LOG ──────────────────────────────────── */
+        .narrative {
+            background: var(--purple-light);
+            border-left: 5px solid var(--purple);
+            border-radius: 6px;
+            padding: 14px 16px;
+            font-size: 1.05em;
+            line-height: 1.55;
+            color: var(--ink);
+            min-height: 80px;
+        }
+
+        /* ── BUTTONS ─────────────────────────────────────────── */
+        .action-btn {
+            width: 100%;
+            padding: 15px 18px;
+            font-size: 1em;
+            font-weight: 700;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: filter 0.2s, transform 0.1s;
+            display: none;
+            margin-top: 10px;
+            letter-spacing: 0.02em;
+        }
+        .action-btn:hover  { filter: brightness(1.1); transform: translateY(-2px); }
+        .action-btn:active { transform: translateY(0); }
+        .action-btn.visible { display: block; }
+
+        .btn-green  { background: var(--green-dark); }
+        .btn-purple { background: var(--purple); }
+        .btn-red    { background: var(--red); }
+        .btn-amber  { background: var(--amber); }
+        .btn-slate  { background: var(--ink); margin-top: 14px; }
+
+        .pulsing {
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,100% { box-shadow: 0 4px 10px rgba(0,0,0,0.15); transform: scale(1); }
+            50%      { box-shadow: 0 6px 18px rgba(0,0,0,0.25); transform: scale(1.015); }
+        }
+
+        /* ── PETRI DISH ─────────────────────────────────────── */
+        .view-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .view-tab {
+            flex: 1;
+            padding: 9px;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--ink-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .view-tab.active {
+            background: var(--purple);
+            color: white;
+            border-color: var(--purple);
+        }
+
+        #petriView {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            min-height: 0;
+        }
+        #tableView {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        /* The actual dish — now circular */
+        .petri-dish {
+            width: 500px;
+            height: 500px;
+            max-width: 100%;
+            max-height: 100%;
+            aspect-ratio: 1;
+            background: radial-gradient(circle at 35% 35%, #f8fffe, #dff5eb);
+            border: 14px solid #b0c4b1;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow:
+                inset 0 8px 24px rgba(0,0,0,0.10),
+                inset 0 -4px 10px rgba(255,255,255,0.5),
+                0 8px 20px rgba(0,0,0,0.08);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: center;
+            gap: 5px;
+            padding: 30px;
+        }
+
+        /* ── BUG TOKENS ─────────────────────────────────────── */
+        .bug {
+            width: 14px;
+            height: 28px;
+            border-radius: 7px;
+            display: inline-block;
+            flex-shrink: 0;
+            transition: opacity 0.4s, transform 0.4s;
+        }
+        .bug-green {
+            background: var(--green-bug);
+            border: 2px solid var(--green-dark);
+            box-shadow: 1px 2px 4px rgba(0,0,0,0.25);
+            animation: popIn 0.3s forwards;
+            opacity: 0;
+        }
+        .bug-gold {
+            background: var(--gold-bug);
+            border: 2px solid var(--gold-dark);
+            box-shadow: 1px 2px 4px rgba(0,0,0,0.25);
+            animation: popIn 0.3s forwards;
+            opacity: 0;
+        }
+        .bug-gold-pulse {
+            background: var(--gold-bug);
+            border: 2px solid var(--gold-dark);
+            animation: glowPulse 1s ease-in-out infinite;
+            position: relative;
+            z-index: 10;
+        }
+        .bug-dead {
+            background: var(--dead) !important;
+            border-color: #7f8c8d !important;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            box-shadow: none !important;
+            animation: none !important;
+            opacity: 1 !important;
+        }
+
+        @keyframes popIn {
+            0%   { transform: scale(0.1) rotate(var(--rot,0deg)); opacity: 0; }
+            70%  { transform: scale(1.2) rotate(var(--rot,0deg)); opacity: 1; }
+            100% { transform: scale(1)   rotate(var(--rot,0deg)); opacity: 1; }
+        }
+        @keyframes glowPulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(241,196,15,0.8); transform: scale(1.1) rotate(var(--rot,0deg)); }
+            70%     { box-shadow: 0 0 0 12px rgba(241,196,15,0); transform: scale(1.3) rotate(var(--rot,0deg)); }
+        }
+
+        /* ── COUNTER BAR ─────────────────────────────────────── */
+        .counter-bar {
+            display: flex;
+            gap: 14px;
+            font-size: 0.95em;
+            font-weight: 700;
+            padding: 10px 18px;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+        }
+        .counter-item { display: flex; align-items: center; gap: 6px; }
+        .counter-dot {
+            width: 12px; height: 12px; border-radius: 50%;
+            display: inline-block; flex-shrink: 0;
+        }
+        .counter-dot.green { background: var(--green-bug); border: 1px solid var(--green-dark); }
+        .counter-dot.gold  { background: var(--gold-bug);  border: 1px solid var(--gold-dark); }
+        .counter-dot.total { background: var(--ink); }
+        .counter-val { color: var(--ink); }
+        .counter-label { color: var(--ink-light); font-weight: 400; }
+
+        /* ── DATA TABLE ─────────────────────────────────────── */
+        table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
+        th, td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+        th { background: var(--ink); color: white; position: sticky; top: 0; z-index: 5; text-align: center; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.05em; }
+        td:nth-child(2) { text-align: center; font-weight: 700; color: var(--green-dark); }
+        td:nth-child(3) { text-align: center; font-weight: 700; color: var(--amber); }
+        .log-note { font-size: 0.9em; color: var(--ink-mid); }
+        tr:nth-child(even) td { background: var(--bg); }
+
+        /* ── CONCLUSION PANEL ────────────────────────────────── */
+        .conclusion-panel {
+            display: none;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 2px solid var(--purple);
+            flex-shrink: 0;
+        }
+        .conclusion-panel .panel-header {
+            background: var(--purple);
+        }
+
+        .question-block {
+            background: var(--bg);
+            border-left: 5px solid var(--purple);
+            border-radius: 6px;
+            padding: 16px;
+            font-size: 1em;
+            line-height: 1.6;
+            color: var(--ink);
+            margin-bottom: 16px;
+            transition: border-color 0.3s;
+        }
+        .question-block strong { font-size: 0.85em; color: var(--ink-light); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .question-slide { display: none; }
+        .question-slide.active { display: block; animation: slideFade 0.35s ease; }
+        @keyframes slideFade { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+        .review-mode .question-slide { display: block; margin-bottom: 10px; animation: none; }
+        .review-mode .carousel-nav   { display: none; }
+
+        .mcq-option {
+            display: block;
+            margin: 8px 0;
+            cursor: pointer;
+            padding: 8px 10px;
+            border-radius: 6px;
+            transition: background 0.15s;
+            font-size: 0.97em;
+        }
+        .mcq-option:hover { background: var(--purple-light); }
+        .mcq-option input { margin-right: 9px; transform: scale(1.3); cursor: pointer; }
+
+        .feedback-text {
+            margin-top: 12px;
+            font-weight: 600;
+            font-size: 0.9em;
+            min-height: 22px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            display: block;
+        }
+
+        .carousel-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+            margin-top: 10px;
+        }
+        .nav-btn {
+            padding: 9px 18px;
+            font-size: 0.9em;
+            font-weight: 700;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            color: white;
+        }
+        #prevBtn { background: var(--ink-light); }
+        #prevBtn:disabled { background: var(--border); color: var(--ink-light); cursor: not-allowed; }
+        #nextBtn   { background: var(--blue); }
+        #submitBtn { background: var(--teal); display: none; }
+
+        .step-pill {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: var(--ink-mid);
+        }
+
+        #quizSummary {
+            display: none;
+            text-align: center;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 700;
+            margin-bottom: 14px;
+        }
+        #retryBtn {
+            display: none;
+            margin: 8px auto 0;
+            padding: 10px 22px;
+            font-size: 0.95em;
+            font-weight: 700;
+            background: var(--amber);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* ── ANTIBIOTIC OVERLAY ─────────────────────────────── */
+        .dish-overlay {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            font-weight: 900;
+            color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s;
+            z-index: 50;
+        }
+        .dish-overlay.show { opacity: 1; }
+        .overlay-red  { background: rgba(231,76,60,0.35); }
+        .overlay-gold { background: rgba(241,196,15,0.25); }
+
+    </style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────────── -->
+<div class="game-header">
+    <div class="level-badge">Level 2</div>
+    <h1>The <span>Superbug</span></h1>
+    <p>Bacteria reproduce asexually — making perfect clones. But clones aren't always identical forever. Explore what happens when a random mutation meets the wrong medicine.</p>
+</div>
+
+<!-- ── PHASE STEPPER ───────────────────────────────────────── -->
+<ul class="phase-stepper" id="stepper" style="max-width:1380px;margin:0 auto 16px;">
+    <li class="phase-step active" id="step-1">1. Multiply</li>
+    <li class="phase-step"        id="step-2">2. Mutate</li>
+    <li class="phase-step"        id="step-3">3. Antibiotics</li>
+    <li class="phase-step"        id="step-4">4. Survivor</li>
+    <li class="phase-step"        id="step-5">5. Superbug</li>
+    <li class="phase-step"        id="step-6">6. Analysis</li>
+</ul>
+
+<!-- ── MAIN LAYOUT ─────────────────────────────────────────── -->
+<div class="game-main">
+
+    <!-- LEFT COLUMN -->
+    <div class="game-left">
+
+        <!-- Conclusion panel (shown last) -->
+        <div class="conclusion-panel" id="conclusionPanel">
+            <div class="panel-header" onclick="togglePanel('conclusionBody', this)">
+                <h3>🎯 Experiment Complete — Analysis</h3>
+                <span class="panel-toggle open">▶</span>
+            </div>
+            <div class="panel-body" id="conclusionBody">
+                <div id="quizSummary"></div>
+                <div id="conclusionCarousel">
+
+                    <div class="question-slide active" id="slide-1">
+                        <div class="question-block" id="q1-block">
+                            <strong>Question 1 of 5</strong><br><br>
+                            How did the <strong style="color:var(--amber);">Gold</strong> bacterium get its mutation?
+                            <div style="margin-top:12px;">
+                                <label class="mcq-option"><input type="radio" name="q1" value="A"> A) It sensed the antibiotics were coming and changed its DNA on purpose.</label>
+                                <label class="mcq-option"><input type="radio" name="q1" value="B"> B) A random copying error happened when a parent bacterium reproduced asexually.</label>
+                                <label class="mcq-option"><input type="radio" name="q1" value="C"> C) The antibiotics caused the mutation after they were added to the dish.</label>
+                            </div>
+                            <span class="feedback-text" id="q1-feedback"></span>
+                        </div>
+                    </div>
+
+                    <div class="question-slide" id="slide-2">
+                        <div class="question-block" id="q2-block">
+                            <strong>Question 2 of 5</strong><br><br>
+                            <em>Before</em> the antibiotics were added, did being Gold give that bacterium any advantage over the Green ones?
+                            <div style="margin-top:12px;">
+                                <label class="mcq-option"><input type="radio" name="q2" value="A"> A) Yes — Gold bacteria are naturally stronger in all environments.</label>
+                                <label class="mcq-option"><input type="radio" name="q2" value="B"> B) No — the mutation only became an advantage <em>after</em> the environment changed.</label>
+                            </div>
+                            <span class="feedback-text" id="q2-feedback"></span>
+                        </div>
+                    </div>
+
+                    <div class="question-slide" id="slide-3">
+                        <div class="question-block" id="q3-block">
+                            <strong>Question 3 of 5</strong><br><br>
+                            Why did the antibiotics completely fail the second time?
+                            <div style="margin-top:12px;">
+                                <label class="mcq-option"><input type="radio" name="q3" value="A"> A) The superbugs reproduced asexually, passing the exact same resistant DNA to every clone.</label>
+                                <label class="mcq-option"><input type="radio" name="q3" value="B"> B) The antibiotics expired and lost their effectiveness.</label>
+                                <label class="mcq-option"><input type="radio" name="q3" value="C"> C) The bacteria reproduced sexually, mixing traits to become stronger.</label>
+                            </div>
+                            <span class="feedback-text" id="q3-feedback"></span>
+                        </div>
+                    </div>
+
+                    <div class="question-slide" id="slide-4">
+                        <div class="question-block" id="q4-block">
+                            <strong>Question 4 of 5</strong><br><br>
+                            Why do all offspring bacteria look exactly the same color as their parent?
+                            <div style="margin-top:12px;">
+                                <label class="mcq-option"><input type="radio" name="q4" value="A"> A) They choose to mimic the parent color to avoid predators.</label>
+                                <label class="mcq-option"><input type="radio" name="q4" value="B"> B) Asexual reproduction creates genetic clones — the offspring inherit identical DNA.</label>
+                                <label class="mcq-option"><input type="radio" name="q4" value="C"> C) The antibiotics dyed them all the same color.</label>
+                            </div>
+                            <span class="feedback-text" id="q4-feedback"></span>
+                        </div>
+                    </div>
+
+                    <div class="question-slide" id="slide-5">
+                        <div class="question-block" id="q5-block">
+                            <strong>Question 5 of 5</strong><br><br>
+                            How did the simulation visually show that bacteria reproduce asexually?
+                            <div style="margin-top:12px;">
+                                <label class="mcq-option"><input type="radio" name="q5" value="A"> A) Offspring always matched the parent's color exactly (Green → Green, Gold → Gold).</label>
+                                <label class="mcq-option"><input type="radio" name="q5" value="B"> B) The bacteria moved around the dish on their own.</label>
+                                <label class="mcq-option"><input type="radio" name="q5" value="C"> C) Bacteria changed color each time they multiplied.</label>
+                            </div>
+                            <span class="feedback-text" id="q5-feedback"></span>
+                        </div>
+                    </div>
+
+                    <div class="carousel-nav">
+                        <button class="nav-btn" id="prevBtn" onclick="prevQ()" disabled>◀ Prev</button>
+                        <span class="step-pill" id="stepIndicator">1 / 5</span>
+                        <button class="nav-btn" id="nextBtn" onclick="nextQ()">Next ▶</button>
+                        <button class="nav-btn" id="submitBtn" onclick="submitQuiz()">Submit ✓</button>
+                    </div>
+                </div>
+                <div style="text-align:center;">
+                    <button id="retryBtn" onclick="submitQuiz()">Check Again</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls panel -->
+        <div class="panel" id="controlsPanel">
+            <div class="panel-header" onclick="togglePanel('controlsBody', this)">
+                <h3>⚙️ Experiment Controls</h3>
+                <span class="panel-toggle open">▶</span>
+            </div>
+            <div class="panel-body" id="controlsBody">
+                <div class="narrative" id="narrative">Loading experiment…</div>
+
+                <button class="action-btn btn-green  pulsing" id="btnMultiply"      onclick="phase_multiply()">🦠 Multiply Bacteria</button>
+                <button class="action-btn btn-purple pulsing" id="btnMutate"        onclick="phase_mutate()">🧬 Introduce Random Mutation</button>
+                <button class="action-btn btn-red    pulsing" id="btnAntibiotic"    onclick="phase_antibiotics()">💊 Administer Antibiotics</button>
+                <button class="action-btn btn-amber  pulsing" id="btnMultiplySuper" onclick="phase_multiplySuper()">🦠 Multiply the Superbug</button>
+                <button class="action-btn btn-red    pulsing" id="btnAntibiotic2"   onclick="phase_antibiotics2()">💊 Administer Antibiotics Again</button>
+                <button class="action-btn btn-slate"          id="btnReset"         onclick="init()">🔄 Restart Experiment</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="game-right">
+
+        <div class="view-tabs">
+            <button class="view-tab active" id="tabPetri" onclick="showView('petri')">🧫 Petri Dish</button>
+            <button class="view-tab"        id="tabTable" onclick="showView('table')">📊 Data Log</button>
+        </div>
+
+        <div id="petriView">
+            <div class="petri-dish" id="dish">
+                <div class="dish-overlay overlay-red"  id="overlayRed"></div>
+                <div class="dish-overlay overlay-gold" id="overlayGold"></div>
+            </div>
+            <div class="counter-bar">
+                <div class="counter-item">
+                    <span class="counter-dot green"></span>
+                    <span class="counter-val" id="cntGreen">0</span>
+                    <span class="counter-label">Normal</span>
+                </div>
+                <div class="counter-item">
+                    <span class="counter-dot gold"></span>
+                    <span class="counter-val" id="cntGold">0</span>
+                    <span class="counter-label">Mutant</span>
+                </div>
+                <div class="counter-item" style="margin-left:auto;">
+                    <span class="counter-dot total"></span>
+                    <span class="counter-val" id="cntTotal">0</span>
+                    <span class="counter-label">Total</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="tableView">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Phase</th>
+                        <th>Normal (Green)</th>
+                        <th>Mutant (Gold)</th>
+                        <th>Observation</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<script>
+/* ── STATE ──────────────────────────────────────────────────── */
+let greenCount  = 0;
+let goldCount   = 0;
+let ticker      = null;
+let quizQ       = 1;
+let quizAttempts = 0;
+const TOTAL_Q   = 5;
+const MAX_BUGS  = 150;
+
+/* ── CHROMEBOOK ZOOM ────────────────────────────────────────── */
+function applyZoom() {
+    const zX = window.innerWidth  / 1400;
+    const zY = window.innerHeight / 940;
+    document.body.style.zoom = Math.min(zX, zY, 1);
+}
+window.addEventListener('resize', applyZoom);
+window.addEventListener('load',   applyZoom);
+applyZoom();
+
+/* ── HELPERS ─────────────────────────────────────────────────── */
+const dish      = document.getElementById('dish');
+const narrative = document.getElementById('narrative');
+
+function totalBugs() { return greenCount + goldCount; }
+
+function updateCounters() {
+    document.getElementById('cntGreen').textContent = greenCount;
+    document.getElementById('cntGold').textContent  = goldCount;
+    document.getElementById('cntTotal').textContent = totalBugs();
+}
+
+function addBug(type, n = 1) {
+    for (let i = 0; i < n; i++) {
+        const el = document.createElement('div');
+        const rot = Math.floor(Math.random() * 360);
+        el.style.setProperty('--rot', rot + 'deg');
+        el.style.transform = `rotate(${rot}deg)`;
+        el.className = 'bug ' + type;
+        dish.appendChild(el);
+        if (type === 'bug-green')      greenCount++;
+        else if (type.startsWith('bug-gold')) goldCount++;
+    }
+    updateCounters();
+}
+
+function hideAllBtns() {
+    document.querySelectorAll('.action-btn').forEach(b => {
+        b.classList.remove('visible');
+        b.style.display = 'none';
+    });
+}
+function showBtn(id) {
+    const b = document.getElementById(id);
+    b.style.display = 'block';
+    b.classList.add('visible');
+}
+
+function logData(phase, green, gold, note) {
+    const tbody = document.getElementById('tableBody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><strong>${phase}</strong></td><td>${green}</td><td>${gold}</td><td class="log-note">${note}</td>`;
+    tbody.appendChild(tr);
+}
+
+function setStep(n) {
+    document.querySelectorAll('.phase-step').forEach((el, i) => {
+        el.classList.remove('active','done');
+        if (i + 1 < n)  el.classList.add('done');
+        if (i + 1 === n) el.classList.add('active');
+    });
+}
+
+function showOverlay(id, duration = 900) {
+    const el = document.getElementById(id);
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), duration);
+}
+
+/* ── VIEW TOGGLE ─────────────────────────────────────────────── */
+function showView(which) {
+    const isPetri = (which === 'petri');
+    document.getElementById('petriView').style.display = isPetri ? 'flex' : 'none';
+    document.getElementById('tableView').style.display = isPetri ? 'none' : 'block';
+    document.getElementById('tabPetri').classList.toggle('active', isPetri);
+    document.getElementById('tabTable').classList.toggle('active', !isPetri);
+}
+
+/* ── PANEL TOGGLE ────────────────────────────────────────────── */
+function togglePanel(bodyId, headerEl) {
+    const body = document.getElementById(bodyId);
+    const icon = headerEl.querySelector('.panel-toggle');
+    const isHidden = body.classList.contains('hidden') || body.style.display === 'none';
+    body.style.display = isHidden ? 'block' : 'none';
+    icon.classList.toggle('open', isHidden);
+}
+
+/* ── INIT ────────────────────────────────────────────────────── */
+function init() {
+    if (ticker) { clearInterval(ticker); ticker = null; }
+
+    // Reset dish
+    // Remove all bug elements but leave overlays
+    Array.from(dish.children).forEach(el => {
+        if (!el.classList.contains('dish-overlay')) dish.removeChild(el);
+    });
+    greenCount = 0;
+    goldCount  = 0;
+    updateCounters();
+
+    // Reset UI
+    hideAllBtns();
+    showBtn('btnMultiply');
+    document.getElementById('tableBody').innerHTML = '';
+    document.getElementById('conclusionPanel').style.display = 'none';
+    document.getElementById('controlsBody').style.display = 'block';
+
+    // Reset quiz
+    quizAttempts = 0;
+    quizQ = 1;
+    document.getElementById('conclusionCarousel').classList.remove('review-mode');
+    document.querySelectorAll('input[type="radio"]').forEach(el => el.checked = false);
+    document.querySelectorAll('.question-block').forEach(el => el.style.borderColor = '');
+    document.querySelectorAll('.feedback-text').forEach(el => el.innerHTML = '');
+    document.getElementById('quizSummary').style.display = 'none';
+    document.getElementById('retryBtn').style.display = 'none';
+    updateCarousel();
+
+    setStep(1);
+    addBug('bug-green', 1);
+    narrative.innerHTML = 'You have <strong>1 normal (Green) bacterium</strong> in the Petri dish.<br><br>Click <strong>Multiply Bacteria</strong> to watch it clone itself asexually.';
+    logData('Start', 1, 0, 'A single normal bacterium is placed in the dish.');
+    showView('petri');
+}
+
+/* ── PHASE 1 — MULTIPLY ─────────────────────────────────────── */
+function phase_multiply() {
+    hideAllBtns();
+    setStep(1);
+    narrative.innerHTML = '<em>Multiplying…</em>';
+
+    ticker = setInterval(() => {
+        addBug('bug-green', 1);
+        if (totalBugs() >= MAX_BUGS) {
+            clearInterval(ticker); ticker = null;
+            setStep(2);
+            narrative.innerHTML = `The bacterium divided <strong>${MAX_BUGS} times</strong>, producing identical green clones.<br><br>Every clone shares the <em>exact same DNA</em> as the original.<br><br>Click <strong>Introduce Random Mutation</strong> to simulate a rare copying error.`;
+            showBtn('btnMutate');
+            logData('Multiply', MAX_BUGS, 0, 'Asexual reproduction produced ' + MAX_BUGS + ' identical clones.');
+        }
+    }, 15);
+}
+
+/* ── PHASE 2 — MUTATE ───────────────────────────────────────── */
+function phase_mutate() {
+    hideAllBtns();
+    setStep(2);
+
+    const el = document.createElement('div');
+    const rot = Math.floor(Math.random() * 360);
+    el.style.setProperty('--rot', rot + 'deg');
+    el.style.transform = `rotate(${rot}deg)`;
+    el.className = 'bug bug-gold-pulse';
+    dish.appendChild(el);
+    goldCount++;
+    updateCounters();
+
+    setStep(3);
+    narrative.innerHTML = `A <strong>copying error</strong> occurred during reproduction!<br><br>One new bacterium has a <strong style="color:var(--amber);">Gold mutation</strong> — a slightly different version of its parent's DNA.<br><br>For now, it's just different. Is different better or worse? Click <strong>Administer Antibiotics</strong> to find out.`;
+    showBtn('btnAntibiotic');
+    logData('Mutation', MAX_BUGS, 1, 'A random DNA copying error created one mutant during reproduction.');
+}
+
+/* ── PHASE 3 — ANTIBIOTICS ──────────────────────────────────── */
+function phase_antibiotics() {
+    hideAllBtns();
+    setStep(3);
+    narrative.innerHTML = '<em>Antibiotics applied… watching for a reaction.</em>';
+    showOverlay('overlayRed', 1200);
+
+    const greens = Array.from(dish.querySelectorAll('.bug-green'));
+
+    // Step 1: show skulls
+    greens.forEach((g, i) => {
+        setTimeout(() => {
+            g.classList.add('bug-dead');
+            g.innerHTML = '💀';
+            g.style.transform = 'rotate(0deg)';
+        }, i * 18);
+    });
+
+    const doneKilling = greens.length * 18;
+
+    // Step 2: fade out
+    setTimeout(() => {
+        greens.forEach((g, i) => {
+            setTimeout(() => {
+                g.style.opacity = '0';
+                g.style.transform = 'scale(0)';
+            }, i * 12);
+        });
+    }, doneKilling + 400);
+
+    const doneFading = doneKilling + 400 + greens.length * 12 + 500;
+
+    // Step 3: clean up, show survivor
+    setTimeout(() => {
+        Array.from(dish.children).forEach(el => {
+            if (el.classList.contains('bug-dead')) dish.removeChild(el);
+        });
+        greenCount = 0;
+        updateCounters();
+
+        setStep(4);
+        narrative.innerHTML = `The antibiotic wiped out <strong>all ${MAX_BUGS} normal green bacteria</strong>.<br><br>But the <strong style="color:var(--amber);">Gold mutant survived</strong> — its DNA change happened to make it resistant to this medicine.<br><br>The mutation wasn't a choice. It was random luck that its mutation turned out to be useful <em>in this environment</em>.<br><br>Click <strong>Multiply the Superbug</strong> to see what happens next.`;
+        showBtn('btnMultiplySuper');
+        logData('Antibiotics', 0, 1, 'All normal bacteria killed. The mutant survived — its DNA happened to confer resistance.');
+    }, doneFading);
+}
+
+/* ── PHASE 4 — MULTIPLY SUPERBUG ────────────────────────────── */
+function phase_multiplySuper() {
+    hideAllBtns();
+    setStep(5);
+    narrative.innerHTML = '<em>The Superbug is multiplying…</em>';
+
+    // Stabilize the pulsing gold bug
+    const pulsing = dish.querySelector('.bug-gold-pulse');
+    if (pulsing) {
+        pulsing.classList.remove('bug-gold-pulse');
+        pulsing.classList.add('bug-gold');
+        pulsing.style.opacity = '1';
+    }
+
+    ticker = setInterval(() => {
+        addBug('bug-gold', 1);
+        if (totalBugs() >= MAX_BUGS) {
+            clearInterval(ticker); ticker = null;
+            setStep(5);
+            narrative.innerHTML = `The Petri dish is now full of <strong style="color:var(--amber);">Gold Superbugs</strong>.<br><br>Every single one is a clone of the resistant survivor — carrying the <em>exact same resistant DNA</em>.<br><br>Click <strong>Administer Antibiotics Again</strong> to see if the medicine works this time.`;
+            showBtn('btnAntibiotic2');
+            logData('Superbug Multiply', 0, MAX_BUGS, 'Resistant survivor cloned itself ' + MAX_BUGS + ' times. All offspring share identical resistant DNA.');
+        }
+    }, 15);
+}
+
+/* ── PHASE 5 — ANTIBIOTICS AGAIN ────────────────────────────── */
+function phase_antibiotics2() {
+    hideAllBtns();
+    setStep(6);
+    narrative.innerHTML = '<em>Antibiotics applied…</em>';
+    showOverlay('overlayRed', 600);
+
+    setTimeout(() => {
+        showOverlay('overlayGold', 1400);
+        narrative.innerHTML = `<strong>No effect. 🛡️</strong><br><br>Every bacterium survived. Because asexual reproduction creates <em>perfect clones</em>, every offspring inherited the <strong>same resistant DNA</strong> from the original mutant.<br><br>This is exactly how real-world antibiotic resistance develops. <strong>Experiment complete.</strong>`;
+
+        logData('Antibiotics Again', 0, MAX_BUGS, 'Zero effect. The entire population carries identical resistant DNA — asexual cloning locked in the trait.');
+
+        // Show conclusion, collapse controls
+        document.getElementById('conclusionPanel').style.display = 'block';
+        document.getElementById('controlsBody').style.display = 'none';
+        showBtn('btnReset');
+
+        setTimeout(() => {
+            document.getElementById('conclusionPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 200);
+    }, 1500);
+}
+
+/* ── QUIZ LOGIC ──────────────────────────────────────────────── */
+function updateCarousel() {
+    document.querySelectorAll('.question-slide').forEach((el, i) => {
+        el.classList.toggle('active', i + 1 === quizQ);
+    });
+    document.getElementById('prevBtn').disabled = (quizQ === 1);
+    const isLast = (quizQ === TOTAL_Q);
+    document.getElementById('nextBtn').style.display  = isLast ? 'none' : 'inline-block';
+    document.getElementById('submitBtn').style.display = isLast ? 'inline-block' : 'none';
+    document.getElementById('stepIndicator').textContent = `${quizQ} / ${TOTAL_Q}`;
+}
+
+function nextQ() { if (quizQ < TOTAL_Q) { quizQ++; updateCarousel(); } }
+function prevQ() { if (quizQ > 1)       { quizQ--; updateCarousel(); } }
+
+const ANSWERS = { q1:'B', q2:'B', q3:'A', q4:'B', q5:'A' };
+const CORRECT_FB = {
+    q1: '✅ Correct! Mutations are random copying errors — organisms cannot plan or choose to mutate.',
+    q2: '✅ Correct! A trait is only an advantage if the environment makes it one. Without antibiotics, "Gold" meant nothing.',
+    q3: '✅ Correct! Every clone inherited the identical resistant DNA from the one surviving parent.',
+    q4: '✅ Correct! Asexual reproduction copies DNA exactly — offspring are genetic clones of the parent.',
+    q5: '✅ Correct! Same color = same DNA. Green cloned Green; Gold cloned Gold.'
+};
+const WRONG_FB = {
+    q1: '❌ Think about <em>when</em> the mutation happened. Did the bacteria know antibiotics were coming?',
+    q2: '❌ If no antibiotics were ever added, would the Gold bacterium have had any advantage?',
+    q3: '❌ Think about what "asexual reproduction" means for the DNA passed to each offspring.',
+    q4: '❌ Compare asexual reproduction to sexual reproduction. What\'s different about the DNA?',
+    q5: '❌ Look at the petri dish. What visual detail showed the offspring were exact copies?'
+};
+
+function submitQuiz() {
+    if (!document.getElementById('conclusionCarousel').classList.contains('review-mode')) {
+        document.getElementById('conclusionCarousel').classList.add('review-mode');
+    }
+    quizAttempts++;
+    let allCorrect = true;
+
+    ['q1','q2','q3','q4','q5'].forEach(q => {
+        const val = document.querySelector(`input[name="${q}"]:checked`)?.value;
+        const fb  = document.getElementById(`${q}-feedback`);
+        const blk = document.getElementById(`${q}-block`);
+        const correct = (val === ANSWERS[q]);
+        if (!correct) allCorrect = false;
+        blk.style.borderColor = correct ? 'var(--teal)' : 'var(--red)';
+        fb.style.background   = correct ? '#e6faf5' : '#ffeaea';
+        fb.style.color        = correct ? 'var(--teal)' : 'var(--red)';
+        fb.innerHTML          = correct ? CORRECT_FB[q] : WRONG_FB[q];
+    });
+
+    const summary = document.getElementById('quizSummary');
+    summary.style.display = 'block';
+    const retry = document.getElementById('retryBtn');
+
+    if (allCorrect) {
+        summary.style.background   = '#e6faf5';
+        summary.style.color        = 'var(--teal)';
+        summary.style.border       = '2px solid var(--teal)';
+        summary.innerHTML = `🎉 All correct in ${quizAttempts} attempt${quizAttempts > 1 ? 's' : ''}! You've got this.`;
+        retry.style.display = 'none';
+    } else {
+        summary.style.background   = '#ffeaea';
+        summary.style.color        = 'var(--red)';
+        summary.style.border       = '2px solid var(--red)';
+        summary.innerHTML = `Attempt ${quizAttempts}: some answers need another look. Review the feedback above.`;
+        retry.style.display = 'inline-block';
+    }
+
+    document.getElementById('conclusionPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/* ── BOOT ────────────────────────────────────────────────────── */
+window.onload = init;
+</script>
+</body>
+</html>
