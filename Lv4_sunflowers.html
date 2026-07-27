@@ -1,0 +1,3260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level 4: Sunflower Population Lab</title>
+    <style>
+        /* ── DESIGN TOKENS ───────────────────────────────────── */
+        :root {
+            --bg:           #eef2f7;
+            --surface:      #ffffff;
+            --border:       #cbd5e1;
+
+            /* Primary brand: cobalt blue (distinct from Lv3's teal-green and the Strain A marker blue) */
+            --teal:         #1d4ed8;
+            --teal-dark:    #1640b0;
+            --teal-light:   #dde7fc;
+
+            --ink:          #1a2333;
+            --ink-mid:      #4b5870;
+            --ink-light:    #8492a8;
+
+            /* Secondary accent: slate navy */
+            --purple:       #334d7a;
+            --purple-light: #e4eaf5;
+            --blue:         #0891b2;
+            --blue-light:   #cffafe;
+            --amber:        #d97706;
+            --amber-light:  #fef3c7;
+            --green:        #16a34a;
+            --red:          #dc2626;
+            --red-light:    #fee2e2;
+
+            /* Strain plot colors (kept distinct from the brand colors above) */
+            --strain-a:     #7c3aed;
+            --strain-b:     #db2777;
+            --strain-c:     #d97706;
+
+            --radius:       10px;
+            --shadow:       0 2px 8px rgba(0,0,0,0.09);
+            --shadow-lg:    0 6px 20px rgba(0,0,0,0.13);
+        }
+
+        /* ── RESET & BASE ───────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            padding: 16px 14px 40px;
+            min-height: 100vh;
+        }
+
+        .page-wrap {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        /* ── HEADER ─────────────────────────────────────────── */
+        .game-header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .level-badge {
+            display: inline-block;
+            background: var(--teal);
+            color: white;
+            font-size: 0.75em;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+        }
+        .game-header h1 {
+            font-size: 1.9em;
+            font-weight: 800;
+            color: var(--ink);
+            line-height: 1.15;
+        }
+        .game-header h1 span { color: var(--teal); }
+        .game-header .subtitle {
+            color: var(--ink-mid);
+            font-size: 0.95em;
+            max-width: 680px;
+            margin: 6px auto 0;
+            line-height: 1.4;
+        }
+        .autosave-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.78em;
+            font-weight: 700;
+            color: var(--green);
+            margin-top: 8px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .autosave-status.visible { opacity: 1; }
+
+        /* ── STEP BUTTONS (merged stepper + action controls) ──── */
+        .stepper {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+            align-items: center;
+        }
+
+        .step-btn {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            color: var(--ink-light);
+            font-size: 1em;
+            font-weight: 700;
+            padding: 13px 22px;
+            border-radius: 30px;
+            transition: all 0.25s ease;
+            cursor: not-allowed;
+            box-shadow: var(--shadow);
+            font-family: inherit;
+        }
+        .step-btn .num {
+            width: 24px; height: 24px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: var(--border);
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85em;
+            transition: all 0.25s ease;
+        }
+
+        /* Upcoming step: ready to click, gently pulsing to draw the eye */
+        .step-btn.ready {
+            cursor: pointer;
+            border-color: var(--teal);
+            color: var(--teal-dark);
+            background: var(--teal-light);
+            animation: pulse-step 1.6s infinite;
+        }
+        .step-btn.ready .num { background: var(--teal); }
+        .step-btn.ready:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); animation: none; }
+
+        /* Completed step */
+        .step-btn.done {
+            cursor: default;
+            border-color: var(--green);
+            color: var(--green);
+            background: var(--surface);
+        }
+        .step-btn.done .num { background: var(--green); font-size: 0; }
+        .step-btn.done .num::before { content: "✓"; font-size: 0.95rem; }
+        .step-btn.done .label-text { display: none; }
+        .step-btn.done .label-done { display: inline; }
+
+        /* Currently in-progress step (no direct button action, e.g. filling out the notepad) */
+        .step-btn.in-progress {
+            cursor: default;
+            border-color: var(--purple);
+            color: var(--purple);
+            background: var(--purple-light);
+            animation: pulse-step-purple 1.6s infinite;
+        }
+        .step-btn.in-progress .num { background: var(--purple); }
+
+        /* Future / not-yet-reachable step */
+        .step-btn.upcoming {
+            opacity: 0.55;
+        }
+
+        .step-btn .label-done { display: none; }
+
+        @keyframes pulse-step {
+            0% { box-shadow: 0 0 0 0 rgba(29, 78, 216, 0.45); }
+            70% { box-shadow: 0 0 0 12px rgba(29, 78, 216, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(29, 78, 216, 0); }
+        }
+        @keyframes pulse-step-purple {
+            0% { box-shadow: 0 0 0 0 rgba(51, 77, 122, 0.4); }
+            70% { box-shadow: 0 0 0 12px rgba(51, 77, 122, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(51, 77, 122, 0); }
+        }
+
+        #reset_btn {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            z-index: 1500;
+            padding: 9px 16px;
+            font-size: 0.82em;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 700;
+            border: 1.5px solid var(--red);
+            color: var(--red);
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+        }
+        #reset_btn:hover { background: var(--red); color: white; transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+
+        /* ── CUSTOM MODAL SYSTEM ────────────────────────────── */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background-color: rgba(26, 35, 51, 0.55);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 3000;
+            backdrop-filter: blur(3px);
+            padding: 16px;
+        }
+        .modal-content {
+            background: var(--surface);
+            padding: 28px 30px;
+            border-radius: 14px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            border-top: 5px solid var(--teal);
+            box-shadow: var(--shadow-lg);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content h2 { color: var(--teal-dark); margin-top: 0; font-size: 1.5em; }
+        .modal-content p, .modal-content li { font-size: 1em; line-height: 1.55; color: var(--ink); text-align: left; }
+        .modal-content ul { padding-left: 22px; margin: 10px 0; }
+        .modal-content li { margin-bottom: 4px; }
+
+        #alert-modal .modal-content { border-top-color: var(--blue); max-width: 460px; }
+        #alert-modal h2 { color: var(--blue); }
+        #alert-modal p { text-align: center; font-size: 1.05em; }
+
+        .btn-primary {
+            margin-top: 18px;
+            padding: 11px 26px;
+            font-size: 1em;
+            background: var(--teal);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover { background: var(--teal-dark); }
+        .btn-blue { background: var(--blue); }
+        .btn-blue:hover { background: #1d4fd1; }
+        .btn-red { background: var(--red); }
+        .btn-red:hover { background: #b91c1c; }
+
+        /* ── SIMULATION GRID ────────────────────────────────── */
+        .experiment-grid {
+            display: grid;
+            grid-template-columns: minmax(110px, 150px) repeat(3, 1fr);
+            gap: 1px;
+            width: 100%;
+            background-color: var(--border);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            margin-bottom: 8px;
+        }
+
+        .grid-cell {
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 10px 6px 12px;
+        }
+        .header-cell {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: var(--teal-light);
+            padding: 8px 6px;
+        }
+        .loc-label { align-items: center; text-align: center; }
+        .loc-title { color: var(--teal-dark); font-size: clamp(0.85em, 2vw, 1.1em); font-weight: 800; letter-spacing: 0.5px; }
+        .loc-desc { color: var(--ink-mid); font-size: clamp(0.65em, 1.4vw, 0.8em); margin-top: 2px; }
+
+        .strain-label { align-items: flex-end; text-align: right; padding-right: 10px; background: var(--surface); border-right: 3px solid var(--teal); }
+        .strain-title { color: var(--ink); font-size: clamp(0.85em, 2vw, 1.05em); font-weight: 800; }
+        .strain-desc { color: var(--ink-mid); font-size: clamp(0.7em, 1.4vw, 0.82em); margin-top: 2px; }
+        .strain-ref { color: var(--teal-dark); font-size: clamp(0.65em, 1.3vw, 0.78em); font-weight: 700; margin-top: 4px; background: var(--teal-light); padding: 2px 7px; border-radius: 4px; }
+
+        /* ── GROWTH AREA ─────────────────────────────────────── */
+        .growth-area {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            min-height: 150px;
+            max-height: 240px;
+            position: relative;
+            background: #f3f6fa;
+            border-radius: 6px;
+            border-bottom: 6px solid #8a6a3f;
+            display: flex;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        .ruler { width: 24px; height: 100%; border-right: 1px solid var(--border); position: relative; flex-shrink: 0; }
+        .ruler-tick { position: absolute; left: 0; width: 100%; height: 1px; background: var(--border); }
+        .ruler-label { position: absolute; left: 27px; transform: translateY(50%); color: var(--ink-light); font-size: 0.62em; white-space: nowrap; line-height: 1; }
+        .ruler-label.top-label { transform: translateY(0%); }
+
+        .plants-wrapper { flex-grow: 1; display: flex; justify-content: space-evenly; align-items: flex-end; padding: 0 2px 0 0; position: relative; height: 100%; }
+        .mini-plant { display: flex; flex-direction: column; align-items: center; position: relative; opacity: 0; transition: opacity 0.5s; height: 100%; justify-content: flex-end; }
+        .mini-plant.planted { opacity: 1; }
+        .mini-pot { width: 14px; height: 12px; background: #8a6a3f; border-radius: 0 0 3px 3px; z-index: 2; position: relative; flex-shrink: 0; }
+        .mini-pot::after { content: ''; position: absolute; top: -2px; left: -2px; width: 18px; height: 3px; background: #6e5230; border-radius: 2px; }
+        .mini-stem { width: 3px; background: #4caf6e; position: relative; height: 0px; transition: height 1.8s ease-out; flex-shrink: 0; }
+        .mini-head { width: 13px; height: 13px; background: var(--amber); border-radius: 50%; position: absolute; top: -7px; left: 50%; transform: translateX(-50%) scale(0); transition: transform 0.4s 1.8s; border: 1px solid #b45309; }
+
+        /* ── DATA PANEL ─────────────────────────────────────── */
+        .data-panel {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: stretch;
+            background: var(--bg);
+            padding: 8px 9px;
+            border-radius: 6px;
+            font-size: 0.85em;
+        }
+        .prediction-box { display: flex; align-items: center; justify-content: space-between; gap: 6px; color: var(--blue); font-weight: 700; }
+        .prediction-box span { font-size: 0.85em; }
+        .prediction-input {
+            width: 58px;
+            background: var(--surface);
+            border: 2px solid var(--blue);
+            color: var(--ink);
+            border-radius: 6px;
+            padding: 4px 5px;
+            text-align: center;
+            font-size: 0.95em;
+            font-weight: 700;
+        }
+        .prediction-input:disabled { border-color: var(--border); color: var(--ink-light); background: var(--bg); }
+
+        @keyframes pulse-blue-ring {
+            0% { box-shadow: 0 0 0 0 rgba(8, 145, 178, 0.55); }
+            70% { box-shadow: 0 0 0 8px rgba(8, 145, 178, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(8, 145, 178, 0); }
+        }
+        .prediction-input.needs-input { animation: pulse-blue-ring 1.5s infinite; }
+
+        .actual-box {
+            color: var(--teal-dark);
+            font-weight: 700;
+            font-size: 0.85em;
+            background: var(--teal-light);
+            padding: 4px 7px;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.5s, background-color 0.3s, box-shadow 0.3s;
+            text-align: center;
+        }
+        .actual-box.revealed { opacity: 1; }
+
+        @keyframes pulse-teal-ring {
+            0% { box-shadow: 0 0 0 0 rgba(29, 78, 216, 0.5); background-color: var(--teal-light); }
+            50% { box-shadow: 0 0 0 6px rgba(29, 78, 216, 0); background-color: #b9cdf7; }
+            100% { box-shadow: 0 0 0 0 rgba(29, 78, 216, 0); background-color: var(--teal-light); }
+        }
+        .actual-box.needs-transfer { animation: pulse-teal-ring 1.5s infinite; }
+
+        /* ── FLOATING DATA NOTEPAD ──────────────────────────── */
+        .notepad-widget {
+            position: fixed;
+            bottom: 18px;
+            right: 18px;
+            width: min(380px, calc(100vw - 36px));
+            min-width: 280px;
+            min-height: 220px;
+            max-height: calc(100vh - 36px);
+            background: var(--surface);
+            border-radius: 10px;
+            box-shadow: var(--shadow-lg);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            border: 1.5px solid var(--border);
+            border-top: 4px solid var(--purple);
+            overflow: hidden;
+            resize: both;
+        }
+
+        .notepad-widget.minimized {
+            min-height: 0;
+            height: auto !important;
+            width: 240px !important;
+            max-width: calc(100vw - 36px);
+            resize: none;
+        }
+        .notepad-widget.minimized .notepad-body { display: none; }
+
+        .notepad-header {
+            background: var(--purple);
+            color: white;
+            padding: 10px 13px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: grab;
+            user-select: none;
+            font-size: 1em;
+            flex-shrink: 0;
+            transition: box-shadow 0.3s;
+        }
+        .notepad-header:active { cursor: grabbing; }
+        .notepad-header.needs-attention { animation: pulse-step-purple 1.6s infinite; }
+
+        .notepad-controls button { background: none; border: none; color: white; font-size: 1.15em; cursor: pointer; font-weight: 700; padding: 0 4px; line-height: 1; }
+        .notepad-controls button:hover { opacity: 0.75; }
+        .notepad-body { padding: 13px; display: flex; flex-direction: column; flex-grow: 1; overflow: auto; }
+        .notepad-body p { margin-top: 0; color: var(--ink-mid); font-size: 0.85em; margin-bottom: 10px; }
+
+        .notepad-table { width: 100%; border-collapse: collapse; color: var(--ink); margin-bottom: 12px; }
+        .notepad-table th, .notepad-table td { border: 1px solid var(--border); padding: 6px 3px; text-align: center; font-size: 0.85em; }
+        .notepad-table th { background: var(--teal-light); color: var(--teal-dark); font-weight: 700; }
+
+        .notepad-table input {
+            width: 100%;
+            min-width: 42px;
+            max-width: 75px;
+            box-sizing: border-box;
+            padding: 4px;
+            text-align: center;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.9em;
+            background: var(--surface);
+            color: var(--ink);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .notepad-table input:focus { outline: none; border-color: var(--blue); }
+
+        .input-correct { background-color: #dcfce7 !important; border-color: var(--green) !important; }
+        .input-incorrect { background-color: var(--red-light) !important; border-color: var(--red) !important; }
+
+        .btn-check-notepad { background: var(--purple); color: white; border: none; padding: 9px; border-radius: 6px; font-weight: 700; cursor: pointer; margin-top: auto; font-size: 0.9em; }
+        .btn-check-notepad:hover { background: #24385c; }
+
+        /* ── ANALYTICS SECTION ──────────────────────────────── */
+        .analytics-section {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            background: var(--surface);
+            padding: 20px 16px 26px;
+            border-radius: var(--radius);
+            border: 1.5px solid var(--border);
+            border-top: 5px solid var(--purple);
+            margin-top: 22px;
+            box-sizing: border-box;
+            scroll-margin-top: 16px;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .analytics-section h2 { color: var(--purple); margin-top: 0; font-size: 1.45em; border-bottom: 2px solid var(--border); padding-bottom: 10px; width: 100%; text-align: center; }
+        .analytics-section .sub-instructions { color: var(--ink-mid); font-size: 0.95em; margin-top: 6px; text-align: center; }
+
+        .graph-section { width: 100%; background: var(--bg); padding: 16px 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; margin-top: 14px; position: relative; }
+        .graph-section h3 { color: var(--ink); font-size: 1.1em; margin-bottom: 4px; }
+
+        /* Fullscreen-only title, hidden in normal view (the bar itself and its button stay visible) */
+        .fs-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            width: 100%;
+        }
+        .fs-only-title { display: none; }
+
+        .btn-fullscreen {
+            margin-bottom: 10px;
+            padding: 8px 14px;
+            font-size: 0.85em;
+            font-weight: 700;
+            border: 1.5px solid var(--purple);
+            color: var(--purple);
+            background: var(--surface);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .btn-fullscreen:hover { background: var(--purple-light); }
+
+        @keyframes pulse-exit-btn {
+            0%   { box-shadow: 0 0 0 0 rgba(51,77,122,0.65); background: var(--purple-light); }
+            70%  { box-shadow: 0 0 0 10px rgba(51,77,122,0); background: var(--surface); }
+            100% { box-shadow: 0 0 0 0 rgba(51,77,122,0); background: var(--surface); }
+        }
+        .btn-fullscreen.exit-pulse {
+            animation: pulse-exit-btn 1.5s infinite;
+            border-color: var(--purple);
+            color: var(--purple);
+            font-weight: 800;
+        }
+        .btn-fullscreen.exit-pulse:hover { animation: none; background: var(--purple-light); }
+
+        .graph-section.fullscreen-mode {
+            position: fixed;
+            inset: 0;
+            margin: 0;
+            z-index: 2500;
+            border-radius: 0;
+            max-width: none !important;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            justify-content: flex-start;
+            box-shadow: var(--shadow-lg);
+            padding: 14px 18px;
+            box-sizing: border-box;
+        }
+        body.fullscreen-lock { overflow: hidden; }
+
+        /* In fullscreen mode: show the title, keep tools panel but tighten its spacing */
+        .graph-section.fullscreen-mode .fs-bar {
+            justify-content: space-between;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+        }
+        .graph-section.fullscreen-mode .fs-only-title { display: block; margin-bottom: 0; }
+        .graph-section.fullscreen-mode .btn-fullscreen { margin-bottom: 0; }
+        .graph-section.fullscreen-mode #tools-panel {
+            margin-bottom: 8px;
+            flex-shrink: 0;
+        }
+
+        .graph-section.fullscreen-mode .graph-board-container,
+        .graph-section.fullscreen-mode .x-axis {
+            max-width: none !important;
+            width: 100%;
+        }
+
+        /* Reference data table - layout container (panel is now position:fixed in fullscreen) */
+        .fs-layout {
+            display: flex;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+        }
+        .graph-board-wrap {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .graph-section.fullscreen-mode .fs-layout {
+            flex: 1 1 auto;
+            min-height: 0;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .graph-section.fullscreen-mode .graph-board-wrap {
+            flex: 1 1 auto;
+            min-width: 0;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+        }
+
+        .fs-data-panel {
+            display: none;
+        }
+
+        /* In fullscreen mode the data table becomes a small floating widget anchored top-right,
+           matching the style of the regular Data Notepad so students are already familiar with it */
+        .graph-section.fullscreen-mode .fs-data-panel {
+            display: flex;
+            position: fixed;
+            top: 70px;
+            right: 18px;
+            width: 260px;
+            z-index: 2600;
+            background: var(--surface);
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            border-top: 4px solid var(--teal);
+            box-shadow: var(--shadow-lg);
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .fs-panel-header {
+            background: var(--teal);
+            color: white;
+            font-weight: 700;
+            font-size: 0.9em;
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: default;
+            flex-shrink: 0;
+        }
+        .fs-panel-header button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.1em;
+            cursor: pointer;
+            padding: 0 3px;
+            line-height: 1;
+            font-weight: 700;
+        }
+        .fs-panel-header button:hover { opacity: 0.75; }
+        .fs-panel-body { padding: 10px 12px 12px; }
+        .fs-data-panel.fs-minimized .fs-panel-body { display: none; }
+        .graph-section.fullscreen-mode .fs-data-panel.fs-minimized { width: auto; }
+
+        .fs-data-panel h4 { color: var(--teal-dark); font-size: 0.9em; margin-bottom: 8px; text-align: center; }
+        .fs-data-table { width: 100%; border-collapse: collapse; font-size: 0.8em; }
+        .fs-data-table th, .fs-data-table td { border: 1px solid var(--border); padding: 5px 3px; text-align: center; }
+        .fs-data-table th { background: var(--teal-light); color: var(--teal-dark); font-weight: 700; font-size: 0.82em; }
+        .fs-data-table td.strain-id { font-weight: 700; background: var(--teal-light); color: var(--teal-dark); }
+
+        /* Cells representing a value already plotted on the graph: grayed out and struck through */
+        .fs-data-table td.cell-plotted {
+            color: var(--ink-light);
+            background: var(--bg);
+            text-decoration: line-through;
+            font-weight: 400;
+        }
+        .fs-data-table td.cell-plotted::after { content: " ✓"; text-decoration: none; color: var(--green); font-weight: 700; }
+
+        /* Compact horizontal data table shown above the graph in normal (non-fullscreen) view */
+        .normal-data-panel {
+            display: block;
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto 14px;
+            background: var(--surface);
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            border-top: 4px solid var(--teal);
+            padding: 12px 14px;
+            transition: box-shadow 0.3s, border-color 0.3s;
+        }
+        .normal-data-panel.highlight-pulse {
+            border-color: var(--teal);
+            box-shadow: 0 0 0 4px rgba(29,78,216,0.35), 0 0 20px rgba(29,78,216,0.2);
+        }
+        .graph-section.fullscreen-mode .normal-data-panel { display: none; }
+        .normal-data-panel h4 { color: var(--teal-dark); font-size: 0.9em; margin-bottom: 8px; text-align: center; }
+
+        .plot-tools-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%; max-width: 900px; margin-bottom: 16px; align-items: center; }
+        .plot-tools { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+        .tool-btn { padding: 9px 14px; font-size: 0.95em; border: 3px solid transparent; border-radius: 8px; cursor: pointer; font-weight: 700; color: white; transition: all 0.2s; position: relative; }
+        .tool-btn.active { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(0,0,0,0.08); transform: scale(1.04); }
+
+        /* ── GUIDED FIRST-POINT COACHMARK ───────────────────── */
+        @keyframes coachmark-glow {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+        .coachmark-target {
+            animation: coachmark-glow 1.4s infinite;
+            position: relative;
+            z-index: 20;
+        }
+        .coachmark-bubble {
+            display: none;
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto 14px;
+            background: var(--ink);
+            color: white;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.92em;
+            line-height: 1.45;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            animation: coachmark-fade-in 0.35s ease;
+        }
+        .coachmark-bubble.visible { display: block; }
+        .coachmark-bubble b { color: #ffd9a0; }
+        /* Arrow removed — plain rounded card, no directional pointer */
+        .coachmark-bubble .coachmark-arrow { display: none; }
+        @keyframes coachmark-fade-in {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-check-graph { padding: 10px 16px; font-size: 0.92em; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; background: var(--green); color: white; transition: background 0.2s; }
+        .btn-check-graph:hover { background: #128a3e; }
+
+        .btn-revert { padding: 10px 16px; font-size: 0.92em; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; background: var(--blue); color: white; display: none; }
+        .btn-revert:hover { background: #0e7490; }
+
+        .graph-board-container { display: flex; width: 100%; max-width: 950px; position: relative; }
+
+        .y-axis-title {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            text-align: center;
+            font-weight: 700;
+            color: var(--ink-mid);
+            font-size: 0.85em;
+            margin-right: 8px;
+            letter-spacing: 1px;
+            flex-shrink: 0;
+        }
+
+        .y-axis { width: 38px; position: relative; border-right: 3px solid var(--ink-light); display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+        .y-tick { position: absolute; right: 0; width: 8px; height: 2px; background-color: var(--ink-light); transform: translateY(50%); z-index: 5; }
+        .y-label { position: absolute; right: 13px; transform: translateY(50%); font-size: 0.85em; color: var(--ink-mid); font-weight: 700; }
+
+        .graph-board {
+            flex-grow: 1;
+            height: min(520px, 58vh);
+            min-height: 300px;
+            position: relative;
+            display: flex;
+            background: var(--surface);
+            border-bottom: 3px solid var(--ink-light);
+            border-radius: 4px 4px 0 0;
+        }
+
+        #grid-lines-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+
+        .plot-column { flex: 1; position: relative; cursor: crosshair; border-right: 2px dashed var(--border); z-index: 2; }
+        .plot-column.coachmark-target { animation: none; background-color: rgba(220, 38, 38, 0.06); box-shadow: inset 0 0 0 3px rgba(220, 38, 38, 0.5); }
+        .coachmark-target-line {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: repeating-linear-gradient(90deg, var(--red), var(--red) 6px, transparent 6px, transparent 12px);
+            z-index: 3;
+            pointer-events: none;
+        }
+        .coachmark-target-line::after {
+            content: attr(data-label);
+            position: absolute;
+            right: 4px;
+            top: -22px;
+            background: var(--red);
+            color: white;
+            font-size: 0.72em;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .plot-column:last-child { border-right: none; }
+        .plot-column:hover { background-color: var(--teal-light); }
+
+        .x-axis { display: flex; margin-left: 46px; width: calc(100% - 46px); max-width: 950px; margin-top: 10px; }
+        .x-label { flex: 1; text-align: center; font-weight: 700; color: var(--teal-dark); font-size: 0.95em; }
+
+        /* The Plotted Points */
+        .data-point {
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            transform: translate(-50%, 50%);
+            left: 50%;
+            border: 3px solid white;
+            cursor: grab;
+            box-shadow: var(--shadow);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            user-select: none;
+        }
+        .data-point:active { cursor: grabbing; }
+
+        .point-locked { border-color: var(--green) !important; cursor: default !important; }
+        .point-incorrect {
+            border: 3px solid var(--red) !important;
+            box-shadow: 0 0 14px 5px rgba(220, 38, 38, 0.45) !important;
+            animation: shake 0.4s;
+        }
+
+        .graph-legend {
+            display: none;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 18px;
+            margin-top: 18px;
+            background: var(--bg);
+            padding: 9px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.95em; }
+        .legend-color { width: 16px; height: 16px; border-radius: 4px; border: 2px solid white; box-shadow: 0 0 0 1px var(--border); }
+
+        @keyframes shake {
+            0% { transform: translate(-50%, 50%) translateX(0); }
+            25% { transform: translate(-50%, 50%) translateX(-5px); }
+            50% { transform: translate(-50%, 50%) translateX(5px); }
+            75% { transform: translate(-50%, 50%) translateX(-5px); }
+            100% { transform: translate(-50%, 50%) translateX(0); }
+        }
+
+        /* ── CHROMEBOOK / SMALL VIEWPORT RESPONSIVENESS ─────── */
+        @media (max-width: 820px) {
+            .experiment-grid { grid-template-columns: 90px repeat(3, 1fr); }
+            .strain-label { padding-right: 5px; }
+            .ruler { width: 18px; }
+            .ruler-label { left: 21px; font-size: 0.58em; }
+            .data-panel { font-size: 0.78em; }
+            .prediction-input { width: 50px; }
+            .notepad-widget { width: calc(100vw - 24px); right: 12px; bottom: 12px; }
+            .game-header h1 { font-size: 1.5em; }
+        }
+
+        @media (max-width: 600px) {
+            .experiment-grid { grid-template-columns: 70px repeat(3, 1fr); }
+            .loc-desc { display: none; }
+            .strain-desc { display: none; }
+            .y-axis-title { font-size: 0.7em; }
+            .stepper { gap: 7px; }
+            .step-btn { padding: 10px 14px; font-size: 0.85em; gap: 6px; }
+            .step-btn .num { width: 20px; height: 20px; }
+            .btn-fullscreen { font-size: 0.78em; padding: 7px 10px; }
+            #reset_btn { top: 8px; right: 8px; padding: 6px 10px; font-size: 0.72em; }
+        }
+
+        @media (max-height: 720px) {
+            .growth-area { max-height: 170px; }
+            .graph-board { height: min(340px, 45vh); }
+        }
+
+        /* Fullscreen graph-board height is set dynamically by JS to use full available space */
+        .graph-section.fullscreen-mode .graph-board {
+            flex-grow: 1;
+            width: 100%;
+        }
+
+        /* ── BAR CHART DATA LABELS ───────────────────────────── */
+        .bar-label {
+            position: absolute;
+            bottom: 100%;              /* sits just above the top of the bar */
+            left: 50%;
+            transform: translateX(-50%) translateY(-4px);
+            font-size: clamp(0.72em, 1.1vw, 0.92em);
+            font-weight: 800;
+            color: var(--ink);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 15;
+            opacity: 0;
+            transition: opacity 0.5s 1.2s;
+            background: rgba(255,255,255,0.92);
+            border-radius: 4px;
+            padding: 2px 5px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+            line-height: 1.2;
+        }
+        .bar-label.visible { opacity: 1; }
+
+        /* ── CONCLUSION WINDOW ───────────────────────────────── */
+        #conclusion-window {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(860px, 92vw);
+            height: min(680px, 88vh);
+            min-width: 340px;
+            min-height: 48px;   /* header-bar height when minimized */
+            background: var(--surface);
+            border-radius: 14px;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.28);
+            z-index: 4000;
+            flex-direction: column;
+            overflow: hidden;
+            resize: both;
+        }
+        #conclusion-window.open { display: flex; }
+        #conclusion-window.cw-minimized {
+            height: auto !important;
+            min-height: 0;
+            resize: none;
+        }
+        #conclusion-window.cw-minimized .cw-body { display: none; }
+
+        .cw-header {
+            background: var(--purple);
+            color: white;
+            padding: 13px 18px;
+            font-weight: 800;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: grab;
+            user-select: none;
+            flex-shrink: 0;
+            font-size: 1.05em;
+        }
+        .cw-header:active { cursor: grabbing; }
+        .cw-header-btns { display:flex; gap:6px; align-items:center; }
+        .cw-header-btns button {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 0.9em;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            line-height: 1.2;
+        }
+        .cw-header-btns button:hover { background: rgba(255,255,255,0.35); }
+
+        .cw-size-btns { display:flex; gap:4px; margin-right:8px; }
+        .cw-size-btns button { padding:3px 8px; font-size:0.78em; }
+        .cw-resize-hint {
+            font-size: 0.72em;
+            opacity: 0.65;
+            font-weight: 400;
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+
+        .cw-body {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            padding: 20px 24px;
+        }
+
+        /* No overlay — window sits on top of content without dimming/blurring it,
+           so students can still reference the graph or simulation beneath */
+        .cw-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 3999;
+            /* intentionally no background color or blur — the window floats freely */
+        }
+        .cw-overlay.open { display: block; pointer-events: none; }
+
+        /* Question styles */
+        .cw-question {
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 16px 18px;
+            margin-bottom: 18px;
+            border-left: 4px solid var(--teal);
+        }
+        .cw-question h3 { font-size:1em; color:var(--teal-dark); margin-bottom:10px; }
+        .cw-question p { font-size:0.95em; line-height:1.5; color:var(--ink); margin-bottom:10px; }
+        .cw-question label { display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; cursor:pointer; font-size:0.93em; line-height:1.45; }
+        .cw-question input[type=radio], .cw-question input[type=checkbox] { margin-top:3px; flex-shrink:0; accent-color:var(--teal); width:16px; height:16px; }
+        .cw-question textarea {
+            width: 100%;
+            min-height: 80px;
+            border-radius: 7px;
+            border: 1.5px solid var(--border);
+            padding: 10px;
+            font-family: inherit;
+            font-size: 0.93em;
+            resize: vertical;
+            background: var(--surface);
+            color: var(--ink);
+            box-sizing: border-box;
+        }
+        .cw-question textarea:focus { outline: none; border-color: var(--teal); }
+        .cw-transfer { border-left-color: var(--purple); }
+        .cw-transfer h3 { color: var(--purple); }
+
+        /* CER question layout */
+        .cer-row { display:flex; gap:12px; margin-bottom:14px; align-items:flex-start; }
+        .cer-label {
+            flex-shrink:0; width:80px; font-weight:800; font-size:0.85em;
+            text-align:center; padding:6px 4px; border-radius:6px; margin-top:2px;
+        }
+        .cer-claim    { background:#dbeafe; color:#1d4ed8; }
+        .cer-evidence { background:#dcfce7; color:#15803d; }
+        .cer-reasoning{ background:#ede9fe; color:#6d28d9; }
+        .cer-content  { flex:1; }
+        .cer-prompt   { font-size:0.85em; color:var(--ink-mid); margin-bottom:4px; }
+        .cer-stem     { font-size:0.93em; margin-bottom:6px; }
+        .cer-select {
+            width:100%; padding:8px 10px; border-radius:7px; font-family:inherit;
+            font-size:0.9em; border:1.5px solid var(--border); background:var(--surface);
+            color:var(--ink); cursor:pointer;
+            white-space: normal;      /* allow text to wrap in the selected value area */
+            word-break: break-word;
+            box-sizing: border-box;
+            max-width: 100%;
+        }
+        .cer-select option {
+            white-space: normal;
+            word-break: break-word;
+            padding: 6px 4px;
+        }
+        .cer-select:focus { outline:none; border-color:var(--teal); }
+
+        /* Graph resize handle */
+        .cw-graph-img-wrap {
+            position: relative;
+            display: block;
+            width: 100%;
+            max-width: 500px;
+            min-width: 200px;
+            min-height: 180px;
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: visible;
+            border: 2px solid var(--border);
+        }
+        .cw-graph-img-wrap canvas { display:block; width:100%; height:100%; }
+        .cw-graph-resize-handle {
+            position: absolute;
+            bottom: -1px;
+            right: -1px;
+            width: 22px;
+            height: 22px;
+            background: var(--teal);
+            color: white;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0 0 6px 0;
+            cursor: se-resize;
+            z-index: 5;
+            user-select: none;
+        }
+
+        /* Calculator buttons */
+        .calc-btn {
+            width:44px; height:38px; border:1px solid var(--border);
+            border-radius:6px; cursor:pointer; font-size:0.95em; font-weight:700;
+            background:var(--surface); color:var(--ink); font-family:inherit;
+            transition:background 0.15s; white-space:nowrap;
+        }
+        .calc-btn:hover { background:var(--teal-light); }
+        .calc-op { background:var(--teal-light); color:var(--teal-dark); }
+        .calc-op:hover { background:var(--teal); color:white; }
+        .calc-clear { background:var(--red-light); color:var(--red); }
+        .calc-clear:hover { background:var(--red); color:white; }
+        .calc-use-result {
+            /* spans 2 columns; override fixed width so it fills the double slot */
+            width:auto; font-size:0.78em; letter-spacing:0.01em;
+            padding:0 6px; height:38px;
+        }
+
+        /* Re-open conclusion button on graph-done-banner */
+        #reopen-conclusion-btn {
+            padding:9px 18px; background:var(--purple); color:white;
+            border:none; border-radius:8px; font-weight:700; cursor:pointer;
+            font-size:0.9em; flex-shrink:0;
+        }
+        #reopen-conclusion-btn:hover { background:#24385c; }
+
+        /* Draggable + resizable fs-data-panel */
+        .graph-section.fullscreen-mode .fs-data-panel {
+            cursor: default;
+            overflow: auto;
+            resize: both;
+            font-size: 1em;  /* base for em-scaling */
+        }
+        .fs-panel-drag-handle {
+            cursor: grab;
+        }
+        .fs-panel-drag-handle:active { cursor: grabbing; }
+
+        /* Graph-click question */
+        .cw-graph-img-wrap {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            max-width: 500px;
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid var(--border);
+        }
+        .cw-graph-img-wrap canvas {
+            display: block;
+            width: 100%;
+        }
+        .cw-graph-target-ring {
+            position: absolute;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            border: 3px dashed rgba(255,255,255,0.85);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            display: none;
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.3);
+        }
+
+        /* Feedback */
+        .cw-feedback {
+            display: none;
+            padding: 11px 14px;
+            border-radius: 8px;
+            font-size: 0.88em;
+            margin-top: 10px;
+            line-height: 1.45;
+        }
+        .cw-feedback.correct { display:block; background:#dcfce7; color:#166534; border:1.5px solid #86efac; }
+        .cw-feedback.incorrect { display:block; background:var(--red-light); color:#991b1b; border:1.5px solid #fca5a5; }
+        .cw-feedback.partial { display:block; background:#fef3c7; color:#92400e; border:1.5px solid #fcd34d; }
+
+        /* Score banner */
+        #cw-score-banner {
+            display: none;
+            text-align: center;
+            padding: 18px;
+            background: var(--purple-light);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid var(--purple);
+        }
+        #cw-score-banner h2 { color: var(--purple); margin-bottom:6px; }
+        #cw-score-banner p { color: var(--ink); font-size:0.95em; }
+
+        .cw-submit-row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:8px; }
+        .cw-btn { padding:11px 24px; font-size:0.95em; border:none; border-radius:8px; font-weight:700; cursor:pointer; }
+        .cw-btn-primary { background:var(--purple); color:white; }
+        .cw-btn-primary:hover { background:#24385c; }
+        .cw-btn-secondary { background:var(--bg); color:var(--ink-mid); border:1.5px solid var(--border); }
+        .cw-btn-secondary:hover { background:var(--border); }
+    </style>
+</head>
+<body>
+<button id="reset_btn" onclick="confirmResetLab()">↺ Reset Lab</button>
+<div class="page-wrap">
+
+    <div id="intro-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>🌻 Lab Scenario: Sunflowers &amp; Genetics</h2>
+            <p>You have been given three different strains of sunflower plants. Each has different base genetics:</p>
+            <ul>
+                <li><b>Strain A:</b> Genetically Very Tall (Usually 4.0&ndash;5.0 ft)</li>
+                <li><b>Strain B:</b> Genetically Tall (Usually 2.0&ndash;3.0 ft)</li>
+                <li><b>Strain C:</b> Genetically Short (Usually 1.0&ndash;1.5 ft)</li>
+            </ul>
+            <p>To test how environment impacts these genes, you will plant a group of <b>five seeds</b> from each strain into three different locations: Outside, Window, and Inside.</p>
+            <p><i>Think about this: will a genetically &ldquo;Tall&rdquo; plant always outgrow a genetically &ldquo;Short&rdquo; plant, even in a different environment?</i></p>
+            <p><b>Your task:</b> enter a hypothesis for the average height in all 9 environments, simulate the growth, and record your data in the floating notepad.</p>
+            <button class="btn-primary" onclick="document.getElementById('intro-modal').style.display='none'">I understand</button>
+        </div>
+    </div>
+
+    <div id="alert-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h2 id="alert-title">Notice</h2>
+            <p id="alert-message">Message goes here.</p>
+            <div style="display:flex; gap:10px; justify-content:center; margin-top:18px;">
+                <button class="btn-primary" id="alert-cancel-btn" style="display:none; background: var(--surface); color: var(--ink-mid); border: 1.5px solid var(--border); margin-top:0;">Cancel</button>
+                <button class="btn-primary btn-blue" id="alert-btn" style="margin-top:0;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notepad-widget" class="notepad-widget">
+        <div id="notepad-header" class="notepad-header">
+            <span>📝 Data Notepad</span>
+            <div class="notepad-controls">
+                <button id="notepad-toggle-btn" onclick="toggleNotepad()" title="Minimize">_</button>
+            </div>
+        </div>
+        <div id="notepad-body" class="notepad-body">
+            <p>Record the <b>average height</b> (in ft) from the simulation.</p>
+            <table class="notepad-table">
+                <thead>
+                    <tr>
+                        <th>Strain</th>
+                        <th>Outside</th>
+                        <th>Window</th>
+                        <th>Inside</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight:700; background:var(--teal-light); color:var(--teal-dark);">A</td>
+                        <td><input type="number" id="note_A_loc1" step="0.1"></td>
+                        <td><input type="number" id="note_A_loc2" step="0.1"></td>
+                        <td><input type="number" id="note_A_loc3" step="0.1"></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:700; background:var(--teal-light); color:var(--teal-dark);">B</td>
+                        <td><input type="number" id="note_B_loc1" step="0.1"></td>
+                        <td><input type="number" id="note_B_loc2" step="0.1"></td>
+                        <td><input type="number" id="note_B_loc3" step="0.1"></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:700; background:var(--teal-light); color:var(--teal-dark);">C</td>
+                        <td><input type="number" id="note_C_loc1" step="0.1"></td>
+                        <td><input type="number" id="note_C_loc2" step="0.1"></td>
+                        <td><input type="number" id="note_C_loc3" step="0.1"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn-check-notepad" onclick="checkNotepadData()">Check My Data</button>
+        </div>
+    </div>
+
+    <div class="game-header">
+        <div class="level-badge">Level 4</div>
+        <h1>Sunflower <span>Population Lab</span></h1>
+        <p class="subtitle">Genetics sets the potential, but the environment decides what's actually expressed. Test it with three sunflower strains across three light conditions.</p>
+        <div class="autosave-status" id="autosave-status">✔ Progress auto-saved</div>
+    </div>
+
+    <div class="stepper" id="stepper">
+        <button id="plant_btn" class="step-btn ready" onclick="plantAll()">
+            <span class="num">1</span>
+            <span class="label-text">Plant Seeds</span>
+            <span class="label-done">Planted</span>
+        </button>
+        <button id="lock_btn" class="step-btn upcoming" onclick="lockPredictions()" disabled>
+            <span class="num">2</span>
+            <span class="label-text">Lock Predictions</span>
+            <span class="label-done">Predicted</span>
+        </button>
+        <button id="simulate_btn" class="step-btn upcoming" onclick="simulateGrowth()" disabled>
+            <span class="num">3</span>
+            <span class="label-text">Simulate Growth</span>
+            <span class="label-done">Simulated</span>
+        </button>
+        <button id="analytics_btn" class="step-btn upcoming" onclick="openAnalytics()" disabled>
+            <span class="num">4</span>
+            <span class="label-text">Data Analytics</span>
+            <span class="label-done">Graphed</span>
+        </button>
+        <button id="conclusion_btn" class="step-btn upcoming" onclick="openConclusionWindow()" disabled>
+            <span class="num">5</span>
+            <span class="label-text">Conclusion</span>
+            <span class="label-done">Complete</span>
+        </button>
+    </div>
+
+
+    <div class="experiment-grid" id="main-grid"></div>
+
+    <div id="analytics-section" class="analytics-section">
+        <h2>📊 Data Analytics Dashboard</h2>
+        <p id="graph-instructions" class="sub-instructions">
+            <b>Tools:</b> click the graph to plot &middot; <b style="color:var(--ink);">drag</b> a point up or down to adjust it &middot; <b style="color:var(--ink);">double-click</b> a point to erase it.
+        </p>
+
+        <div class="graph-section" id="graph-section">
+            <div class="fs-bar" id="fs-bar">
+                <h3 class="fs-only-title">Interactive Graphing</h3>
+                <button class="btn-fullscreen" id="btn-fullscreen" onclick="toggleFullscreenGraph()" title="Expand graph">⛶ Expand Graph</button>
+            </div>
+
+            <div id="coachmark-bubble" class="coachmark-bubble">
+                <span id="coachmark-text"></span>
+                <div class="coachmark-arrow"></div>
+            </div>
+
+            <div class="normal-data-panel" id="normal-data-panel">
+                <h4>📝 Your Recorded Data &mdash; plotted points are grayed out</h4>
+                <table class="fs-data-table">
+                    <thead>
+                        <tr><th>Strain</th><th>Outside</th><th>Window</th><th>Inside</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="strain-id">A</td>
+                            <td id="nm_A_loc1">--</td>
+                            <td id="nm_A_loc2">--</td>
+                            <td id="nm_A_loc3">--</td>
+                        </tr>
+                        <tr>
+                            <td class="strain-id">B</td>
+                            <td id="nm_B_loc1">--</td>
+                            <td id="nm_B_loc2">--</td>
+                            <td id="nm_B_loc3">--</td>
+                        </tr>
+                        <tr>
+                            <td class="strain-id">C</td>
+                            <td id="nm_C_loc1">--</td>
+                            <td id="nm_C_loc2">--</td>
+                            <td id="nm_C_loc3">--</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="plot-tools-container" id="tools-panel">
+                <div class="plot-tools">
+                    <button class="tool-btn" id="tool-btn-A" style="background-color: var(--strain-a);" onclick="setPlotTool('A', 'var(--strain-a)')">Strain A Marker</button>
+                    <button class="tool-btn" style="background-color: var(--strain-b);" onclick="setPlotTool('B', 'var(--strain-b)')">Strain B Marker</button>
+                    <button class="tool-btn" style="background-color: var(--strain-c);" onclick="setPlotTool('C', 'var(--strain-c)')">Strain C Marker</button>
+                </div>
+                <button class="btn-check-graph" id="btn-check-graph" onclick="checkGraphAccuracy()">Check Graph Accuracy</button>
+                <button class="btn-revert" id="btn-revert" onclick="revertToPoints()">Convert Back to Points</button>
+            </div>
+
+            <div class="fs-layout">
+                <div class="graph-board-wrap">
+                    <div class="graph-board-container">
+                        <div class="y-axis-title">Average Height (feet)</div>
+                        <div class="y-axis" id="y-axis-labels"></div>
+                        <div class="graph-board" id="graph-board">
+                            <div id="grid-lines-container"></div>
+                            <div class="plot-column" id="col-loc1" onclick="plotPoint(event, this, 'loc1')"></div>
+                            <div class="plot-column" id="col-loc2" onclick="plotPoint(event, this, 'loc2')"></div>
+                            <div class="plot-column" id="col-loc3" onclick="plotPoint(event, this, 'loc3')"></div>
+                        </div>
+                    </div>
+                    <div class="x-axis">
+                        <div class="x-label">Outside</div>
+                        <div class="x-label">Window</div>
+                        <div class="x-label">Inside</div>
+                    </div>
+
+                    <div class="graph-legend" id="graph-legend">
+                        <div class="legend-item"><div class="legend-color" style="background:var(--strain-a);"></div> Strain A</div>
+                        <div class="legend-item"><div class="legend-color" style="background:var(--strain-b);"></div> Strain B</div>
+                        <div class="legend-item"><div class="legend-color" style="background:var(--strain-c);"></div> Strain C</div>
+                    </div>
+                </div>
+
+                <div class="fs-data-panel" id="fs-data-panel">
+                    <div class="fs-panel-header fs-panel-drag-handle" id="fs-panel-drag-handle">
+                        <span>📝 Your Data</span>
+                        <button id="fs-panel-toggle-btn" onclick="toggleFsPanel()" title="Minimize">_</button>
+                    </div>
+                    <div class="fs-panel-body">
+                        <table class="fs-data-table">
+                            <thead>
+                                <tr><th>Strain</th><th>Outside</th><th>Window</th><th>Inside</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="strain-id">A</td>
+                                    <td id="fs_A_loc1">--</td>
+                                    <td id="fs_A_loc2">--</td>
+                                    <td id="fs_A_loc3">--</td>
+                                </tr>
+                                <tr>
+                                    <td class="strain-id">B</td>
+                                    <td id="fs_B_loc1">--</td>
+                                    <td id="fs_B_loc2">--</td>
+                                    <td id="fs_B_loc3">--</td>
+                                </tr>
+                                <tr>
+                                    <td class="strain-id">C</td>
+                                    <td id="fs_C_loc1">--</td>
+                                    <td id="fs_C_loc2">--</td>
+                                    <td id="fs_C_loc3">--</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="graph-done-banner" style="display:none; width:100%; max-width:900px; margin-top:20px; background:var(--purple-light); border-radius:8px; padding:16px 20px; border-left:4px solid var(--purple); align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+            <p style="margin:0; font-size:0.95em; color:var(--ink); flex:1;">🌻 <b>Nice work!</b> Your bar chart is complete. Time to put your data to work — open the Conclusion Questions to finish the lab.</p>
+            <button id="reopen-conclusion-btn" onclick="openConclusionWindow()">📋 Open Conclusion Questions</button>
+        </div>
+    </div>
+
+</div>
+
+<!-- Conclusion window overlay -->
+<div class="cw-overlay" id="cw-overlay"></div>
+
+<!-- Conclusion resizable/draggable window -->
+<div id="conclusion-window">
+    <div class="cw-header" id="cw-drag-handle">
+        <span>🌻 Conclusion Questions</span>
+        <div style="display:flex; align-items:center; gap:6px;">
+            <span class="cw-resize-hint">drag corner to resize</span>
+            <div class="cw-size-btns">
+                <button onclick="setCWSize('S')" title="Small">S</button>
+                <button onclick="setCWSize('M')" title="Medium">M</button>
+                <button onclick="setCWSize('L')" title="Large">L</button>
+            </div>
+            <div class="cw-header-btns">
+                <button id="cw-minimize-btn" onclick="toggleCWMinimize()" title="Minimize">_</button>
+                <button onclick="closeConclusionWindow()" title="Close">✕</button>
+            </div>
+        </div>
+    </div>
+    <div class="cw-body" id="cw-body">
+
+        <!-- Score banner (hidden until submitted) -->
+        <div id="cw-score-banner"></div>
+
+        <!-- Q1: Graph-click question (resizable graph) -->
+        <div class="cw-question" id="cwq1">
+            <h3>Question 1 — Read the Graph</h3>
+            <p>Look at the bar chart you created. <b>Click the bar that shows the tallest average height for any strain in any location.</b></p>
+            <p style="font-size:0.85em; color:var(--ink-mid);">Click directly on a bar in the chart below. Drag the ⤡ corner to resize in both directions.</p>
+            <div class="cw-graph-img-wrap" id="cw-graph-wrap" style="height:240px;">
+                <canvas id="cw-mini-graph" width="460" height="240"></canvas>
+                <div class="cw-graph-target-ring" id="cw-target-ring"></div>
+                <div class="cw-graph-resize-handle" id="cw-graph-resize" title="Drag to resize">⤡</div>
+            </div>
+            <p id="cw-click-status" style="font-size:0.87em; margin-top:8px; color:var(--ink-mid);">No bar selected yet.</p>
+            <input type="hidden" id="cw-q1-answer" value="">
+            <div class="cw-feedback" id="cw-fb1"></div>
+        </div>
+
+        <!-- Q2: Multiple choice -->
+        <div class="cw-question" id="cwq2">
+            <h3>Question 2 — Cause and Effect</h3>
+            <p>Strain A is genetically programmed to grow <b>very tall</b>. But when it was grown <b>Inside</b> (low light), it was much shorter than Strain A Outside. What does this tell us?</p>
+            <label><input type="radio" name="cwq2" value="a"> The genetics of Strain A changed when moved inside.</label>
+            <label><input type="radio" name="cwq2" value="b"> The environment can limit how much of a gene's potential is expressed.</label>
+            <label><input type="radio" name="cwq2" value="c"> Strain A is actually genetically short; it just grows tall outside by accident.</label>
+            <label><input type="radio" name="cwq2" value="d"> Light has no effect on plant height — something else caused the difference.</label>
+            <div class="cw-feedback" id="cw-fb2"></div>
+        </div>
+
+        <!-- Q3: Compare strains + calculation -->
+        <div class="cw-question" id="cwq3">
+            <h3>Question 3 — Compare the Strains</h3>
+            <p>Compare <b>Strain C Outside</b> (genetically short, great light) vs. <b>Strain A Inside</b> (genetically very tall, poor light). Which statement best describes what you see?</p>
+            <label><input type="radio" name="cwq3" value="a"> Genes always win — Strain A is taller than Strain C no matter what.</label>
+            <label><input type="radio" name="cwq3" value="b"> Environment always wins — the location completely determines final height regardless of genetics.</label>
+            <label><input type="radio" name="cwq3" value="c"> Both genes and environment matter — a genetically shorter plant in good conditions can outgrow a genetically taller plant in poor conditions.</label>
+            <label><input type="radio" name="cwq3" value="d"> Neither genes nor environment have a consistent effect on height.</label>
+            <div class="cw-feedback" id="cw-fb3"></div>
+
+            <div id="cwq3b-section" style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
+                <p style="font-weight:700; margin-bottom:6px;">Part B — Calculate the Difference</p>
+                <p style="font-size:0.93em; margin-bottom:10px;">
+                    Using your data table, calculate the difference in average height between
+                    <b>Strain C Outside</b> and <b>Strain A Inside</b>. Enter your answer in feet (round to 2 decimal places).
+                </p>
+                <p style="font-size:0.88em; margin-bottom:10px; color:var(--ink-mid);">
+                    💡 Need the values?
+                    <a href="#" onclick="scrollToDataTable(); return false;"
+                       style="color:var(--teal-dark); font-weight:700; text-decoration:underline;">
+                        Open the Your Recorded Data table
+                    </a>
+                    below the graph.
+                </p>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center; gap:6px; font-size:0.93em;">
+                        <span>Strain C Outside (ft)</span>
+                        <span style="margin:0 4px;">−</span>
+                        <span>Strain A Inside (ft)</span>
+                        <span style="margin:0 4px;">=</span>
+                    </div>
+                    <input type="number" id="cwq3b-answer" step="0.01" placeholder="? ft"
+                        style="width:80px; padding:6px 8px; border:2px solid var(--border); border-radius:6px; font-size:1em; text-align:center; background:var(--surface);">
+                    <span style="font-size:0.93em;">ft</span>
+                </div>
+                <details style="margin-bottom:8px;">
+                    <summary style="cursor:pointer; font-size:0.85em; color:var(--teal-dark); font-weight:700;">🧮 Show Calculator</summary>
+                    <div style="margin-top:8px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px; display:inline-block;">
+                        <div id="calc-display" style="background:#1a2333; color:#a0f0c0; font-family:monospace; font-size:1.25em; padding:8px 12px; border-radius:6px; min-width:180px; text-align:right; margin-bottom:8px; word-break:break-all;">0</div>
+                        <div style="display:grid; grid-template-columns:repeat(4,44px); gap:5px;">
+                            <button class="calc-btn" onclick="calcInput('7')">7</button>
+                            <button class="calc-btn" onclick="calcInput('8')">8</button>
+                            <button class="calc-btn" onclick="calcInput('9')">9</button>
+                            <button class="calc-btn calc-op" onclick="calcInput('/')">÷</button>
+                            <button class="calc-btn" onclick="calcInput('4')">4</button>
+                            <button class="calc-btn" onclick="calcInput('5')">5</button>
+                            <button class="calc-btn" onclick="calcInput('6')">6</button>
+                            <button class="calc-btn calc-op" onclick="calcInput('*')">×</button>
+                            <button class="calc-btn" onclick="calcInput('1')">1</button>
+                            <button class="calc-btn" onclick="calcInput('2')">2</button>
+                            <button class="calc-btn" onclick="calcInput('3')">3</button>
+                            <button class="calc-btn calc-op" onclick="calcInput('-')">−</button>
+                            <button class="calc-btn" onclick="calcInput('0')">0</button>
+                            <button class="calc-btn" onclick="calcInput('.')">.</button>
+                            <button class="calc-btn calc-op" onclick="calcEquals()">=</button>
+                            <button class="calc-btn calc-op" onclick="calcInput('+')">+</button>
+                            <button class="calc-btn calc-clear" style="grid-column:span 2;" onclick="calcClear()">AC</button>
+                            <button class="calc-btn calc-op calc-use-result" style="grid-column:span 2;" onclick="calcUseResult()">→ Use Result</button>
+                        </div>
+                    </div>
+                </details>
+                <div class="cw-feedback" id="cw-fb3b"></div>
+            </div>
+        </div>
+
+        <!-- Q4: CER — Genetics vs. Environment (dropdown menus) -->
+        <div class="cw-question" id="cwq4">
+            <h3>Question 4 — Genetics vs. Environment: CER</h3>
+            <p>Use <b>Claim → Evidence → Reasoning</b> to explain how genetics and environment together determine a plant's height. Select the best option for each part.</p>
+
+            <div class="cer-row">
+                <div class="cer-label cer-claim">Claim</div>
+                <div class="cer-content">
+                    <p class="cer-prompt">Choose the statement that best completes the claim:</p>
+                    <p class="cer-stem"><em>"A plant's final height is determined by…"</em></p>
+                    <select id="cer-claim" class="cer-select">
+                        <option value="">— select —</option>
+                        <option value="wrong1">…its genetics only — the environment plays no role.</option>
+                        <option value="wrong2">…its environment only — genetics makes no difference.</option>
+                        <option value="correct">…the interaction between its genetics and its environment.</option>
+                        <option value="wrong3">…random chance — neither genetics nor environment matters.</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="cer-row">
+                <div class="cer-label cer-evidence">Evidence</div>
+                <div class="cer-content">
+                    <p class="cer-prompt">Choose the piece of evidence from <em>this experiment</em> that best supports your claim:</p>
+                    <select id="cer-evidence" class="cer-select">
+                        <option value="">— select —</option>
+                        <option value="wrong1">Strain A grew to the same height in both the Outside and Inside conditions.</option>
+                        <option value="data">Strain A's average height was much taller Outside than Inside, even though the genetics were identical.</option>
+                        <option value="wrong2">Strain C always outgrew Strain A regardless of which environment they were placed in.</option>
+                        <option value="wrong3">All three strains grew to similar average heights when placed in the same environment.</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="cer-row">
+                <div class="cer-label cer-reasoning">Reasoning</div>
+                <div class="cer-content">
+                    <p class="cer-prompt">Choose the reasoning that best connects the evidence to the claim:</p>
+                    <select id="cer-reasoning" class="cer-select">
+                        <option value="">— select —</option>
+                        <option value="wrong1">This proves that environment is always the stronger factor, regardless of genetics.</option>
+                        <option value="wrong2">This shows that genetics alone controls final height, since Strain A is genetically tall.</option>
+                        <option value="correct">This shows that genetics sets the growth potential, but environment controls how much of that potential is expressed.</option>
+                        <option value="wrong3">This shows that plant height cannot be reliably predicted from either genetics or environment.</option>
+                    </select>
+                </div>
+            </div>
+            <div class="cw-feedback" id="cw-fb4"></div>
+        </div>
+
+        <!-- Q5: Transfer task — animal twins -->
+        <div class="cw-question cw-transfer" id="cwq5">
+            <h3>⭐ Question 5 — Transfer Task (New Scenario)</h3>
+            <p>A biologist is studying <b>identical twin cheetahs</b> born in the same litter. Both cubs have exactly the same DNA. Cub A is raised in a large wildlife reserve with plenty of prey to chase and vast open space. Cub B is raised in a small zoo enclosure with food delivered directly — no need to run or hunt.</p>
+            <p>By age 2, Cub A has developed significantly more muscle mass and is considerably faster than Cub B.</p>
+            <p>Which of the following best explains this difference?</p>
+            <label><input type="radio" name="cwq5" value="a"> One of the cubs must have had a genetic mutation that made it stronger — identical twins always develop the same muscles.</label>
+            <label><input type="radio" name="cwq5" value="b"> Their identical genes gave them the same genetic potential, but their different environments (exercise from hunting vs. no exercise) led to different physical development.</label>
+            <label><input type="radio" name="cwq5" value="c"> Cub B has better genes for muscle development; the reserve environment just helped Cub A artificially catch up.</label>
+            <label><input type="radio" name="cwq5" value="d"> Environment has no effect on muscle mass in cheetahs — the difference was purely random.</label>
+            <div class="cw-feedback" id="cw-fb5"></div>
+        </div>
+
+        <div class="cw-submit-row">
+            <button class="cw-btn cw-btn-primary" id="cw-submit-btn" onclick="gradeConclusionQuestions()">Submit Answers</button>
+            <button class="cw-btn cw-btn-secondary" id="cw-retry-btn" style="display:none;" onclick="retryConclusionQuestions()">Try Again</button>
+        </div>
+
+    </div>
+</div>
+
+    <script>
+        const envMultipliers = { 'loc1': 1.0, 'loc2': 0.35, 'loc3': 0.1 };
+        const strainGenotypes = {
+            'A': { min: 4.0, max: 5.0 },
+            'B': { min: 2.0, max: 3.0 },
+            'C': { min: 1.0, max: 1.5 }
+        };
+
+        const maxRulerFeet = 5;
+        const plantsPerCell = 5;
+
+        const strains = ['A', 'B', 'C'];
+        const locations = ['loc1', 'loc2', 'loc3'];
+
+        const simulatedData = {
+            'A': { 'loc1': 0, 'loc2': 0, 'loc3': 0 },
+            'B': { 'loc1': 0, 'loc2': 0, 'loc3': 0 },
+            'C': { 'loc1': 0, 'loc2': 0, 'loc3': 0 }
+        };
+
+        const SAVE_KEY = 'sunflowerLab_lv4_save';
+        let _resetInProgress = false;
+
+        window.onload = function() {
+            buildGridCells();
+            buildGraphAxes();
+            initDraggableNotepad();
+            initPointDragging();
+            initNotepadLiveCheck();
+            initAutoSaveListeners();
+            setActiveStep(1);
+            restoreGameState();
+        };
+
+        // ── AUTO-SAVE ──────────────────────────────────────────
+        let _autoSaveFlashTimer = null;
+        function flashAutoSave() {
+            const el = document.getElementById('autosave-status');
+            if (!el) return;
+            el.classList.add('visible');
+            clearTimeout(_autoSaveFlashTimer);
+            _autoSaveFlashTimer = setTimeout(() => { el.classList.remove('visible'); }, 2200);
+        }
+
+        function saveGameState() {
+            try {
+                const predictions = {};
+                const notes = {};
+                strains.forEach(strain => {
+                    predictions[strain] = {};
+                    notes[strain] = {};
+                    locations.forEach(loc => {
+                        const predEl = document.getElementById(`pred_${strain}_${loc}`);
+                        const noteEl = document.getElementById(`note_${strain}_${loc}`);
+                        predictions[strain][loc] = predEl ? predEl.value : "";
+                        notes[strain][loc] = noteEl ? noteEl.value : "";
+                    });
+                });
+
+                const points = [];
+                document.querySelectorAll('.data-point').forEach(p => {
+                    points.push({
+                        strain: p.getAttribute('data-strain'),
+                        loc: p.getAttribute('data-loc'),
+                        bottom: parseFloat(p.style.bottom),
+                        locked: p.classList.contains('point-locked')
+                    });
+                });
+
+                const state = {
+                    planted: document.getElementById('plant_btn').disabled,
+                    simulated: document.getElementById('simulate_btn').disabled && document.getElementById('lock_btn').disabled,
+                    predictions: predictions,
+                    notes: notes,
+                    simulatedData: simulatedData,
+                    notepadVisible: document.getElementById('notepad-widget').style.display === 'flex',
+                    analyticsUnlocked: !document.getElementById('analytics_btn').disabled,
+                    analyticsOpen: document.getElementById('analytics-section').style.display === 'flex',
+                    points: points,
+                    barChartMode: document.getElementById('btn-revert').style.display === 'block'
+                };
+
+                localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+                flashAutoSave();
+            } catch (e) {
+                console.warn('Auto-save failed:', e);
+            }
+        }
+
+        function restoreGameState() {
+            let raw;
+            try {
+                raw = localStorage.getItem(SAVE_KEY);
+            } catch (e) {
+                return;
+            }
+            if (!raw) return;
+
+            let state;
+            try {
+                state = JSON.parse(raw);
+            } catch (e) {
+                return;
+            }
+
+            if (state.simulatedData) {
+                strains.forEach(strain => {
+                    locations.forEach(loc => {
+                        if (state.simulatedData[strain] && state.simulatedData[strain][loc] !== undefined) {
+                            simulatedData[strain][loc] = state.simulatedData[strain][loc];
+                        }
+                    });
+                });
+            }
+
+            if (state.planted) {
+                plantAll(true);
+
+                if (state.predictions) {
+                    strains.forEach(strain => {
+                        locations.forEach(loc => {
+                            const val = state.predictions[strain] && state.predictions[strain][loc];
+                            if (val !== undefined && val !== "") {
+                                const el = document.getElementById(`pred_${strain}_${loc}`);
+                                el.value = val;
+                                el.classList.remove('needs-input');
+                            }
+                        });
+                    });
+                }
+
+                if (state.simulated) {
+                    instantSimulateGrowth();
+
+                    if (state.notes) {
+                        strains.forEach(strain => {
+                            locations.forEach(loc => {
+                                const val = state.notes[strain] && state.notes[strain][loc];
+                                if (val !== undefined && val !== "") {
+                                    document.getElementById(`note_${strain}_${loc}`).value = val;
+                                }
+                            });
+                        });
+                    }
+
+                    if (state.notepadVisible) {
+                        document.getElementById('notepad-widget').style.display = 'flex';
+                    }
+
+                    if (state.analyticsUnlocked) {
+                        const analyticsBtn = document.getElementById('analytics_btn');
+                        analyticsBtn.disabled = false;
+                        strains.forEach(strain => locations.forEach(loc => {
+                            document.getElementById(`actual_${strain}_${loc}`).classList.remove('needs-transfer');
+                        }));
+                        strains.forEach(strain => locations.forEach(loc => {
+                            const noteEl = document.getElementById(`note_${strain}_${loc}`);
+                            if (noteEl.value !== "") noteEl.classList.add('input-correct');
+                        }));
+                    }
+
+                    if (state.points && state.points.length) {
+                        state.points.forEach(pt => {
+                            const col = document.getElementById(`col-${pt.loc}`);
+                            const point = document.createElement('div');
+                            point.className = 'data-point' + (pt.locked ? ' point-locked' : '');
+                            point.style.backgroundColor = `var(--strain-${pt.strain.toLowerCase()})`;
+                            point.style.bottom = `${pt.bottom}%`;
+                            point.setAttribute('data-strain', pt.strain);
+                            point.setAttribute('data-loc', pt.loc);
+
+                            point.ondblclick = function(e) {
+                                e.stopPropagation();
+                                if (!point.classList.contains('point-locked')) {
+                                    col.removeChild(point);
+                                    populateFsDataPanel();
+                                    saveGameState();
+                                }
+                            };
+                            point.onmousedown = function(e) {
+                                e.stopPropagation();
+                                if (!point.classList.contains('point-locked')) {
+                                    activeDragPoint = point;
+                                    dragStartY = e.clientY;
+                                    pointStartBottomPct = parseFloat(point.style.bottom);
+                                }
+                            };
+                            col.appendChild(point);
+                        });
+                        populateFsDataPanel();
+                    }
+
+                    if (state.analyticsOpen) {
+                        document.getElementById('analytics-section').style.display = 'flex';
+                        if (state.barChartMode) {
+                            animateToBarChart();
+                            // Skip the 1s animation transition on restore
+                            document.querySelectorAll('.data-point').forEach(p => { p.style.transition = 'none'; });
+                        }
+                    }
+                }
+
+                setActiveStep(state.analyticsUnlocked ? 5 : (state.simulated ? 4 : (state.planted ? 2 : 1)));
+            }
+        }
+
+        function initAutoSaveListeners() {
+            window.addEventListener('beforeunload', () => {
+                if (!_resetInProgress) saveGameState();
+            });
+            // Periodic safety-net save while a student is actively working
+            setInterval(() => {
+                if (!_resetInProgress) saveGameState();
+            }, 15000);
+        }
+
+        function initNotepadLiveCheck() {
+            strains.forEach(strain => {
+                locations.forEach(loc => {
+                    const inputEl = document.getElementById(`note_${strain}_${loc}`);
+                    inputEl.addEventListener('input', function() {
+                        const studentVal = parseFloat(this.value);
+                        const actualVal = parseFloat(simulatedData[strain][loc]);
+                        if (!isNaN(studentVal) && Math.abs(studentVal - actualVal) <= 0.05) {
+                            document.getElementById(`actual_${strain}_${loc}`).classList.remove('needs-transfer');
+                        }
+                    });
+                });
+            });
+        }
+
+        function setActiveStep(n) {
+            const buttonIds = ['plant_btn', 'lock_btn', 'simulate_btn', 'analytics_btn', 'conclusion_btn'];
+            const effectiveStep = Math.min(n, 5);
+
+            buttonIds.forEach((id, idx) => {
+                const stepNum = idx + 1;
+                const el = document.getElementById(id);
+                el.classList.remove('done', 'ready', 'in-progress', 'upcoming');
+
+                if (stepNum < effectiveStep) {
+                    el.classList.add('done');
+                } else if (stepNum === effectiveStep) {
+                    el.classList.add(el.disabled ? 'upcoming' : 'ready');
+                } else {
+                    el.classList.add('upcoming');
+                }
+            });
+
+            // Step 4 ("Record Data") has no button — the student works in the notepad instead,
+            // so give the notepad header itself the pulsing call-to-action.
+            const notepadHeader = document.getElementById('notepad-header');
+            if (notepadHeader) {
+                notepadHeader.classList.toggle('needs-attention', n === 4);
+            }
+        }
+
+        function showAlert(title, message, btnText = "OK", callback = null) {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-message').innerHTML = message;
+
+            document.getElementById('alert-cancel-btn').style.display = 'none';
+
+            const btn = document.getElementById('alert-btn');
+            btn.innerText = btnText;
+            btn.className = 'btn-primary btn-blue';
+
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+
+            newBtn.onclick = function() {
+                document.getElementById('alert-modal').style.display = 'none';
+                if (callback) callback();
+            };
+
+            document.getElementById('alert-modal').style.display = 'flex';
+        }
+
+        function showConfirm(title, message, confirmText, onConfirm) {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-message').innerHTML = message;
+
+            const confirmBtn = document.getElementById('alert-btn');
+            confirmBtn.innerText = confirmText;
+            confirmBtn.className = 'btn-primary btn-red';
+
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+            const cancelBtn = document.getElementById('alert-cancel-btn');
+            cancelBtn.style.display = 'inline-block';
+
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+            newConfirmBtn.onclick = function() {
+                document.getElementById('alert-modal').style.display = 'none';
+                onConfirm();
+            };
+            newCancelBtn.onclick = function() {
+                document.getElementById('alert-modal').style.display = 'none';
+            };
+
+            document.getElementById('alert-modal').style.display = 'flex';
+        }
+
+        function confirmResetLab() {
+            showConfirm(
+                "Reset the Lab?",
+                "This will permanently clear all planted seeds, predictions, simulation results, and recorded data. This cannot be undone.",
+                "Reset Everything",
+                function() {
+                    _resetInProgress = true;
+                    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+                    location.reload();
+                }
+            );
+        }
+
+        function buildGridCells() {
+            const grid = document.getElementById('main-grid');
+
+            let html = `
+                <div class="header-cell loc-label" style="grid-column: 2;">
+                    <div class="loc-title">OUTSIDE</div><div class="loc-desc">Optimal Sunlight</div>
+                </div>
+                <div class="header-cell loc-label" style="grid-column: 3;">
+                    <div class="loc-title">WINDOW</div><div class="loc-desc">Moderate Sunlight</div>
+                </div>
+                <div class="header-cell loc-label" style="grid-column: 4;">
+                    <div class="loc-title">INSIDE</div><div class="loc-desc">Poor Sunlight</div>
+                </div>
+
+                <div class="header-cell strain-label" style="grid-row: 2;">
+                    <div class="strain-title">Strain A</div><div class="strain-desc">(Very Tall)</div><div class="strain-ref">4.0&ndash;5.0 ft</div>
+                </div>
+                <div class="header-cell strain-label" style="grid-row: 3;">
+                    <div class="strain-title">Strain B</div><div class="strain-desc">(Tall)</div><div class="strain-ref">2.0&ndash;3.0 ft</div>
+                </div>
+                <div class="header-cell strain-label" style="grid-row: 4;">
+                    <div class="strain-title">Strain C</div><div class="strain-desc">(Short)</div><div class="strain-ref">1.0&ndash;1.5 ft</div>
+                </div>
+            `;
+            grid.innerHTML = html;
+
+            strains.forEach((strain, rowIdx) => {
+                locations.forEach((loc, colIdx) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.style.gridRow = rowIdx + 2;
+                    cell.style.gridColumn = colIdx + 2;
+
+                    let rulerTicks = '';
+                    for (let i = 0; i <= maxRulerFeet; i++) {
+                        const pct = (i / maxRulerFeet) * 100;
+                        const isTop = i === maxRulerFeet;
+                        const labelClass = isTop ? 'ruler-label top-label' : 'ruler-label';
+                        rulerTicks += `
+                            <div class="ruler-tick" style="bottom: ${pct}%"></div>
+                            <div class="${labelClass}" style="bottom: ${pct}%">${i}ft</div>
+                        `;
+                    }
+
+                    cell.innerHTML = `
+                        <div class="growth-area">
+                            <div class="ruler">${rulerTicks}</div>
+                            <div class="plants-wrapper" id="${strain}_${loc}_wrapper"></div>
+                        </div>
+                        <div class="data-panel">
+                            <div class="prediction-box">
+                                <span>Predict:</span> <input type="number" id="pred_${strain}_${loc}" class="prediction-input" step="0.1" min="0" disabled> ft
+                            </div>
+                            <div class="actual-box" id="actual_${strain}_${loc}">Avg: -- ft</div>
+                        </div>
+                    `;
+                    grid.appendChild(cell);
+                });
+            });
+        }
+
+        function plantAll(silent) {
+            strains.forEach(strain => {
+                locations.forEach(loc => {
+                    const wrapper = document.getElementById(`${strain}_${loc}_wrapper`);
+                    wrapper.innerHTML = '';
+                    for (let i = 0; i < plantsPerCell; i++) {
+                        wrapper.innerHTML += `
+                            <div class="mini-plant planted" id="plant_${strain}_${loc}_${i}">
+                                <div class="mini-stem"><div class="mini-head"></div></div>
+                                <div class="mini-pot"></div>
+                            </div>
+                        `;
+                    }
+                    const predInput = document.getElementById(`pred_${strain}_${loc}`);
+                    predInput.disabled = false;
+                    predInput.classList.add('needs-input');
+                    predInput.addEventListener('input', function() {
+                        if (this.value !== "") {
+                            this.classList.remove('needs-input');
+                        } else {
+                            this.classList.add('needs-input');
+                        }
+                        saveGameState();
+                    });
+                });
+            });
+            document.getElementById('plant_btn').disabled = true;
+            document.getElementById('lock_btn').disabled = false;
+            setActiveStep(2);
+            if (!silent) saveGameState();
+        }
+
+        function lockPredictions() {
+            let allFilled = true;
+            strains.forEach(strain => {
+                locations.forEach(loc => {
+                    const val = document.getElementById(`pred_${strain}_${loc}`).value;
+                    if (val === "" || val === null) allFilled = false;
+                });
+            });
+
+            if (!allFilled) return showAlert("Missing Predictions", "Please enter a prediction for all 9 scenarios before simulating!");
+
+            strains.forEach(strain => {
+                locations.forEach(loc => {
+                    const predInput = document.getElementById(`pred_${strain}_${loc}`);
+                    predInput.disabled = true;
+                    predInput.classList.remove('needs-input');
+                });
+            });
+
+            document.getElementById('lock_btn').disabled = true;
+            document.getElementById('simulate_btn').disabled = false;
+            setActiveStep(3);
+            saveGameState();
+        }
+
+        function getPxPerFoot(growthArea) {
+            // The plants-wrapper fills the full chamber height (it's where pot + stem + bloom live).
+            // Pot is 12px tall and the bloom head needs ~7px of headroom above the stem top,
+            // so the usable stem-growth range is chamberHeight - potHeight - headroom.
+            const potHeight = 12;
+            const headroom = 9;
+            const usable = growthArea.clientHeight - potHeight - headroom;
+            return Math.max(usable, 10) / maxRulerFeet;
+        }
+
+        function simulateGrowth() {
+            strains.forEach(strain => {
+                locations.forEach(loc => {
+                    const genetics = strainGenotypes[strain];
+                    const environment = envMultipliers[loc];
+                    let totalHeightFeet = 0;
+
+                    const wrapper = document.getElementById(`${strain}_${loc}_wrapper`);
+                    const growthArea = wrapper.closest('.growth-area');
+                    const pxPerFoot = getPxPerFoot(growthArea);
+                    const maxStemPx = pxPerFoot * maxRulerFeet;
+
+                    for (let i = 0; i < plantsPerCell; i++) {
+                        const potGenotypeHeight = Math.random() * (genetics.max - genetics.min) + genetics.min;
+                        const finalHeightFeet = potGenotypeHeight * environment;
+                        const finalHeightPx = Math.min(finalHeightFeet * pxPerFoot, maxStemPx);
+
+                        totalHeightFeet += finalHeightFeet;
+
+                        const plantEl = document.getElementById(`plant_${strain}_${loc}_${i}`);
+                        plantEl.querySelector('.mini-stem').style.height = `${finalHeightPx}px`;
+
+                        setTimeout(() => {
+                            plantEl.querySelector('.mini-head').style.transform = 'translateX(-50%) scale(1)';
+                        }, 1800 + (Math.random() * 250));
+                    }
+
+                    const avgHeight = totalHeightFeet / plantsPerCell;
+                    simulatedData[strain][loc] = avgHeight.toFixed(2);
+
+                    const actualBox = document.getElementById(`actual_${strain}_${loc}`);
+                    setTimeout(() => {
+                        actualBox.innerText = `Avg: ${avgHeight.toFixed(2)} ft`;
+                        actualBox.classList.add('revealed', 'needs-transfer');
+                    }, 2150);
+                });
+            });
+
+            document.getElementById('simulate_btn').disabled = true;
+
+            setTimeout(() => {
+                document.getElementById('notepad-widget').style.display = 'flex';
+                setActiveStep(4);
+                saveGameState();
+            }, 2300);
+        }
+
+        // Used only during state restore: renders plants/labels from already-known
+        // simulatedData instantly, without re-randomizing heights or animating growth.
+        function instantSimulateGrowth() {
+            strains.forEach(strain => {
+                locations.forEach(loc => {
+                    const avgHeight = parseFloat(simulatedData[strain][loc]);
+                    const wrapper = document.getElementById(`${strain}_${loc}_wrapper`);
+                    const growthArea = wrapper.closest('.growth-area');
+                    const pxPerFoot = getPxPerFoot(growthArea);
+                    const maxStemPx = pxPerFoot * maxRulerFeet;
+                    const environment = envMultipliers[loc];
+                    const genetics = strainGenotypes[strain];
+
+                    for (let i = 0; i < plantsPerCell; i++) {
+                        // Individual plant heights aren't persisted (only the average is),
+                        // so approximate each plant near the saved average for a reasonable visual.
+                        const jitter = (Math.random() - 0.5) * 0.3;
+                        const potGenotypeHeight = Math.min(Math.max(avgHeight / environment + jitter, genetics.min * 0.5), genetics.max);
+                        const finalHeightFeet = potGenotypeHeight * environment;
+                        const finalHeightPx = Math.min(finalHeightFeet * pxPerFoot, maxStemPx);
+
+                        const plantEl = document.getElementById(`plant_${strain}_${loc}_${i}`);
+                        const stem = plantEl.querySelector('.mini-stem');
+                        stem.style.transition = 'none';
+                        stem.style.height = `${finalHeightPx}px`;
+                        plantEl.querySelector('.mini-head').style.transition = 'none';
+                        plantEl.querySelector('.mini-head').style.transform = 'translateX(-50%) scale(1)';
+                    }
+
+                    const actualBox = document.getElementById(`actual_${strain}_${loc}`);
+                    actualBox.innerText = `Avg: ${avgHeight.toFixed(2)} ft`;
+                    actualBox.classList.add('revealed');
+                });
+            });
+
+            document.getElementById('simulate_btn').disabled = true;
+        }
+
+        function toggleNotepad() {
+            const widget = document.getElementById('notepad-widget');
+            const btn = document.getElementById('notepad-toggle-btn');
+            const isMinimized = widget.classList.toggle('minimized');
+            btn.innerText = isMinimized ? '▢' : '_';
+            btn.title = isMinimized ? 'Restore' : 'Minimize';
+        }
+
+        function initDraggableNotepad() {
+            const notepad = document.getElementById('notepad-widget');
+            const header = document.getElementById('notepad-header');
+
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
+
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+
+                const rect = notepad.getBoundingClientRect();
+                initialLeft = rect.left;
+                initialTop = rect.top;
+
+                notepad.style.right = 'auto';
+                notepad.style.bottom = 'auto';
+                notepad.style.left = initialLeft + 'px';
+                notepad.style.top = initialTop + 'px';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                let newLeft = initialLeft + dx;
+                let newTop = initialTop + dy;
+
+                newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - 60));
+                newTop = Math.max(0, Math.min(newTop, window.innerHeight - 40));
+
+                notepad.style.left = newLeft + 'px';
+                notepad.style.top = newTop + 'px';
+            });
+
+            document.addEventListener('mouseup', () => { isDragging = false; });
+        }
+
+        function checkNotepadData() {
+            let allCorrect = true;
+
+            strains.forEach(strain => {
+                locations.forEach(loc => {
+                    const inputEl = document.getElementById(`note_${strain}_${loc}`);
+                    const studentVal = parseFloat(inputEl.value);
+                    const actualVal = parseFloat(simulatedData[strain][loc]);
+
+                    inputEl.classList.remove('input-correct', 'input-incorrect');
+
+                    if (isNaN(studentVal)) {
+                        inputEl.classList.add('input-incorrect');
+                        allCorrect = false;
+                    } else if (Math.abs(studentVal - actualVal) <= 0.05) {
+                        inputEl.classList.add('input-correct');
+                        document.getElementById(`actual_${strain}_${loc}`).classList.remove('needs-transfer');
+                    } else {
+                        inputEl.classList.add('input-incorrect');
+                        allCorrect = false;
+                    }
+                });
+            });
+
+            if (allCorrect) {
+                const analyticsBtn = document.getElementById('analytics_btn');
+                analyticsBtn.disabled = false;
+                setActiveStep(4);
+
+                showAlert("Success!", "Excellent job! All of your data has been transcribed correctly.<br><br>Click the pulsing <b>Data Analytics</b> button to continue.", "Continue");
+            } else {
+                showAlert("Check Your Data", "Some entries are missing or incorrect.<br><br>Find the <b>red boxes</b> and try fixing them based on the simulation results.", "Try Again");
+            }
+            saveGameState();
+        }
+
+        function openAnalytics() {
+            const analyticsBtn = document.getElementById('analytics_btn');
+            analyticsBtn.classList.remove('ready');
+            analyticsBtn.classList.add('done');
+
+            const analyticsSection = document.getElementById('analytics-section');
+            analyticsSection.style.display = 'flex';
+
+            setTimeout(() => {
+                analyticsSection.scrollIntoView({ behavior: 'smooth' });
+
+                // Launch straight into fullscreen so the graphing tools and the
+                // first-point walkthrough are immediately visible, not scrolled past.
+                enterFullscreenGraph();
+
+                // Only walk the student through plotting if they haven't placed any points yet
+                // (so this doesn't re-trigger for a restored/in-progress session).
+                const hasAnyPoints = document.querySelectorAll('.data-point').length > 0;
+                if (!hasAnyPoints) {
+                    setTimeout(startCoachmark, 500);
+                }
+            }, 100);
+
+            saveGameState();
+        }
+
+        // ── GUIDED FIRST-POINT COACHMARK ───────────────────────
+        let coachmarkStage = 0; // 0 = inactive, 1 = pick Strain A, 2 = click Outside column
+
+        function startCoachmark() {
+            coachmarkStage = 1;
+            const bubble = document.getElementById('coachmark-bubble');
+            const text = document.getElementById('coachmark-text');
+
+            text.innerHTML = `Let's plot your first point together. <b>Click the "Strain A Marker" button</b> to pick up that color.`;
+            bubble.classList.add('visible');
+
+            document.getElementById('tool-btn-A').classList.add('coachmark-target');
+            requestAnimationFrame(sizeFullscreenGraph);
+        }
+
+        function advanceCoachmarkToColumn() {
+            coachmarkStage = 2;
+            document.getElementById('tool-btn-A').classList.remove('coachmark-target');
+
+            const outsideValue = parseFloat(simulatedData.A.loc1);
+            const text = document.getElementById('coachmark-text');
+            text.innerHTML = `Good. Now <b>click in the "Outside" column</b> at about <b>${outsideValue.toFixed(2)} ft</b> on the y-axis &mdash; that's the average height you recorded for Strain A Outside. The dashed red line marks the spot.`;
+
+            const col = document.getElementById('col-loc1');
+            col.classList.add('coachmark-target');
+
+            const maxGraphFeet = 5;
+            const pct = Math.min((outsideValue / maxGraphFeet) * 100, 100);
+            const line = document.createElement('div');
+            line.className = 'coachmark-target-line';
+            line.id = 'coachmark-target-line';
+            line.style.bottom = `${pct}%`;
+            line.setAttribute('data-label', `~${outsideValue.toFixed(2)} ft`);
+            col.appendChild(line);
+            requestAnimationFrame(sizeFullscreenGraph);
+        }
+
+        function finishCoachmark() {
+            coachmarkStage = 0;
+            document.getElementById('tool-btn-A').classList.remove('coachmark-target');
+            const col = document.getElementById('col-loc1');
+            col.classList.remove('coachmark-target');
+            const line = document.getElementById('coachmark-target-line');
+            if (line) line.remove();
+
+            const bubble = document.getElementById('coachmark-bubble');
+            const text = document.getElementById('coachmark-text');
+            text.innerHTML = `Nice work! That's how it's done. Now plot the remaining 8 points the same way: pick a strain marker, then click its height in each column.`;
+
+            setTimeout(() => {
+                bubble.classList.remove('visible');
+                requestAnimationFrame(sizeFullscreenGraph);
+            }, 4500);
+        }
+
+        function dismissCoachmarkSilently() {
+            coachmarkStage = 0;
+            document.getElementById('tool-btn-A').classList.remove('coachmark-target');
+            const col = document.getElementById('col-loc1');
+            col.classList.remove('coachmark-target');
+            const line = document.getElementById('coachmark-target-line');
+            if (line) line.remove();
+            document.getElementById('coachmark-bubble').classList.remove('visible');
+            requestAnimationFrame(sizeFullscreenGraph);
+        }
+
+        function toggleFullscreenGraph() {
+            const graphSection = document.getElementById('graph-section');
+            if (graphSection.classList.contains('fullscreen-mode')) {
+                exitFullscreenGraph();
+            } else {
+                enterFullscreenGraph();
+            }
+        }
+
+        function enterFullscreenGraph() {
+            const graphSection = document.getElementById('graph-section');
+            if (graphSection.classList.contains('fullscreen-mode')) return;
+
+            const btn = document.getElementById('btn-fullscreen');
+            graphSection.classList.add('fullscreen-mode');
+            document.body.classList.add('fullscreen-lock');
+            btn.innerText = '✕ Exit Fullscreen';
+            btn.title = 'Exit fullscreen';
+
+            populateFsDataPanel();
+            // Wait a frame so the fullscreen layout has settled before measuring it
+            requestAnimationFrame(() => requestAnimationFrame(sizeFullscreenGraph));
+            window.addEventListener('resize', sizeFullscreenGraph);
+        }
+
+        function exitFullscreenGraph() {
+            const graphSection = document.getElementById('graph-section');
+            if (!graphSection.classList.contains('fullscreen-mode')) return;
+
+            const btn = document.getElementById('btn-fullscreen');
+            graphSection.classList.remove('fullscreen-mode');
+            document.body.classList.remove('fullscreen-lock');
+            btn.innerText = '⛶ Expand Graph';
+            btn.title = 'Expand graph';
+            btn.classList.remove('exit-pulse');
+
+            document.getElementById('graph-board').style.height = '';
+            window.removeEventListener('resize', sizeFullscreenGraph);
+
+            // If Step 5 is the current target (conclusion not yet opened),
+            // scroll the stepper into view so the pulsing Step 5 pill is obvious
+            const conclusionBtn = document.getElementById('conclusion_btn');
+            if (conclusionBtn && conclusionBtn.classList.contains('ready')) {
+                setTimeout(() => {
+                    conclusionBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            }
+        }
+
+        function sizeFullscreenGraph() {
+            const graphSection = document.getElementById('graph-section');
+            if (!graphSection.classList.contains('fullscreen-mode')) return;
+
+            const wrap = document.querySelector('.graph-board-wrap');
+            const xAxis = document.querySelector('.graph-section.fullscreen-mode .x-axis');
+            const legend = document.getElementById('graph-legend');
+            const board = document.getElementById('graph-board');
+
+            const wrapHeight = wrap.clientHeight;
+            const xAxisHeight = xAxis ? xAxis.offsetHeight : 0;
+            const legendHeight = (legend && legend.style.display !== 'none') ? legend.offsetHeight + 18 : 0;
+
+            const available = wrapHeight - xAxisHeight - legendHeight - 12;
+            board.style.height = Math.max(available, 220) + 'px';
+        }
+
+        function populateFsDataPanel() {
+            strains.forEach(strain => {
+                locations.forEach(loc => {
+                    const noteInput = document.getElementById(`note_${strain}_${loc}`);
+                    const val = noteInput && noteInput.value !== "" ? parseFloat(noteInput.value) : null;
+                    const displayText = (val !== null && !isNaN(val)) ? val.toFixed(2) : '--';
+
+                    const isPlotted = document.querySelector(
+                        `.data-point[data-strain="${strain}"][data-loc="${loc}"]`
+                    ) !== null;
+
+                    ['fs', 'nm'].forEach(prefix => {
+                        const cell = document.getElementById(`${prefix}_${strain}_${loc}`);
+                        if (!cell) return;
+                        cell.innerText = displayText;
+                        cell.classList.toggle('cell-plotted', isPlotted);
+                    });
+                });
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const graphSection = document.getElementById('graph-section');
+                if (graphSection && graphSection.classList.contains('fullscreen-mode')) {
+                    toggleFullscreenGraph();
+                }
+            }
+        });
+
+        function buildGraphAxes() {
+            const yAxis = document.getElementById('y-axis-labels');
+            const gridLines = document.getElementById('grid-lines-container');
+            const maxGraphFeet = 5;
+
+            yAxis.innerHTML = '';
+            gridLines.innerHTML = '';
+
+            for (let i = 0; i <= 10; i++) {
+                const ft = i / 2;
+                const pct = (ft / maxGraphFeet) * 100;
+
+                if (i % 2 === 0) {
+                    yAxis.innerHTML += `
+                        <div class="y-tick" style="bottom: ${pct}%;"></div>
+                        <div class="y-label" style="bottom: ${pct}%;">${ft}</div>
+                    `;
+                    if (ft > 0) {
+                        gridLines.innerHTML += `<div style="position:absolute; bottom:${pct}%; left:0; width:100%; height:2px; background-color:rgba(0,0,0,0.08);"></div>`;
+                    }
+                } else {
+                    yAxis.innerHTML += `
+                        <div class="y-tick" style="bottom: ${pct}%; width: 5px; right: 0;"></div>
+                    `;
+                    gridLines.innerHTML += `<div style="position:absolute; bottom:${pct}%; left:0; width:100%; height:1px; border-top: 1px dashed rgba(0,0,0,0.07);"></div>`;
+                }
+            }
+        }
+
+        let activeMarkerColor = null;
+        let activeStrainId = null;
+
+        function setPlotTool(strain, color) {
+            activeStrainId = strain;
+            activeMarkerColor = color;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (coachmarkStage === 1) {
+                if (strain === 'A') {
+                    advanceCoachmarkToColumn();
+                } else {
+                    dismissCoachmarkSilently();
+                }
+            }
+        }
+
+        let didDrag = false;
+        let activeDragPoint = null;
+        let dragStartY = 0;
+        let pointStartBottomPct = 0;
+
+        function initPointDragging() {
+            document.addEventListener('mousemove', (e) => {
+                if (activeDragPoint) {
+                    didDrag = true;
+                    const column = activeDragPoint.parentElement;
+                    const colHeight = column.clientHeight;
+                    const dyPct = ((dragStartY - e.clientY) / colHeight) * 100;
+                    let newBottomPct = pointStartBottomPct + dyPct;
+
+                    if (newBottomPct < 0) newBottomPct = 0;
+                    if (newBottomPct > 100) newBottomPct = 100;
+
+                    activeDragPoint.style.bottom = `${newBottomPct}%`;
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (activeDragPoint) {
+                    activeDragPoint.classList.remove('point-incorrect');
+                    activeDragPoint.style.border = '3px solid white';
+                    activeDragPoint.style.boxShadow = 'var(--shadow)';
+                    activeDragPoint.innerHTML = '';
+
+                    activeDragPoint = null;
+
+                    setTimeout(() => { didDrag = false; }, 50);
+                    saveGameState();
+                }
+            });
+        }
+
+        function plotPoint(event, columnElement, locationId) {
+            if (didDrag || event.target.classList.contains('data-point')) return;
+
+            if (!activeMarkerColor) {
+                return showAlert("Select a Tool", "Please select a Strain Marker color before clicking on the graph.");
+            }
+
+            const existingPoint = columnElement.querySelector(".data-point[data-strain='" + activeStrainId + "']");
+            if (existingPoint) {
+                return showAlert("Duplicate Point", `You have already plotted a point for Strain ${activeStrainId} in this location.<br><br>Double-click the existing point if you want to remove it.`);
+            }
+
+            const rect = columnElement.getBoundingClientRect();
+            const y = event.clientY - rect.top;
+            const bottomPct = ((rect.height - y) / rect.height) * 100;
+
+            const point = document.createElement('div');
+            point.className = 'data-point';
+            point.style.backgroundColor = activeMarkerColor;
+            point.style.bottom = `${bottomPct}%`;
+
+            point.setAttribute('data-strain', activeStrainId);
+            point.setAttribute('data-loc', locationId);
+
+            point.ondblclick = function(e) {
+                e.stopPropagation();
+                if (!point.classList.contains('point-locked')) {
+                    columnElement.removeChild(point);
+                    populateFsDataPanel();
+                    saveGameState();
+                }
+            };
+
+            point.onmousedown = function(e) {
+                e.stopPropagation();
+                if (!point.classList.contains('point-locked')) {
+                    activeDragPoint = point;
+                    dragStartY = e.clientY;
+                    pointStartBottomPct = parseFloat(point.style.bottom);
+                }
+            };
+
+            columnElement.appendChild(point);
+            populateFsDataPanel();
+
+            if (coachmarkStage > 0) {
+                if (activeStrainId === 'A' && locationId === 'loc1') {
+                    finishCoachmark();
+                } else {
+                    // Student found their own way to plot something else first — step back quietly.
+                    dismissCoachmarkSilently();
+                }
+            }
+
+            saveGameState();
+        }
+
+        function checkGraphAccuracy() {
+            const maxGraphFeet = 5;
+            const toleranceFeet = 0.2;
+            let allCorrect = true;
+            let totalPoints = 0;
+
+            const columns = document.querySelectorAll('.plot-column');
+
+            columns.forEach(col => {
+                const points = col.querySelectorAll('.data-point');
+                totalPoints += points.length;
+                const colHeight = col.clientHeight;
+
+                points.forEach(point => {
+                    const strain = point.getAttribute('data-strain');
+                    const loc = point.getAttribute('data-loc');
+
+                    const actualFeet = parseFloat(simulatedData[strain][loc]);
+
+                    const bottomPct = parseFloat(point.style.bottom);
+                    const plottedFeet = (bottomPct / 100) * maxGraphFeet;
+
+                    point.classList.remove('point-incorrect');
+                    point.innerHTML = '';
+
+                    if (Math.abs(plottedFeet - actualFeet) <= toleranceFeet) {
+                        point.classList.add('point-locked');
+                    } else {
+                        point.classList.add('point-incorrect');
+                        point.innerHTML = '❌';
+                        allCorrect = false;
+                    }
+                });
+            });
+
+            if (totalPoints < 9) {
+                showAlert("Missing Data", `You have only plotted ${totalPoints} point(s).<br><br>You must plot all 9 averages (3 strains x 3 locations) to complete your graph!`);
+            } else if (allCorrect) {
+                showAlert("Graph Verified!", "Fantastic! All of your points are accurately plotted and are now locked.<br><br>Let's convert this data into a grouped bar chart.", "Animate Graph", animateToBarChart);
+            } else {
+                showAlert("Check Your Graph", "Some of your points are off target.<br><br>Look for the red ❌ indicators. <b>Click and drag</b> those points up or down to correct them. Correct points have been locked.", "Fix Errors");
+            }
+            saveGameState();
+        }
+
+        function animateToBarChart() {
+            document.getElementById('tools-panel').style.display = 'none';
+            document.getElementById('btn-revert').style.display = 'block';
+            document.getElementById('graph-legend').style.display = 'flex';
+            document.getElementById('graph-instructions').innerText = "Notice how the individual data points stretch to form columns.";
+            document.getElementById('conclusion-panel').style.display = 'block';
+
+            const maxGraphFeet = 5;
+
+            document.querySelectorAll('.data-point').forEach(point => {
+                const strain = point.getAttribute('data-strain');
+                const loc = point.getAttribute('data-loc');
+                const actualFeet = parseFloat(simulatedData[strain][loc]);
+                const targetHeightPct = (actualFeet / maxGraphFeet) * 100;
+
+                point.style.transition = 'all 1.0s cubic-bezier(0.25, 1, 0.5, 1)';
+                point.style.borderRadius = '4px 4px 0 0';
+                point.style.width = '25%';
+                point.style.borderWidth = '2px 2px 0 2px';
+                point.style.boxShadow = 'none';
+
+                if (strain === 'A') point.style.left = '25%';
+                if (strain === 'B') point.style.left = '50%';
+                if (strain === 'C') point.style.left = '75%';
+
+                point.style.transform = 'translate(-50%, 0)';
+                point.style.bottom = '0%';
+                point.style.height = `${targetHeightPct}%`;
+            });
+
+            requestAnimationFrame(sizeFullscreenGraph);
+            saveGameState();
+        }
+
+        function animateToBarChart() {
+            document.getElementById('tools-panel').style.display = 'none';
+            document.getElementById('btn-revert').style.display = 'block';
+            document.getElementById('graph-legend').style.display = 'flex';
+            document.getElementById('graph-instructions').innerText = "Notice how the individual data points stretch to form columns.";
+
+            const maxGraphFeet = 5;
+
+            // Remove any previous bar labels
+            document.querySelectorAll('.bar-label').forEach(l => l.remove());
+
+            document.querySelectorAll('.data-point').forEach(point => {
+                const strain = point.getAttribute('data-strain');
+                const loc = point.getAttribute('data-loc');
+                const actualFeet = parseFloat(simulatedData[strain][loc]);
+                const targetHeightPct = (actualFeet / maxGraphFeet) * 100;
+
+                point.style.transition = 'all 1.0s cubic-bezier(0.25, 1, 0.5, 1)';
+                point.style.borderRadius = '4px 4px 0 0';
+                point.style.width = '25%';
+                point.style.borderWidth = '2px 2px 0 2px';
+                point.style.boxShadow = 'none';
+
+                if (strain === 'A') point.style.left = '25%';
+                if (strain === 'B') point.style.left = '50%';
+                if (strain === 'C') point.style.left = '75%';
+
+                point.style.transform = 'translate(-50%, 0)';
+                point.style.bottom = '0%';
+                point.style.height = `${targetHeightPct}%`;
+
+                // Add a data label above the bar
+                const label = document.createElement('div');
+                label.className = 'bar-label';
+                label.innerText = actualFeet.toFixed(2) + ' ft';
+                point.appendChild(label);
+                setTimeout(() => label.classList.add('visible'), 1400);
+            });
+
+            // Show congratulations after bars finish animating
+            setTimeout(() => {
+                const banner = document.getElementById('graph-done-banner');
+                banner.style.display = 'flex';
+
+                const conclusionBtn = document.getElementById('conclusion_btn');
+                conclusionBtn.disabled = false;
+                setActiveStep(5);
+
+                // Pulse the Exit Fullscreen button to direct students to leave and review
+                const exitBtn = document.getElementById('btn-fullscreen');
+                if (exitBtn) exitBtn.classList.add('exit-pulse');
+
+                showAlert(
+                    '🎉 Congratulations!',
+                    'Great job graphing your data!<br><br>Please look at the bar graph you made and review any trends you notice. When you\'re ready, click <b>✕ Exit Fullscreen</b> (it\'s pulsing!) and then click <b>Step 5 — Conclusion</b> on the main page.',
+                    'Got it — I\'ll review the graph!'
+                    // No callback — student exits fullscreen manually, then clicks Step 5
+                );
+            }, 1600);
+
+            requestAnimationFrame(sizeFullscreenGraph);
+            saveGameState();
+        }
+
+        function revertToPoints() {
+            document.getElementById('tools-panel').style.display = 'flex';
+            document.getElementById('btn-revert').style.display = 'none';
+            document.getElementById('graph-legend').style.display = 'none';
+            document.getElementById('graph-instructions').innerHTML = "<b>Tools:</b> click the graph to plot &middot; <b style='color:var(--ink);'>drag</b> a point up or down to adjust it &middot; <b style='color:var(--ink);'>double-click</b> a point to erase it.";
+
+            // Remove bar labels on revert
+            document.querySelectorAll('.bar-label').forEach(l => l.remove());
+
+            const maxGraphFeet = 5;
+
+            document.querySelectorAll('.data-point').forEach(point => {
+                const strain = point.getAttribute('data-strain');
+                const loc = point.getAttribute('data-loc');
+                const actualFeet = parseFloat(simulatedData[strain][loc]);
+                const targetHeightPct = (actualFeet / maxGraphFeet) * 100;
+
+                point.style.transition = 'all 1.0s cubic-bezier(0.25, 1, 0.5, 1)';
+                point.style.borderRadius = '50%';
+                point.style.width = '22px';
+                point.style.borderWidth = '3px';
+                point.style.left = '50%';
+                point.style.transform = 'translate(-50%, 50%)';
+
+                point.style.height = '22px';
+                point.style.bottom = `${targetHeightPct}%`;
+            });
+
+            requestAnimationFrame(sizeFullscreenGraph);
+            saveGameState();
+        }
+
+        // ── CONCLUSION WINDOW ─────────────────────────────────────
+        let cwGraphClickAnswer = '';  // 'correct' | 'wrong' | ''
+
+        function openConclusionWindow() {
+            document.getElementById('conclusion_btn').classList.remove('ready');
+            document.getElementById('conclusion_btn').classList.add('done');
+
+            // Draw the mini bar chart on the canvas for Q1, populate real data in CER and Q3b
+            setTimeout(() => { drawCWGraph(); populateCERSpans(); }, 80);
+
+            document.getElementById('cw-overlay').classList.add('open');
+            document.getElementById('conclusion-window').classList.add('open');
+
+            // Exit fullscreen if somehow still in it (e.g. restored session)
+            const graphSection = document.getElementById('graph-section');
+            if (graphSection && graphSection.classList.contains('fullscreen-mode')) {
+                exitFullscreenGraph();
+            }
+
+            saveGameState();
+        }
+
+        function closeConclusionWindow() {
+            document.getElementById('cw-overlay').classList.remove('open');
+            document.getElementById('conclusion-window').classList.remove('open');
+        }
+
+        function toggleCWMinimize() {
+            const win = document.getElementById('conclusion-window');
+            const btn = document.getElementById('cw-minimize-btn');
+            const isMin = win.classList.toggle('cw-minimized');
+            btn.innerText = isMin ? '▢' : '_';
+            btn.title = isMin ? 'Restore' : 'Minimize';
+        }
+
+        function toggleFsPanel() {
+            const panel = document.getElementById('fs-data-panel');
+            const btn = document.getElementById('fs-panel-toggle-btn');
+            if (!panel) return;
+            const isMin = panel.classList.toggle('fs-minimized');
+            btn.innerText = isMin ? '▢' : '_';
+            btn.title = isMin ? 'Restore' : 'Minimize';
+        }
+
+        function setCWSize(s) {
+            const win = document.getElementById('conclusion-window');
+            // Un-minimize first so the size is actually visible
+            win.classList.remove('cw-minimized');
+            document.getElementById('cw-minimize-btn').innerText = '_';
+            const sizes = { S: ['560px','480px'], M: ['780px','620px'], L: ['min(960px,94vw)','min(760px,90vh)'] };
+            const [w, h] = sizes[s] || sizes.M;
+            win.style.width = w;
+            win.style.height = h;
+            win.style.top = '50%';
+            win.style.left = '50%';
+            win.style.transform = 'translate(-50%,-50%)';
+        }
+
+        // Draggable conclusion window
+        (function() {
+            let dragging = false, sx, sy, sl, st;
+            document.addEventListener('DOMContentLoaded', () => {});
+            window.addEventListener('load', () => {
+                const handle = document.getElementById('cw-drag-handle');
+                const win = document.getElementById('conclusion-window');
+                if (!handle || !win) return;
+                handle.addEventListener('mousedown', e => {
+                    dragging = true;
+                    const r = win.getBoundingClientRect();
+                    sl = r.left; st = r.top; sx = e.clientX; sy = e.clientY;
+                    win.style.transform = 'none';
+                    win.style.left = r.left + 'px';
+                    win.style.top = r.top + 'px';
+                });
+                document.addEventListener('mousemove', e => {
+                    if (!dragging) return;
+                    const nx = Math.max(0, Math.min(sl + (e.clientX - sx), window.innerWidth - 60));
+                    const ny = Math.max(0, Math.min(st + (e.clientY - sy), window.innerHeight - 40));
+                    win.style.left = nx + 'px'; win.style.top = ny + 'px';
+                });
+                document.addEventListener('mouseup', () => { dragging = false; });
+            });
+        })();
+
+        // Draw the mini bar chart for Q1 graph-click
+        function drawCWGraph() {
+            const canvas = document.getElementById('cw-mini-graph');
+            if (!canvas) return;
+            const wrap = document.getElementById('cw-graph-wrap');
+            canvas.width  = wrap.clientWidth  || 460;
+            canvas.height = wrap.clientHeight || 240;
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width, H = canvas.height;
+            // Extra top padding so labels above bars have room
+            const pad = { l:46, r:12, t:44, b:36 };
+            const chartW = W - pad.l - pad.r;
+            const chartH = H - pad.t - pad.b;
+            const maxFt = 5;
+
+            ctx.fillStyle = '#f3f6fa';
+            ctx.fillRect(0, 0, W, H);
+
+            // Grid lines
+            for (let ft = 0; ft <= maxFt; ft++) {
+                const y = pad.t + chartH - (ft / maxFt) * chartH;
+                ctx.strokeStyle = ft === 0 ? '#8492a8' : '#cbd5e1';
+                ctx.lineWidth = ft === 0 ? 2 : 1;
+                ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+                ctx.fillStyle = '#4b5870'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+                ctx.fillText(ft, pad.l - 5, y + 4);
+            }
+
+            // Y-axis title
+            ctx.save(); ctx.translate(11, H/2); ctx.rotate(-Math.PI/2);
+            ctx.fillStyle = '#4b5870'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('Avg Height (ft)', 0, 0); ctx.restore();
+
+            const strainColors = { A: '#7c3aed', B: '#db2777', C: '#d97706' };
+            const locs = ['loc1', 'loc2', 'loc3'];
+            const locLabels = ['Outside', 'Window', 'Inside'];
+            const groupW = chartW / 3;
+            const barW = groupW / 4.5;
+
+            // Store click zones for Q1 grading
+            window._cwBarZones = [];
+
+            locs.forEach((loc, li) => {
+                const groupX = pad.l + li * groupW;
+                const strains = ['A', 'B', 'C'];
+                strains.forEach((strain, si) => {
+                    const ft = parseFloat(simulatedData[strain][loc]);
+                    const barH = (ft / maxFt) * chartH;
+                    const x = groupX + (si + 0.75) * barW;
+                    const y = pad.t + chartH - barH;
+                    ctx.fillStyle = strainColors[strain];
+                    ctx.fillRect(x, y, barW, barH);
+
+                    // Value label — drawn ABOVE the bar, outside it
+                    const labelX = x + barW / 2;
+                    const labelY = y - 4;                // just above bar top
+                    const labelText = ft.toFixed(2) + ' ft';
+                    const labelFontSize = Math.max(9, Math.min(13, barW * 0.55));
+                    ctx.font = `bold ${labelFontSize}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    const textW = ctx.measureText(labelText).width;
+                    const pillW = textW + 6;
+                    const pillH = labelFontSize + 4;
+                    // White pill background
+                    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+                    ctx.beginPath();
+                    ctx.roundRect(labelX - pillW/2, labelY - pillH + 2, pillW, pillH, 3);
+                    ctx.fill();
+                    // Dark text
+                    ctx.fillStyle = '#1a2333';
+                    ctx.fillText(labelText, labelX, labelY - 1);
+
+                    // X labels
+                    if (si === 1) {
+                        ctx.fillStyle = '#1d4ed8'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+                        ctx.fillText(locLabels[li], groupX + groupW/2, H - 6);
+                    }
+                    window._cwBarZones.push({ strain, loc, x, y, w: barW, h: barH, ft });
+                });
+            });
+
+            // Legend
+            let lx = pad.l;
+            Object.entries(strainColors).forEach(([s, c]) => {
+                ctx.fillStyle = c; ctx.fillRect(lx, 4, 12, 12);
+                ctx.fillStyle = '#1a2333'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+                ctx.fillText('Strain ' + s, lx + 15, 14);
+                lx += 72;
+            });
+        }
+
+        // Handle Q1 graph click
+        document.addEventListener('click', function(e) {
+            const wrap = document.getElementById('cw-graph-wrap');
+            const canvas = document.getElementById('cw-mini-graph');
+            if (!wrap || !canvas || !wrap.contains(e.target)) return;
+            if (!window._cwBarZones || !window._cwBarZones.length) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const cx = (e.clientX - rect.left) * scaleX;
+            const cy = (e.clientY - rect.top) * scaleY;
+
+            let hit = null;
+            window._cwBarZones.forEach(z => {
+                if (cx >= z.x && cx <= z.x + z.w && cy >= z.y && cy <= z.y + z.h) hit = z;
+            });
+
+            if (!hit) {
+                document.getElementById('cw-click-status').innerText = 'You clicked between bars. Try clicking directly on a colored bar.';
+                document.getElementById('cw-q1-answer').value = '';
+                document.getElementById('cw-target-ring').style.display = 'none';
+                return;
+            }
+
+            const ring = document.getElementById('cw-target-ring');
+            const displayX = (hit.x + hit.w/2) / scaleX;
+            const displayY = (hit.y) / scaleY;
+            ring.style.left = displayX + 'px';
+            ring.style.top = displayY + 'px';
+            ring.style.display = 'block';
+
+            cwGraphClickAnswer = `${hit.strain}_${hit.loc}`;
+            document.getElementById('cw-q1-answer').value = cwGraphClickAnswer;
+            document.getElementById('cw-click-status').innerText =
+                `Selected: Strain ${hit.strain} — ${['Outside','Window','Inside'][['loc1','loc2','loc3'].indexOf(hit.loc)]} (${hit.ft.toFixed(2)} ft)`;
+        });
+
+        function findTallestBar() {
+            if (!window._cwBarZones || !window._cwBarZones.length) return null;
+            return window._cwBarZones.reduce((a, b) => b.ft > a.ft ? b : a);
+        }
+
+        function gradeConclusionQuestions() {
+            let score = 0;
+            let total = 6;  // Q1, Q2, Q3a, Q3b, Q4(CER), Q5
+            let allAnswered = true;
+
+            // Q1: Graph click — must select the actual tallest bar (Strain A, loc1 = Outside)
+            const q1ans = document.getElementById('cw-q1-answer').value;
+            const tallest = findTallestBar();
+            const fb1 = document.getElementById('cw-fb1');
+            if (!q1ans) {
+                allAnswered = false;
+                fb1.className = 'cw-feedback incorrect';
+                fb1.innerHTML = '❌ Please click on a bar in the chart to answer this question.';
+            } else {
+                const correctBar = tallest ? `${tallest.strain}_${tallest.loc}` : 'A_loc1';
+                if (q1ans === correctBar) {
+                    score++;
+                    fb1.className = 'cw-feedback correct';
+                    fb1.innerHTML = `✅ Correct! Strain A Outside had the tallest average height because it had both the best genetics (genetically very tall) <em>and</em> the best environment (full sunlight).`;
+                } else {
+                    const [selStrain, selLoc] = q1ans.split('_');
+                    const locLabel = ['Outside','Window','Inside'][['loc1','loc2','loc3'].indexOf(selLoc)];
+                    fb1.className = 'cw-feedback incorrect';
+                    fb1.innerHTML = `❌ Not quite. You selected Strain ${selStrain} in the ${locLabel} condition. Look at the chart again — which bar is the absolute tallest? Remember, Strain A had the strongest genetics, and Outside had the best light conditions.`;
+                }
+            }
+
+            // Q2
+            const q2 = document.querySelector('input[name="cwq2"]:checked');
+            const fb2 = document.getElementById('cw-fb2');
+            if (!q2) { allAnswered = false; fb2.className = 'cw-feedback incorrect'; fb2.innerHTML = '❌ Please select an answer.'; }
+            else if (q2.value === 'b') {
+                score++;
+                fb2.className = 'cw-feedback correct';
+                fb2.innerHTML = '✅ Correct! Strain A\'s <em>genes didn\'t change</em> — its DNA is the same inside and outside. But the lack of light prevented the genes from expressing their full potential. Genes set the ceiling; environment determines how close you get.';
+            } else {
+                const fb2msgs = {
+                    a: '❌ Incorrect. The genes themselves don\'t change when a plant moves locations — DNA is fixed. What changes is how much of that genetic potential is expressed.',
+                    c: '❌ Incorrect. Strain A is genuinely programmed for tall growth — we saw this clearly in the Outside condition. Its short height inside was caused by the environment, not its genetics.',
+                    d: '❌ Incorrect. Light is a major factor in plant growth — the stark difference between Strain A Outside vs. Inside is direct evidence that the environment had a major effect.'
+                };
+                fb2.className = 'cw-feedback incorrect';
+                fb2.innerHTML = fb2msgs[q2.value] || '❌ Incorrect. Try again.';
+            }
+
+            // Q3 Part A
+            const q3 = document.querySelector('input[name="cwq3"]:checked');
+            const fb3 = document.getElementById('cw-fb3');
+            if (!q3) { allAnswered = false; fb3.className = 'cw-feedback incorrect'; fb3.innerHTML = '❌ Please select an answer for Part A.'; }
+            else if (q3.value === 'c') {
+                score++;
+                fb3.className = 'cw-feedback correct';
+                fb3.innerHTML = '✅ Correct! Both genetics and environment matter. A plant with weaker genetics in ideal conditions can outperform a plant with stronger genetics in poor conditions.';
+            } else {
+                const fb3msgs = {
+                    a: '❌ Not quite. Look at your data — Strain A Inside was likely shorter than Strain C Outside, showing environment can overcome genetic potential.',
+                    b: '❌ Not quite. Environment matters a lot, but Strain A still grew taller than Strain C in the same environment, proving genetics has real influence too.',
+                    d: '❌ Incorrect. Both genes and environment had clear, consistent effects across all 9 conditions in your experiment.'
+                };
+                fb3.className = 'cw-feedback incorrect';
+                fb3.innerHTML = fb3msgs[q3.value] || '❌ Incorrect. Try again.';
+            }
+
+            // Q3 Part B — calculate difference
+            const fb3b = document.getElementById('cw-fb3b');
+            const q3bInput = document.getElementById('cwq3b-answer');
+            const q3bVal = parseFloat(q3bInput ? q3bInput.value : '');
+            const cOutside = parseFloat(simulatedData.C.loc1);
+            const aInside  = parseFloat(simulatedData.A.loc3);
+            const expected3b = Math.abs(cOutside - aInside);
+            if (isNaN(q3bVal)) {
+                allAnswered = false;
+                fb3b.className = 'cw-feedback incorrect';
+                fb3b.innerHTML = '❌ Please calculate the difference and enter a number.';
+            } else if (Math.abs(q3bVal - expected3b) <= 0.05) {
+                score++;
+                fb3b.className = 'cw-feedback correct';
+                fb3b.innerHTML = `✅ Correct! The difference is ${expected3b.toFixed(2)} ft. Strain C Outside averaged ${cOutside.toFixed(2)} ft and Strain A Inside averaged ${aInside.toFixed(2)} ft.`;
+            } else {
+                fb3b.className = 'cw-feedback incorrect';
+                fb3b.innerHTML = `❌ Not quite. Try: Strain C Outside (${cOutside.toFixed(2)} ft) minus Strain A Inside (${aInside.toFixed(2)} ft) = ${expected3b.toFixed(2)} ft. Check your subtraction.`;
+            }
+
+            // Q4 — CER dropdowns
+            const cerClaim    = document.getElementById('cer-claim')?.value;
+            const cerEvidence = document.getElementById('cer-evidence')?.value;
+            const cerReason   = document.getElementById('cer-reasoning')?.value;
+            const fb4 = document.getElementById('cw-fb4');
+            if (!cerClaim || !cerEvidence || !cerReason) {
+                allAnswered = false;
+                fb4.className = 'cw-feedback incorrect';
+                fb4.innerHTML = '❌ Please select an option for Claim, Evidence, and Reasoning.';
+            } else {
+                const claimOk = cerClaim === 'correct';
+                const evidOk  = cerEvidence === 'data';
+                const reasonOk= cerReason === 'correct';
+                if (claimOk && evidOk && reasonOk) {
+                    score++;
+                    fb4.className = 'cw-feedback correct';
+                    fb4.innerHTML = '✅ Excellent CER! You correctly identified that genetics and environment interact, used real experimental data as evidence, and explained <em>why</em> the environment limits what genes can express.';
+                } else {
+                    const hints = [];
+                    if (!claimOk) hints.push('your <b>Claim</b> should state that <em>both</em> genetics and environment interact');
+                    if (!evidOk)  hints.push('your <b>Evidence</b> should use actual data from Strain A comparing the two environments');
+                    if (!reasonOk)hints.push('your <b>Reasoning</b> should explain how genetics sets potential and environment limits expression');
+                    fb4.className = 'cw-feedback partial';
+                    fb4.innerHTML = `⚠️ Almost! Check: ${hints.join('; ')}.`;
+                }
+            }
+
+            // Q5 — Animal twins transfer task
+            const q5 = document.querySelector('input[name="cwq5"]:checked');
+            const fb5 = document.getElementById('cw-fb5');
+            if (!q5) { allAnswered = false; fb5.className = 'cw-feedback incorrect'; fb5.innerHTML = '❌ Please select an answer.'; }
+            else if (q5.value === 'b') {
+                score++;
+                fb5.className = 'cw-feedback correct';
+                fb5.innerHTML = '✅ Excellent! Just like Strain A had the genetic potential to grow very tall but couldn\'t in poor light, the cheetah cubs had identical genetic potential for muscle — but Cub A\'s environment (constant exercise from hunting) allowed those genes to be expressed more fully. Same genetics, different environment, different outcome.';
+            } else {
+                const fb5msgs = {
+                    a: '❌ Identical twins share the exact same DNA. A mutation would make them non-identical. The difference has to come from something outside the genes.',
+                    c: '❌ Both cubs have the exact same genes — neither has "better" genes than the other. The explanation must involve environment.',
+                    d: '❌ The experiment you just completed showed exactly how environment shapes traits. Apply that same reasoning here — Cub A exercised constantly by hunting, while Cub B didn\'t need to move.'
+                };
+                fb5.className = 'cw-feedback incorrect';
+                fb5.innerHTML = fb5msgs[q5.value] || '❌ Incorrect. Try again.';
+            }
+
+            if (!allAnswered) {
+                showAlert('Missing Answers', 'Please complete all questions (including Part B and all three CER dropdowns) before submitting.');
+                return;
+            }
+
+            // Show score
+            const pct = Math.round((score / total) * 100);
+            const emoji = pct === 100 ? '🌟' : pct >= 80 ? '✅' : pct >= 60 ? '⚠️' : '🔄';
+            const msg = pct === 100
+                ? 'Perfect score! You\'ve mastered how Genetics and Environment interact.'
+                : pct >= 80
+                ? 'Great work! Review any incorrect answers, then you\'re done.'
+                : pct >= 60
+                ? 'Good effort! Read the feedback below and try the questions you missed.'
+                : 'Keep going — read the feedback carefully and try again!';
+
+            const banner = document.getElementById('cw-score-banner');
+            banner.innerHTML = `<h2>${emoji} Score: ${score} / ${total} &nbsp;(${pct}%)</h2><p>${msg}</p>`;
+            banner.style.display = 'block';
+            banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            document.getElementById('cw-submit-btn').style.display = pct === 100 ? 'none' : 'none';
+            document.getElementById('cw-retry-btn').style.display = pct < 100 ? 'block' : 'none';
+
+            if (pct === 100) {
+                setActiveStep(5);
+                document.getElementById('conclusion_btn').classList.remove('ready');
+                document.getElementById('conclusion_btn').classList.add('done');
+            }
+            saveGameState();
+        }
+
+        function retryConclusionQuestions() {
+            // Q1
+            const fb1Cls = document.getElementById('cw-fb1').classList;
+            if (!fb1Cls.contains('correct')) {
+                document.getElementById('cw-q1-answer').value = '';
+                document.getElementById('cw-click-status').innerText = 'No bar selected yet.';
+                document.getElementById('cw-target-ring').style.display = 'none';
+            }
+            // Q2, Q3, Q5 radio buttons
+            ['cwq2','cwq3','cwq5'].forEach(name => {
+                const fbId = 'cw-fb' + name.replace('cwq','');
+                if (!document.getElementById(fbId).classList.contains('correct')) {
+                    const checked = document.querySelector(`input[name="${name}"]:checked`);
+                    if (checked) checked.checked = false;
+                }
+            });
+            // Q3b
+            const fb3bCls = document.getElementById('cw-fb3b')?.classList;
+            if (fb3bCls && !fb3bCls.contains('correct')) {
+                const q3bEl = document.getElementById('cwq3b-answer');
+                if (q3bEl) q3bEl.value = '';
+            }
+            // Q4 CER dropdowns
+            const fb4Cls = document.getElementById('cw-fb4').classList;
+            if (!fb4Cls.contains('correct')) {
+                ['cer-claim','cer-evidence','cer-reasoning'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+            }
+
+            document.getElementById('cw-score-banner').style.display = 'none';
+            document.getElementById('cw-retry-btn').style.display = 'none';
+            document.getElementById('cw-submit-btn').style.display = 'block';
+            document.getElementById('cw-body').scrollTop = 0;
+        }
+        // ── CALCULATOR ────────────────────────────────────────────
+        let _calcExpr = '';
+        function calcInput(v) {
+            const d = document.getElementById('calc-display');
+            if (!d) return;
+            if (_calcExpr === '0' && !'0123456789.'.includes(v)) {
+                _calcExpr = v; // operator after 0
+            } else if (_calcExpr === '0' && v !== '.') {
+                _calcExpr = v;
+            } else {
+                _calcExpr += v;
+            }
+            d.innerText = _calcExpr;
+        }
+        function calcEquals() {
+            const d = document.getElementById('calc-display');
+            if (!d) return;
+            try {
+                const result = Function('"use strict"; return (' + _calcExpr + ')')();
+                _calcExpr = String(Math.round(result * 10000) / 10000);
+                d.innerText = _calcExpr;
+            } catch(e) { d.innerText = 'Error'; _calcExpr = '0'; }
+        }
+        function calcClear() {
+            _calcExpr = '0';
+            const d = document.getElementById('calc-display');
+            if (d) d.innerText = '0';
+        }
+        function calcUseResult() {
+            const d = document.getElementById('calc-display');
+            const el = document.getElementById('cwq3b-answer');
+            if (el && d) {
+                const val = parseFloat(d.innerText);
+                if (!isNaN(val)) el.value = Math.round(val * 100) / 100;
+            }
+        }
+
+        // ── POPULATE CER EVIDENCE SPANS WITH REAL DATA ────────────
+        function populateCERSpans() {
+            const aOut = parseFloat(simulatedData.A.loc1);
+            const aIn  = parseFloat(simulatedData.A.loc3);
+
+            // Update the evidence dropdown option to include real values
+            const evSel = document.getElementById('cer-evidence');
+            if (evSel) {
+                Array.from(evSel.options).forEach(opt => {
+                    if (opt.value === 'data') {
+                        opt.text = `Strain A's average height was much taller Outside (${aOut.toFixed(2)} ft) than Inside (${aIn.toFixed(2)} ft), even though the genetics were identical.`;
+                    }
+                });
+            }
+        }
+
+        function scrollToDataTable() {
+            // Close conclusion window temporarily, scroll to the data table, then offer to re-open
+            const panel = document.getElementById('normal-data-panel');
+            if (!panel) return;
+
+            // Close the window
+            closeConclusionWindow();
+
+            // Scroll the data table into view
+            setTimeout(() => {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Add a highlight pulse
+                panel.classList.add('highlight-pulse');
+
+                // Show a small banner prompting them to come back
+                const banner = document.getElementById('graph-done-banner');
+                if (banner) banner.style.display = 'flex';
+
+                // Remove pulse after 3 seconds
+                setTimeout(() => {
+                    panel.classList.remove('highlight-pulse');
+                }, 3000);
+            }, 300);
+        }
+
+        // ── GRAPH RESIZE HANDLE (Q1 mini chart) ──────────────────
+        (function() {
+            window.addEventListener('load', () => {
+                const handle = document.getElementById('cw-graph-resize');
+                const wrap   = document.getElementById('cw-graph-wrap');
+                if (!handle || !wrap) return;
+                let dragging = false, startX, startY, startW, startH;
+                handle.addEventListener('mousedown', e => {
+                    e.preventDefault(); e.stopPropagation();
+                    dragging = true;
+                    startX = e.clientX; startY = e.clientY;
+                    startW = wrap.offsetWidth;
+                    startH = wrap.offsetHeight || 240;
+                });
+                document.addEventListener('mousemove', e => {
+                    if (!dragging) return;
+                    const newW = Math.max(220, startW + (e.clientX - startX));
+                    const newH = Math.max(160, startH + (e.clientY - startY));
+                    // Set both wrapper dimensions so it actually expands in both axes
+                    wrap.style.width    = newW + 'px';
+                    wrap.style.height   = newH + 'px';
+                    wrap.style.maxWidth = 'none';
+                    // Sync the canvas resolution attributes to the new pixel size
+                    const canvas = document.getElementById('cw-mini-graph');
+                    if (canvas) {
+                        canvas.width  = newW;
+                        canvas.height = newH;
+                    }
+                    drawCWGraph();
+                });
+                document.addEventListener('mouseup', () => { dragging = false; });
+            });
+        })();
+
+        // ── FS-DATA-PANEL: DRAGGABLE + FONT SCALING ──────────────
+        (function() {
+            window.addEventListener('load', () => {
+                const panel  = document.getElementById('fs-data-panel');
+                const handle = document.getElementById('fs-panel-drag-handle');
+                if (!panel || !handle) return;
+
+                // Drag
+                let dragging = false, sx, sy, sl, st;
+                handle.addEventListener('mousedown', e => {
+                    if (e.target.tagName === 'BUTTON') return;
+                    dragging = true;
+                    const r = panel.getBoundingClientRect();
+                    sl = r.left; st = r.top; sx = e.clientX; sy = e.clientY;
+                    panel.style.right = 'auto';
+                    panel.style.bottom = 'auto';
+                    panel.style.left = r.left + 'px';
+                    panel.style.top  = r.top  + 'px';
+                });
+                document.addEventListener('mousemove', e => {
+                    if (!dragging) return;
+                    const nx = Math.max(0, Math.min(sl + (e.clientX - sx), window.innerWidth  - 40));
+                    const ny = Math.max(0, Math.min(st + (e.clientY - sy), window.innerHeight - 40));
+                    panel.style.left = nx + 'px';
+                    panel.style.top  = ny + 'px';
+                });
+                document.addEventListener('mouseup', () => { dragging = false; });
+
+                // Resize → scale font so text grows/shrinks with the panel
+                if (typeof ResizeObserver !== 'undefined') {
+                    const ro = new ResizeObserver(entries => {
+                        for (const entry of entries) {
+                            const w = entry.contentRect.width;
+                            // baseline 260px → 1em; scale proportionally, clamp 0.65–1.4em
+                            const scale = Math.min(1.4, Math.max(0.65, w / 260));
+                            panel.style.fontSize = scale + 'em';
+                        }
+                    });
+                    ro.observe(panel);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
