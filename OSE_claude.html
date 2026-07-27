@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grades 6-8 MA STE Curriculum Map - Dynamic Sheets Integration</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Slab:wght@700&family=Boogaloo&display=swap" rel="stylesheet">
+    <style>
+        /* ── LIGHT MODE (default) ── */
+        :root {
+            --ma-blue: #1a237e;
+            --full-green: #2e7d32;
+            --partial-amber: #f57c00;
+            --ext-blue: #0277bd;
+            --none-red: #c62828;
+
+            --bg-page:    #f8f9fa;
+            --bg-card:    #ffffff;
+            --bg-th:      #f1f3f5;
+            --bg-cat-hdr: #f8f9fa;
+            --bg-overview:#eef2f5;
+            --bg-pill-dark: #e9ecef;
+
+            --text-main:  #2c3e50;
+            --text-muted: #666;
+            --text-light: #999;
+            --text-pill-dark: #333;
+
+            --border:     #dee2e6;
+            --border-light: #f0f0f0;
+            --border-pill-dark: #ccc;
+
+            --shadow-sm:  0 1px 3px rgba(0,0,0,0.1);
+            --shadow-card:0 2px 4px rgba(0,0,0,0.05);
+            --shadow-overview: 0 2px 5px rgba(0,0,0,0.08);
+
+            --tooltip-bg: #333;
+            --tooltip-color: #fff;
+
+            --input-bg:   #ffffff;
+            --btn-bg:     #ffffff;
+        }
+
+        /* ── DARK MODE ── */
+        body.dark-mode {
+            --ma-blue:    #4a90d9;
+            --full-green: #4caf50;
+            --partial-amber: #ffb74d;
+            --ext-blue:   #29b6f6;
+            --none-red:   #ef5350;
+
+            --bg-page:    #1a1a2e;
+            --bg-card:    #16213e;
+            --bg-th:      #0f3460;
+            --bg-cat-hdr: #1e2a45;
+            --bg-overview:#1e2a45;
+            --bg-pill-dark: #2a3a5c;
+
+            --text-main:  #e0e0e0;
+            --text-muted: #aaa;
+            --text-light: #777;
+            --text-pill-dark: #ccc;
+
+            --border:     #2e3f5c;
+            --border-light: #2a3a5c;
+            --border-pill-dark: #3a4f70;
+
+            --shadow-sm:  0 1px 3px rgba(0,0,0,0.4);
+            --shadow-card:0 2px 4px rgba(0,0,0,0.3);
+            --shadow-overview: 0 2px 5px rgba(0,0,0,0.4);
+
+            --tooltip-bg: #0f3460;
+            --tooltip-color: #e0e0e0;
+
+            --input-bg:   #16213e;
+            --btn-bg:     #16213e;
+        }
+
+        body {
+            font-family: 'Roboto', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            font-size: 18px;
+            font-weight: 400;
+            line-height: 1.6;
+            transition: background-color 0.25s, color 0.25s;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+            color: white;
+            padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(26,35,126,0.3);
+        }
+
+        header h1 {
+            font-family: 'Boogaloo', cursive;
+            font-size: 2.6rem;
+            font-weight: 400;
+            margin-top: 0;
+            margin-bottom: 0;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── DARK MODE TOGGLE ── */
+        #darkToggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        #darkToggle:hover { background: rgba(255,255,255,0.28); }
+
+        /* ── STATS BAR ── */
+        #statsBar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 20px;
+            margin-bottom: 16px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .stats-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .stat-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-page);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: box-shadow 0.15s, opacity 0.15s;
+        }
+        .stat-chip:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .stat-chip.active-filter { box-shadow: 0 0 0 3px var(--ma-blue); }
+        .stat-chip.dimmed { opacity: 0.4; }
+        .stat-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; }
+        .stat-label { color: var(--text-muted); font-size: 0.88rem; font-weight: normal; }
+        #statsGradeGroup { display: flex; gap: 8px; align-items: center; }
+        .grade-chip {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 2px solid var(--border);
+            background: var(--bg-page);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+        }
+        .grade-chip .grade-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .grade-chip.active   { border-color: var(--ma-blue); box-shadow: 0 0 0 2px var(--ma-blue); }
+        .grade-chip.dimmed   { opacity: 0.4; }
+        .grade-chip:hover:not(.active) { border-color: #888; }
+        #statsLabel { font-size: 0.95rem; color: var(--text-muted); font-style: italic; }
+
+        /* ── CONTROLS ── */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-card);
+            margin-bottom: 16px;
+        }
+        .controls-left { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+        .view-btn {
+            padding: 12px 20px;
+            border: 1px solid var(--ma-blue);
+            background: var(--btn-bg);
+            color: var(--ma-blue);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+        .view-btn.active { background: var(--ma-blue); color: white; }
+
+        .util-btn {
+            padding: 10px 16px;
+            border: 1px solid var(--border);
+            background: var(--btn-bg);
+            color: var(--text-main);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+        .util-btn:hover { background: var(--border); }
+
+        #searchInput {
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            width: 100%;
+            max-width: 350px;
+            font-size: 1.1rem;
+            background: var(--input-bg);
+            color: var(--text-main);
+        }
+
+        /* ── TABLE ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            box-shadow: var(--shadow-sm);
+        }
+        th {
+            background-color: var(--bg-th);
+            color: var(--text-main);
+            padding: 15px 12px;
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 15px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: var(--text-main);
+        }
+
+        /* ── BADGES ── */
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: white;
+            white-space: nowrap;
+        }
+        .status-full    { background-color: var(--full-green); }
+        .status-partial { background-color: var(--partial-amber); }
+        .status-ext     { background-color: var(--ext-blue); }
+        .status-none    { background-color: var(--none-red); }
+
+        /* ── TOOLTIPS ── */
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            color: var(--ma-blue);
+            font-weight: bold;
+        }
+        .tooltip-icon { font-size: 1.9rem; vertical-align: middle; }
+        .tooltip-text {
+            visibility: hidden;
+            width: 480px;
+            background-color: var(--tooltip-bg);
+            color: var(--tooltip-color);
+            text-align: left;
+            border-radius: 6px;
+            padding: 15px;
+            position: fixed;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-weight: normal;
+            font-size: 1.05rem;
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+            pointer-events: none;
+            width: 380px;
+            max-width: 90vw;
+        }
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--tooltip-bg) transparent transparent transparent;
+        }
+        /* shown class applied by JS after positioning */
+        .tooltip-text.tt-visible { visibility: visible; opacity: 1; }
+        /* tap/click pin (touch) */
+        .tooltip-container.pinned .tooltip-text { visibility: visible; opacity: 1; pointer-events: auto; }
+
+        /* ── MISC ── */
+        .hidden { display: none !important; }
+
+        .accordion-item {
+            background: var(--bg-card);
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .accordion-header {
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .accordion-content { padding: 0; display: none; background: var(--bg-card); }
+        .unit-table td { border-bottom: 1px solid var(--border-light); padding: 15px; color: var(--text-main); }
+        .none-text { color: var(--text-light); font-style: italic; font-size: 0.95rem; }
+
+        .unit-link {
+            font-weight: 600;
+            color: var(--ma-blue);
+            font-size: 1.05rem;
+            text-decoration: underline;
+            cursor: pointer;
+            display: inline-block;
+        }
+        .unit-link:hover { opacity: 0.8; }
+        .no-link {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            cursor: default;
+        }
+        .unit-pill {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #ffffff33;
+            border: 1px solid #ffffff66;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            margin: 4px 4px 0 0;
+            font-weight: bold;
+            color: white;
+        }
+        .unit-pill-dark {
+            background: var(--bg-pill-dark);
+            border: 1px solid var(--border-pill-dark);
+            color: var(--text-pill-dark);
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.4rem;
+            color: var(--ma-blue);
+            font-weight: bold;
+        }
+
+        /* ── UNIT OVERVIEW CARD ── */
+        .unit-overview-card {
+            background-color: var(--bg-overview);
+            border-left: 5px solid var(--ma-blue);
+            padding: 24px;
+            margin: 20px 15px;
+            border-radius: 6px;
+            font-size: 1.35rem;
+            box-shadow: var(--shadow-overview);
+            line-height: 1.5;
+        }
+        .overview-item { margin-bottom: 16px; }
+        .overview-item:last-child { margin-bottom: 0; margin-top: 20px; }
+        .overview-label {
+            color: var(--ma-blue);
+            text-transform: uppercase;
+            font-size: 1.15rem;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        .overview-item a.unit-link { font-size: 1.25rem; }
+
+        /* ── PRINT MODAL ── */
+        #printModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        #printModal.open { display: flex; }
+        .print-modal-box {
+            background: var(--bg-card);
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 28px 32px;
+            width: 520px;
+            max-width: 95vw;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            font-family: 'Roboto', sans-serif;
+        }
+        .print-modal-box h2 {
+            font-family: 'Roboto Slab', serif;
+            font-size: 1.3rem;
+            color: var(--ma-blue);
+            margin: 0 0 6px 0;
+        }
+        .print-modal-box .print-subtitle {
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+        .print-section-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin: 16px 0 8px 0;
+        }
+        .print-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .print-check-label {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-page);
+            transition: background 0.15s;
+            user-select: none;
+        }
+        .print-check-label:hover { background: var(--border); }
+        .print-check-label input[type=checkbox] {
+            width: 16px; height: 16px;
+            accent-color: var(--ma-blue);
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .print-sub-options {
+            grid-column: 1 / -1;
+            display: none;
+            gap: 8px;
+            padding-left: 18px;
+        }
+        .print-sub-options.visible {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+        .print-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 24px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+        .print-cancel-btn {
+            padding: 10px 20px;
+            border: 1px solid var(--border);
+            background: var(--bg-page);
+            color: var(--text-main);
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .print-go-btn {
+            padding: 10px 24px;
+            background: var(--ma-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .print-go-btn:hover { opacity: 0.88; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Grades 6-8 MA STE Curriculum Map</h1>
+    <button id="darkToggle" onclick="toggleDarkMode()">🌙 Dark Mode</button>
+</header>
+
+<!-- PRINT MODAL -->
+<div id="printModal">
+    <div class="print-modal-box">
+        <h2>🖨 Print Options</h2>
+        <p class="print-subtitle" id="printModalSubtitle">Choose what to include in your printout.</p>
+
+        <!-- STANDARDS VIEW OPTIONS -->
+        <div id="printStdOptions">
+            <div class="print-section-label">Grouping columns</div>
+            <div class="print-options-grid">
+                <label class="print-check-label"><input type="checkbox" id="pDomain" checked> Domain</label>
+                <label class="print-check-label"><input type="checkbox" id="pSubdomain" checked> Subdomain</label>
+            </div>
+            <div class="print-section-label">Standard columns</div>
+            <div class="print-options-grid">
+                <label class="print-check-label"><input type="checkbox" id="pCode" checked> Standard Code</label>
+                <label class="print-check-label"><input type="checkbox" id="pDesc" checked> Description</label>
+                <label class="print-check-label" style="grid-column:1/-1;">
+                    <input type="checkbox" id="pDetails" onchange="toggleDetailsSub()"> Details
+                </label>
+                <div class="print-sub-options" id="printDetailsSub">
+                    <label class="print-check-label"><input type="checkbox" id="pCando" checked> Can-Do Statement</label>
+                    <label class="print-check-label"><input type="checkbox" id="pClar" checked> Clarification Statement</label>
+                    <label class="print-check-label" style="grid-column:1/-1;"><input type="checkbox" id="pBoundary" checked> State Assessment Boundary</label>
+                </div>
+                <label class="print-check-label"><input type="checkbox" id="pMapping" checked> OSE Mapping</label>
+                <label class="print-check-label"><input type="checkbox" id="pCoverage" checked> Coverage Status</label>
+            </div>
+        </div>
+
+        <!-- UNIT VIEW OPTIONS -->
+        <div id="printUnitOptions" style="display:none;">
+            <div class="print-section-label">Unit info</div>
+            <div class="print-options-grid">
+                <label class="print-check-label"><input type="checkbox" id="uUnitName" checked> Unit Name</label>
+                <label class="print-check-label"><input type="checkbox" id="uPhenomenon" checked> Anchoring Phenomenon</label>
+                <label class="print-check-label"><input type="checkbox" id="uDrivingQ" checked> Driving Question</label>
+                <label class="print-check-label"><input type="checkbox" id="uLink" checked> OSE Link</label>
+            </div>
+            <div class="print-section-label">Standards columns per unit</div>
+            <div class="print-options-grid">
+                <label class="print-check-label"><input type="checkbox" id="uCode" checked> Standard Code</label>
+                <label class="print-check-label"><input type="checkbox" id="uSubdomain" checked> Subdomain</label>
+                <label class="print-check-label"><input type="checkbox" id="uDesc" checked> Description</label>
+                <label class="print-check-label" style="grid-column:1/-1;">
+                    <input type="checkbox" id="uDetails" onchange="toggleUnitDetailsSub()"> Details
+                </label>
+                <div class="print-sub-options" id="printUnitDetailsSub">
+                    <label class="print-check-label"><input type="checkbox" id="uCando" checked> Can-Do Statement</label>
+                    <label class="print-check-label"><input type="checkbox" id="uClar" checked> Clarification Statement</label>
+                    <label class="print-check-label" style="grid-column:1/-1;"><input type="checkbox" id="uBoundary" checked> State Assessment Boundary</label>
+                </div>
+                <label class="print-check-label"><input type="checkbox" id="uCoverage" checked> Coverage Status</label>
+            </div>
+        </div>
+
+        <div class="print-modal-actions">
+            <button class="print-cancel-btn" onclick="closePrintModal()">Cancel</button>
+            <button class="print-go-btn" onclick="executePrint()">Print</button>
+        </div>
+    </div>
+</div>
+<div id="statsBar" class="hidden">
+    <div class="stats-group" id="statusChips">
+        <span id="statsLabel">Filter by coverage:</span>
+        <div class="stat-chip active-filter" data-filter="all" onclick="toggleStatusFilter('all')">
+            <span style="font-weight:700;">All</span>
+        </div>
+        <div class="stat-chip" data-filter="full"      onclick="toggleStatusFilter('full')">
+            <div class="stat-dot status-full"></div>
+            <span id="count-full">0</span>
+            <span class="stat-label">Fully Addressed</span>
+        </div>
+        <div class="stat-chip" data-filter="partial"   onclick="toggleStatusFilter('partial')">
+            <div class="stat-dot status-partial"></div>
+            <span id="count-partial">0</span>
+            <span class="stat-label">Partial</span>
+        </div>
+        <div class="stat-chip" data-filter="extension" onclick="toggleStatusFilter('extension')">
+            <div class="stat-dot status-ext"></div>
+            <span id="count-extension">0</span>
+            <span class="stat-label">Extension</span>
+        </div>
+        <div class="stat-chip" data-filter="none"      onclick="toggleStatusFilter('none')">
+            <div class="stat-dot status-none"></div>
+            <span id="count-none">0</span>
+            <span class="stat-label">Not Addressed</span>
+        </div>
+    </div>
+    <div id="statsGradeGroup">
+        <span style="font-size:0.95rem; color:var(--text-muted); font-weight:600;">Grade:</span>
+        <button class="grade-chip active" data-grade="all" onclick="setGradeFilter('all')">All</button>
+        <button class="grade-chip" data-grade="6" onclick="setGradeFilter('6')"><span class="grade-dot" style="background:#8CAD68;"></span>6th</button>
+        <button class="grade-chip" data-grade="7" onclick="setGradeFilter('7')"><span class="grade-dot" style="background:#2E76AF;"></span>7th</button>
+        <button class="grade-chip" data-grade="8" onclick="setGradeFilter('8')"><span class="grade-dot" style="background:#A13340;"></span>8th</button>
+    </div>
+</div>
+
+<div class="controls">
+    <div class="controls-left">
+        <button id="stdViewBtn"  class="view-btn active" onclick="setView('standard')">Standards-First</button>
+        <button id="unitViewBtn" class="view-btn"        onclick="setView('unit')">OpenSciEd Unit-First</button>
+        <button class="util-btn" onclick="expandAll()">⊞ Expand All</button>
+        <button class="util-btn" onclick="collapseAll()">⊟ Collapse All</button>
+        <button class="util-btn" onclick="openPrintDialog()">🖨 Print</button>
+    </div>
+    <input type="text" id="searchInput" placeholder="Search standard, category, topic..." onkeyup="filterData()">
+</div>
+
+<div id="loading" class="loading-state">Fetching live data from Google Sheets...</div>
+
+<div id="standardView" class="hidden"></div>
+<div id="unitView"     class="hidden"></div>
+
+<script>
+    // ── STATE ──────────────────────────────────────────────────────────────
+    let standardsData  = [];
+    let activeFilter   = null;   // 'full' | 'partial' | 'extension' | 'none' | null
+    let activeGrade    = 'all';  // 'all' | '6' | '7' | '8'
+    let currentView    = 'standard';
+
+    // ── URL STATE ──────────────────────────────────────────────────────────
+    function pushState() {
+        const params = new URLSearchParams();
+        if (currentView !== 'standard') params.set('view', currentView);
+        const q = document.getElementById('searchInput').value.trim();
+        if (q) params.set('search', q);
+        if (activeFilter) params.set('status', activeFilter);
+        if (activeGrade !== 'all') params.set('grade', activeGrade);
+        const str = params.toString();
+        history.replaceState(null, '', str ? '?' + str : location.pathname);
+    }
+
+    function applyUrlState() {
+        const params = new URLSearchParams(location.search);
+        if (params.get('view') === 'unit') currentView = 'unit';
+        if (params.get('search')) document.getElementById('searchInput').value = params.get('search');
+        if (params.get('status')) activeFilter = params.get('status');
+        if (params.get('grade'))  activeGrade  = params.get('grade');
+    }
+
+    // ── DARK MODE ──────────────────────────────────────────────────────────
+    function toggleDarkMode() {
+        const isDark = document.body.classList.toggle('dark-mode');
+        document.getElementById('darkToggle').textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+        localStorage.setItem('oseDarkMode', isDark ? '1' : '0');
+    }
+    (function() {
+        if (localStorage.getItem('oseDarkMode') === '1') {
+            document.body.classList.add('dark-mode');
+            document.getElementById('darkToggle').textContent = '☀️ Light Mode';
+        }
+    })();
+
+    // ── OSE UNIT DATA ──────────────────────────────────────────────────────
+    const unitDetails = {
+        "6.1: Light & Matter":                  { dq: "Why do we sometimes see different things when looking at the same object?",          ap: "A one-way mirror",                                              link: "https://openscied.org/instructional-materials/6-1-light-matter/" },
+        "6.2: Thermal Energy":                  { dq: "How can containers keep stuff from warming up or cooling down?",                     ap: "The temperature of a beverage in a cup",                        link: "https://openscied.org/instructional-materials/6-2-thermal-energy/" },
+        "6.3: Weather, Climate & Water Cycling":{ dq: "Why does a lot of hail, rain, or snow fall at some times and not others?",          ap: "Hailstorms occurring when temperatures are above freezing",     link: "https://openscied.org/instructional-materials/6-3-weather-climate-water-cycling/" },
+        "6.4: Plate Tectonics & Rock Cycling":  { dq: "What causes Earth's surface to change?",                                            ap: "Mount Everest is growing",                                      link: "https://openscied.org/instructional-materials/6-4-rock-cycling-plate-tectonics/" },
+        "6.5: Natural Hazards":                 { dq: "Where do natural hazards happen and how do we prepare for them?",                   ap: "2011 Japanese Earthquake & Tsunami",                            link: "https://openscied.org/instructional-materials/6-5-natural-hazards/" },
+        "6.6: Cells & Systems":                 { dq: "How do living things heal?",                                                        ap: "Student's broken foot healed",                                  link: "https://openscied.org/instructional-materials/6-6-cells-systems/" },
+        "7.1: Chemical Reactions & Matter":     { dq: "How can we make something new that was not there before?",                          ap: "Bath bombs",                                                    link: "https://openscied.org/instructional-materials/7-1-chemical-reactions-matter/" },
+        "7.2: Chemical Reactions & Energy":     { dq: "How can we use chemical reactions to design a solution to a problem?",              ap: "MREs",                                                          link: "https://openscied.org/instructional-materials/7-2-chemical-reactions-energy/" },
+        "7.3: Metabolic Reactions":             { dq: "How do things inside our bodies work together to make us feel the way we do?",      ap: "What's happening with M'Kenna?",                                link: "https://openscied.org/instructional-materials/7-3-metabolic-reactions/" },
+        "7.4: Matter Cycling & Photosynthesis": { dq: "Where does food come from and where does it go next?",                             ap: "Maple syrup",                                                   link: "https://openscied.org/instructional-materials/7-4-matter-cycling-photosynthesis/" },
+        "7.5: Ecosystem Dynamics & Biodiversity":{ dq: "How does changing an ecosystem affect what lives there?",                         ap: "Orangutans and chocolate",                                      link: "https://openscied.org/instructional-materials/7-5-ecosystem-dynamics/" },
+        "7.6: Earth's Resources & Human Impact":{ dq: "How do changes in the Earth's system impact our communities and what can we do about it?", ap: "Floods and droughts in the US",                        link: "https://openscied.org/instructional-materials/7-6-earths-resources-human-impact/" },
+        "8.1: Contact Forces":                  { dq: "Why do things sometimes get damaged when they hit each other?",                     ap: "Breaking phones (CD Cases)",                                    link: "https://openscied.org/instructional-materials/8-1-contact-forces/" },
+        "8.2: Sound Waves":                     { dq: "How can a sound make something move?",                                              ap: "The windows of a building visibly shake in response to music",  link: "https://openscied.org/instructional-materials/8-2-sound-waves/" },
+        "8.3: Forces at a Distance":            { dq: "How can a magnet move another object without touching it?",                         ap: "Dissecting a speaker",                                          link: "https://openscied.org/instructional-materials/8-3-forces-at-a-distance/" },
+        "8.4: Earth in Space":                  { dq: "How are we connected to the patterns we see in the sky and space?",                ap: "Sun setting between buildings in NYC",                           link: "https://openscied.org/instructional-materials/8-4-earth-in-space/" },
+        "8.5: Genetics":                        { dq: "Why are living things different from one another?",                                 ap: "Muscular cattle",                                               link: "https://openscied.org/instructional-materials/8-5-genetics/" },
+        "8.6: Natural Selection & Common Ancestry":{ dq: "How could things living today be connected to the things that lived long ago?", ap: "Pedro the Penguin",                                             link: "https://openscied.org/instructional-materials/8-6-natural-selection-common-ancestry/" }
+    };
+
+    // ── GOOGLE SHEETS ──────────────────────────────────────────────────────
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSfmBGJRyFnR43UMXzPHXGlrzJ_4lG8pjNCKAH5fCGcUBf1AILJoVeJ96g-AIPuNBdI6uvzS99VVtQi/pub?output=csv";
+
+    // ── HELPERS ────────────────────────────────────────────────────────────
+    const cleanStr = (str) => str ? str.replace(/\n/g, ' ').replace(/\s\s+/g, ' ').trim() : "";
+
+    const determineDomain = (codeStr) => {
+        const c = codeStr.toUpperCase();
+        if (c.includes('ESS')) return "Earth and Space Science";
+        if (c.includes('LS'))  return "Life Science";
+        if (c.includes('PS'))  return "Physical Science";
+        if (c.includes('ETS')) return "Technology/Engineering";
+        return "Other Domains";
+    };
+
+    const normalizeUnitName = (rawName) => {
+        const match = rawName.match(/^([678]\.\d+)/);
+        if (match) {
+            const prefix = match[1];
+            const exactName = Object.keys(unitDetails).find(k => k.startsWith(prefix));
+            if (exactName) return exactName;
+        }
+        return rawName;
+    };
+
+    function getStatusClass(status) {
+        const s = status.toLowerCase();
+        if (s.includes('as-is') || s.includes('full')) return 'status-full';
+        if (s.includes('partial'))                      return 'status-partial';
+        if (s.includes('extension') || s.includes('ext')) return 'status-ext';
+        if (s.includes('none'))                         return 'status-none';
+        return '';
+    }
+
+    function getStatusCategory(status) {
+        const s = status.toLowerCase();
+        if (s.includes('as-is') || s.includes('full')) return 'full';
+        if (s.includes('partial'))                      return 'partial';
+        if (s.includes('extension') || s.includes('ext')) return 'extension';
+        return 'none';
+    }
+
+    // ── STATS BAR ──────────────────────────────────────────────────────────
+    function updateStats(data) {
+        const counts = { full: 0, partial: 0, extension: 0, none: 0 };
+        data.forEach(item => {
+            // each standard: use its "best" status across all its units
+            const cats = item.units.map(u => getStatusCategory(u.status));
+            if      (cats.includes('full'))      counts.full++;
+            else if (cats.includes('partial'))   counts.partial++;
+            else if (cats.includes('extension')) counts.extension++;
+            else                                 counts.none++;
+        });
+        document.getElementById('count-full').textContent      = counts.full;
+        document.getElementById('count-partial').textContent   = counts.partial;
+        document.getElementById('count-extension').textContent = counts.extension;
+        document.getElementById('count-none').textContent      = counts.none;
+
+        // Update chip visual state
+        document.querySelectorAll('.stat-chip').forEach(chip => {
+            const f = chip.dataset.filter;
+            const isAll = f === 'all';
+            const isActive = activeFilter === null ? isAll : f === activeFilter;
+            chip.classList.toggle('active-filter', isActive);
+            chip.classList.toggle('dimmed', activeFilter !== null && !isActive);
+        });
+    }
+
+    function toggleStatusFilter(filter) {
+        // 'all' chip or re-clicking the active filter both clear back to null
+        if (filter === 'all' || activeFilter === filter) {
+            activeFilter = null;
+        } else {
+            activeFilter = filter;
+        }
+        pushState();
+        filterData();
+    }
+
+    // ── GRADE FILTER ───────────────────────────────────────────────────────
+    function setGradeFilter(grade) {
+        activeGrade = grade;
+        document.querySelectorAll('.grade-chip').forEach(c => {
+            c.classList.toggle('active', c.dataset.grade === grade);
+        });
+        pushState();
+        filterData();
+    }
+
+    // ── EXPAND / COLLAPSE ALL ──────────────────────────────────────────────
+    function expandAll() {
+        const viewId = currentView === 'standard' ? 'standardView' : 'unitView';
+        document.querySelectorAll(`#${viewId} .accordion-content`).forEach(content => {
+            content.style.display = 'block';
+            const span = content.previousElementSibling.querySelector('.toggle-icon');
+            if (span) span.innerText = '-';
+        });
+    }
+
+    function collapseAll() {
+        const viewId = currentView === 'standard' ? 'standardView' : 'unitView';
+        document.querySelectorAll(`#${viewId} .accordion-content`).forEach(content => {
+            content.style.display = 'none';
+            const span = content.previousElementSibling.querySelector('.toggle-icon');
+            if (span) span.innerText = '+';
+        });
+    }
+
+    // ── TOOLTIP SMART POSITIONING ─────────────────────────────────────────
+    function positionTooltip(container) {
+        const tt = container.querySelector('.tooltip-text');
+        if (!tt) return;
+        const iconRect = container.getBoundingClientRect();
+        const ttWidth  = tt.offsetWidth || 380;
+        const ttHeight = tt.offsetHeight || 120;
+        const margin   = 10;
+        const vw = window.innerWidth;
+
+        // Preferred: centered above the icon
+        let left = iconRect.left + iconRect.width / 2 - ttWidth / 2;
+        let top  = iconRect.top - ttHeight - 10;
+
+        // Clamp horizontally within viewport
+        if (left < margin) left = margin;
+        if (left + ttWidth > vw - margin) left = vw - ttWidth - margin;
+
+        // If tooltip would go above viewport, flip below
+        if (top < margin) top = iconRect.bottom + 10;
+
+        tt.style.left = left + 'px';
+        tt.style.top  = top  + 'px';
+        tt.style.bottom = 'auto';
+    }
+
+    // Delegate mouseenter / mouseleave on hover, and click for touch pin
+    document.addEventListener('mouseover', function(e) {
+        const tc = e.target.closest('.tooltip-container');
+        if (!tc) return;
+        positionTooltip(tc);
+        tc.querySelector('.tooltip-text')?.classList.add('tt-visible');
+    });
+    document.addEventListener('mouseout', function(e) {
+        const tc = e.target.closest('.tooltip-container');
+        if (!tc || tc.classList.contains('pinned')) return;
+        tc.querySelector('.tooltip-text')?.classList.remove('tt-visible');
+    });
+    document.addEventListener('click', function(e) {
+        const tc = e.target.closest('.tooltip-container');
+        // Close all pinned tooltips first
+        document.querySelectorAll('.tooltip-container.pinned').forEach(el => {
+            if (el !== tc) {
+                el.classList.remove('pinned');
+                el.querySelector('.tooltip-text')?.classList.remove('tt-visible');
+            }
+        });
+        if (tc) {
+            e.stopPropagation();
+            const isPinned = tc.classList.toggle('pinned');
+            if (isPinned) {
+                positionTooltip(tc);
+                tc.querySelector('.tooltip-text')?.classList.add('tt-visible');
+            } else {
+                tc.querySelector('.tooltip-text')?.classList.remove('tt-visible');
+            }
+        }
+    });
+
+    // ── LOAD FROM GOOGLE SHEETS ────────────────────────────────────────────
+    Papa.parse(sheetUrl, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+            const rawData    = results.data;
+            const consolidated = {};
+
+            rawData.forEach(row => {
+                const code = cleanStr(row['Standard'] || row['Code'] || row['code']);
+                if (!code) return;
+
+                if (!consolidated[code]) {
+                    let rowDomain = cleanStr(row['Domain']);
+                    if (!rowDomain) rowDomain = determineDomain(code);
+
+                    consolidated[code] = {
+                        domain:    rowDomain,
+                        category:  cleanStr(row['Category']) || "Uncategorized",
+                        code:      code,
+                        desc:      cleanStr(row['Description']),
+                        clar:      cleanStr(row['Clarification Statement'] || row['Clarification']),
+                        boundary:  cleanStr(row['State Assessment Boundary'] || row['Boundary']),
+                        cando:     cleanStr(row['Simplified "Can-Do"'] || row['Can-Do'] || row['Can Do']),
+                        units:     []
+                    };
+                }
+
+                let rawUnitStr = cleanStr(row['OSE Unit'] || row['Unit'] || row['OpenSciEd Mapping'] || "").replace(/•/g, '');
+
+                if (rawUnitStr && !rawUnitStr.toLowerCase().includes('no ose units')) {
+                    let splitStr   = rawUnitStr.replace(/(?=6\.|7\.|8\.)/g, '|||');
+                    let unitChunks = splitStr.split('|||').map(s => s.trim()).filter(s => s !== '');
+
+                    unitChunks.forEach(chunk => {
+                        let status     = 'None';
+                        const lowerChunk = chunk.toLowerCase();
+                        if      (lowerChunk.includes('as-is') || lowerChunk.includes('full')) status = 'As-Is';
+                        else if (lowerChunk.includes('partial'))   status = 'Partial';
+                        else if (lowerChunk.includes('ext'))       status = 'Extension';
+
+                        let name = chunk
+                            .replace(/\(\s*(?:as-is|fully|full|partial|extension)\s*\)/gi, '')
+                            .replace(/\b(?:as-is|fully|full|partial|extension)\b/gi, '')
+                            .replace(/[-–—,:;]+$/g, '')
+                            .replace(/[\(\)\[\]]/g, '')
+                            .trim()
+                            .replace(/\s\s+/g, ' ');
+
+                        if (name !== '' && /^[678]\.\d/.test(name)) {
+                            name = normalizeUnitName(name);
+                            if (!consolidated[code].units.some(u => u.name === name)) {
+                                consolidated[code].units.push({ name, status });
+                            }
+                        }
+                    });
+                }
+            });
+
+            Object.values(consolidated).forEach(item => {
+                if (item.units.length === 0) {
+                    item.units.push({ name: 'No OSE Units mapped', status: 'None' });
+                }
+            });
+
+            standardsData = Object.values(consolidated);
+
+            // Apply any URL state before first render
+            applyUrlState();
+
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('statsBar').classList.remove('hidden');
+
+            // Sync grade chip UI
+            document.querySelectorAll('.grade-chip').forEach(c => {
+                c.classList.toggle('active', c.dataset.grade === activeGrade);
+            });
+
+            if (currentView === 'unit') {
+                setView('unit');
+            } else {
+                document.getElementById('standardView').classList.remove('hidden');
+                filterData();
+            }
+        },
+        error: function(err) {
+            document.getElementById('loading').innerHTML = "Error loading data. Please check the Google Sheet link.";
+            console.error(err);
+        }
+    });
+
+    // ── FILTER DATA ────────────────────────────────────────────────────────
+    function filterData() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+
+        let filtered = standardsData.filter(item => {
+            // text search
+            const textMatch = !query ||
+                item.code.toLowerCase().includes(query) ||
+                item.desc.toLowerCase().includes(query) ||
+                item.cando.toLowerCase().includes(query) ||
+                item.category.toLowerCase().includes(query);
+            if (!textMatch) return false;
+
+            // grade filter — view-aware
+            if (activeGrade !== 'all') {
+                const inUnitView = !document.getElementById('unitView').classList.contains('hidden');
+                const gradeMatch = inUnitView
+                    ? item.units.some(u => u.name.startsWith(activeGrade + '.'))   // unit view: filter by OSE unit grade
+                    : item.code.startsWith(activeGrade + '.');                      // standards view: filter by standard code prefix
+                if (!gradeMatch) return false;
+            }
+
+            // status filter: match if ANY of the item's units match
+            if (activeFilter) {
+                const hasMatch = item.units.some(u => getStatusCategory(u.status) === activeFilter);
+                if (!hasMatch) return false;
+            }
+
+            return true;
+        });
+
+        updateStats(filtered);
+        pushState();
+
+        if (!document.getElementById('standardView').classList.contains('hidden')) {
+            renderStandardView(filtered);
+        } else {
+            renderUnitView(filtered);
+        }
+    }
+
+    // ── DETAILS TOOLTIPS ──────────────────────────────────────────────────
+    function generateDetailsHtml(clar, boundary, cando) {
+        let html       = '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; justify-items: center; align-items: center; width: 100%;">';
+        let hasDetails = false;
+
+        if (cando) {
+            html += `<div class="tooltip-container" style="grid-column: 1; margin: 0;"><span class="tooltip-icon">🎯</span><span class="tooltip-text"><strong>"Can-Do" Statement:</strong><br>${cando}</span></div>`;
+            hasDetails = true;
+        }
+        if (clar) {
+            html += `<div class="tooltip-container" style="grid-column: 2; margin: 0;"><span class="tooltip-icon">ℹ️</span><span class="tooltip-text"><strong>Clarification Statement:</strong><br>${clar}</span></div>`;
+            hasDetails = true;
+        }
+        if (boundary) {
+            html += `<div class="tooltip-container" style="grid-column: 3; margin: 0;"><span class="tooltip-icon" style="color: #c62828;">🛑</span><span class="tooltip-text"><strong>State Assessment Boundary:</strong><br>${boundary}</span></div>`;
+            hasDetails = true;
+        }
+
+        if (!hasDetails) return `<span class="none-text" style="display: block; text-align: center; width: 100%;">No details.</span>`;
+        html += '</div>';
+        return html;
+    }
+
+    // ── UNIT PILLS ────────────────────────────────────────────────────────
+    function gradeColors(unitName) {
+        if (unitName.startsWith('6.')) return { bg: '#6a8f4a', border: '#5a7a3a', text: '#fff' };
+        if (unitName.startsWith('7.')) return { bg: '#2362a0', border: '#1a5080', text: '#fff' };
+        if (unitName.startsWith('8.')) return { bg: '#9b2230', border: '#7d1a26', text: '#fff' };
+        return { bg: 'var(--bg-pill-dark)', border: 'var(--border-pill-dark)', text: 'var(--text-pill-dark)' };
+    }
+
+    function getUniqueUnitsHtml(items, useDark = false) {
+        const units = new Set();
+        items.forEach(i => i.units.forEach(u => {
+            if (u.name !== 'No OSE Units mapped') units.add(u.name);
+        }));
+        const sortedUnits = Array.from(units).sort();
+        if (sortedUnits.length === 0) return `<span style="font-size:0.95rem; color:#ccc;">No units currently mapped</span>`;
+        return sortedUnits.map(u => {
+            const c = gradeColors(u);
+            return `<span class="unit-pill" style="background:${c.bg}; border-color:${c.border}; color:${c.text};">${u}</span>`;
+        }).join(' ');
+    }
+
+    // ── RENDER: STANDARD VIEW ─────────────────────────────────────────────
+    function renderStandardView(filteredData) {
+        const container = document.getElementById('standardView');
+        container.innerHTML = '';
+
+        const tree = {};
+        filteredData.forEach(item => {
+            if (!tree[item.domain]) tree[item.domain] = { items: [], categories: {} };
+            tree[item.domain].items.push(item);
+            if (!tree[item.domain].categories[item.category]) tree[item.domain].categories[item.category] = { items: [] };
+            tree[item.domain].categories[item.category].items.push(item);
+        });
+
+        Object.keys(tree).sort().forEach((domainName, domainIndex) => {
+            const domainData     = tree[domainName];
+            const domainUnitsHtml = getUniqueUnitsHtml(domainData.items, false);
+            let categoriesHtml   = '';
+
+            Object.keys(domainData.categories).sort().forEach((catName) => {
+                const catData     = domainData.categories[catName];
+                const catUnitsHtml = getUniqueUnitsHtml(catData.items, true);
+
+                let rowsHtml = catData.items.map(item => {
+                    const unitHtml = item.units.map(u => {
+                        const statusText = (u.status.toLowerCase() === 'as-is' || u.status === 'Full') ? 'AS-IS' : u.status.toUpperCase();
+                        const isNone     = u.status === 'None' || u.name === 'No OSE Units mapped';
+                        const linkClass  = isNone ? 'no-link' : 'unit-link';
+                        const action     = isNone ? '' : `onclick="goToUnit('${u.name}')"`;
+                        const c          = gradeColors(u.name);
+                        const dotStyle   = isNone ? '' : `display:inline-block;width:10px;height:10px;border-radius:50%;background:${c.bg};margin-right:5px;flex-shrink:0;vertical-align:middle;`;
+                        return `
+                        <div style="margin-bottom:8px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                            <span style="flex: 1; text-align: left; line-height: 1.3; display:flex; align-items:center;">
+                                ${isNone ? '' : `<span style="${dotStyle}"></span>`}<a class="${linkClass}" ${action}>${u.name}</a>
+                            </span>
+                            <span class="badge ${getStatusClass(u.status)}" style="margin-bottom: 0; flex-shrink: 0; min-width: 80px; text-align: center;">${statusText}</span>
+                        </div>`;
+                    }).join('');
+
+                    const detailsHtml = generateDetailsHtml(item.clar, item.boundary, item.cando);
+                    return `
+                        <tr>
+                            <td style="width: 15%;"><strong>${item.code}</strong></td>
+                            <td style="width: 45%;">${item.desc}</td>
+                            <td style="width: 15%; text-align:center; vertical-align:middle;">${detailsHtml}</td>
+                            <td style="width: 25%;">${unitHtml}</td>
+                        </tr>`;
+                }).join('');
+
+                categoriesHtml += `
+                    <div class="accordion-item" style="margin: 10px; border: 1px solid var(--border);">
+                        <div class="accordion-header" style="background-color: var(--bg-cat-hdr); color: var(--ma-blue);" onclick="toggleAccordion(this)">
+                            <div>
+                                <div style="font-size: 1.15rem;">${catName}</div>
+                                <div style="margin-top: 5px;">${catUnitsHtml}</div>
+                            </div>
+                            <span class="toggle-icon" style="font-size: 1.4rem; font-weight:bold;">+</span>
+                        </div>
+                        <div class="accordion-content">
+                            <table class="unit-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 15%;">Standard</th>
+                                        <th style="width: 45%;">Exact Official Description</th>
+                                        <th style="width: 15%; text-align:center;">Details (Tap/Hover)</th>
+                                        <th style="width: 25%;">OpenSciEd Mapping</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rowsHtml}</tbody>
+                            </table>
+                        </div>
+                    </div>`;
+            });
+
+            const displayStyle = domainIndex === 0 ? 'block' : 'none';
+            const iconChar     = domainIndex === 0 ? '-' : '+';
+
+            container.innerHTML += `
+                <div class="accordion-item">
+                    <div class="accordion-header" style="background-color: var(--ma-blue); color: white;" onclick="toggleAccordion(this)">
+                        <div>
+                            <div style="font-size: 1.3rem;">${domainName}</div>
+                            <div style="margin-top: 6px;">${domainUnitsHtml}</div>
+                        </div>
+                        <span class="toggle-icon" style="font-size: 1.8rem; font-weight:bold;">${iconChar}</span>
+                    </div>
+                    <div class="accordion-content" style="display: ${displayStyle}; padding: 10px 0; background: var(--bg-card);">
+                        ${categoriesHtml}
+                    </div>
+                </div>`;
+        });
+    }
+
+    // ── RENDER: UNIT VIEW ─────────────────────────────────────────────────
+    function renderUnitView(filteredData) {
+        const container = document.getElementById('unitView');
+        container.innerHTML = '';
+        const units = {};
+
+        filteredData.forEach(item => {
+            item.units.forEach(u => {
+                // In unit view, only include unit accordions that match the active grade
+                if (activeGrade !== 'all' && !u.name.startsWith(activeGrade + '.')) return;
+                if (!units[u.name]) units[u.name] = [];
+                if (!units[u.name].some(existing => existing.code === item.code)) {
+                    units[u.name].push({ ...item, currentStatus: u.status });
+                }
+            });
+        });
+
+        // Unit names come pre-filtered from filterData
+        let unitNames = Object.keys(units).sort();
+
+        unitNames.forEach((unitName, index) => {
+            let headerColor = '#1a237e';
+            if      (unitName.startsWith('6.')) headerColor = '#8CAD68';
+            else if (unitName.startsWith('7.')) headerColor = '#2E76AF';
+            else if (unitName.startsWith('8.')) headerColor = '#A13340';
+            else if (unitName.toLowerCase().includes('no ose units')) headerColor = '#c62828';
+
+            const safeId = "acc-" + unitName.replace(/[^a-zA-Z0-9]/g, '-');
+
+            let overviewHtml = '';
+            let details = unitDetails[unitName];
+            if (!details) {
+                const fuzzyKey = Object.keys(unitDetails).find(k => k.replace(/\s/g, '') === unitName.replace(/\s/g, ''));
+                if (fuzzyKey) details = unitDetails[fuzzyKey];
+            }
+            if (unitName.toLowerCase() !== 'no ose units mapped' && details) {
+                overviewHtml = `
+                    <div class="unit-overview-card">
+                        <div class="overview-item"><span class="overview-label">Anchoring Phenomenon</span> ${details.ap}</div>
+                        <div class="overview-item"><span class="overview-label">Driving Question</span> ${details.dq}</div>
+                        <div class="overview-item"><a href="${details.link}" target="_blank" class="unit-link">View OpenSciEd Materials ↗</a></div>
+                    </div>`;
+            }
+
+            let rows = units[unitName].map(item => {
+                const detailsHtml = generateDetailsHtml(item.clar, item.boundary, item.cando);
+                const statusText  = (item.currentStatus.toLowerCase() === 'as-is' || item.currentStatus === 'Full') ? 'AS-IS' : item.currentStatus.toUpperCase();
+                return `
+                <tr>
+                    <td style="width:20%; border-right: 1px solid var(--border-light);">
+                        <strong>${item.code}</strong><br>
+                        <span class="badge ${getStatusClass(item.currentStatus)}">${statusText}</span>
+                    </td>
+                    <td style="width:60%;">
+                        <div style="font-size:1rem; color:var(--text-muted); font-weight:bold; margin-bottom:5px;">${item.category}</div>
+                        ${item.desc}
+                    </td>
+                    <td style="width:20%; text-align:center; vertical-align:middle;">${detailsHtml}</td>
+                </tr>`;
+            }).join('');
+
+            const displayStyle = index === 0 ? 'block' : 'none';
+            const iconChar     = index === 0 ? '-' : '+';
+
+            container.innerHTML += `
+                <div class="accordion-item" id="${safeId}">
+                    <div class="accordion-header" style="background-color: ${headerColor}; color: white;" onclick="toggleAccordion(this)">
+                        <div style="font-size: 1.25rem;">${unitName} <span>[${units[unitName].length} Standards]</span></div>
+                        <span class="toggle-icon" style="font-size: 1.5rem; font-weight:bold;">${iconChar}</span>
+                    </div>
+                    <div class="accordion-content" style="display: ${displayStyle};">
+                        ${overviewHtml}
+                        <table class="unit-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">Standard</th>
+                                    <th style="width: 60%;">Category & Description</th>
+                                    <th style="width: 20%; text-align:center;">Details (Tap/Hover)</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>`;
+        });
+    }
+
+    // ── VIEW SWITCH ───────────────────────────────────────────────────────
+    function setView(view) {
+        currentView = view;
+        document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+        if (view === 'standard') {
+            document.getElementById('stdViewBtn').classList.add('active');
+            document.getElementById('standardView').classList.remove('hidden');
+            document.getElementById('unitView').classList.add('hidden');
+        } else {
+            document.getElementById('unitViewBtn').classList.add('active');
+            document.getElementById('standardView').classList.add('hidden');
+            document.getElementById('unitView').classList.remove('hidden');
+        }
+        if (standardsData.length > 0) filterData();
+    }
+
+    // ── ACCORDION ─────────────────────────────────────────────────────────
+    function toggleAccordion(header) {
+        const content = header.nextElementSibling;
+        const isOpen  = content.style.display === 'block';
+        content.style.display = isOpen ? 'none' : 'block';
+        const span = header.querySelector('.toggle-icon');
+        if (span) span.innerText = isOpen ? '+' : '-';
+    }
+
+    // ── PRINT DIALOG ──────────────────────────────────────────────────────
+    function openPrintModal() {
+        const inUnitView = !document.getElementById('unitView').classList.contains('hidden');
+        document.getElementById('printStdOptions').style.display  = inUnitView ? 'none' : 'block';
+        document.getElementById('printUnitOptions').style.display = inUnitView ? 'block' : 'none';
+        document.getElementById('printModalSubtitle').textContent =
+            inUnitView ? 'Choose what to include — OpenSciEd Unit view.'
+                       : 'Choose what to include — Standards-First view.';
+        document.getElementById('printModal').classList.add('open');
+    }
+
+    function closePrintModal() {
+        document.getElementById('printModal').classList.remove('open');
+    }
+
+    // Close on backdrop click
+    document.getElementById('printModal').addEventListener('click', function(e) {
+        if (e.target === this) closePrintModal();
+    });
+
+    function toggleDetailsSub() {
+        const checked = document.getElementById('pDetails').checked;
+        const sub = document.getElementById('printDetailsSub');
+        sub.classList.toggle('visible', checked);
+    }
+    function toggleUnitDetailsSub() {
+        const checked = document.getElementById('uDetails').checked;
+        const sub = document.getElementById('printUnitDetailsSub');
+        sub.classList.toggle('visible', checked);
+    }
+
+    function chk(id) { return document.getElementById(id)?.checked; }
+
+    // ── STATUS BADGE HTML FOR PRINT ────────────────────────────────────────
+    function printBadge(status) {
+        const s = status.toLowerCase();
+        let color = '#888', label = status.toUpperCase();
+        if (s.includes('as-is') || s.includes('full'))  { color = '#2e7d32'; label = 'AS-IS'; }
+        else if (s.includes('partial'))                  { color = '#f57c00'; label = 'PARTIAL'; }
+        else if (s.includes('extension') || s.includes('ext')) { color = '#0277bd'; label = 'EXTENSION'; }
+        else if (s.includes('none'))                     { color = '#c62828'; label = 'NONE'; }
+        return `<span style="background:${color};color:white;padding:2pt 6pt;border-radius:3pt;font-size:8pt;font-weight:bold;white-space:nowrap;">${label}</span>`;
+    }
+
+    // ── GENERATE PRINT WINDOW: STANDARDS VIEW ─────────────────────────────
+    function generateStdPrint(opts, data) {
+        // Build tree identical to renderStandardView
+        const tree = {};
+        data.forEach(item => {
+            if (!tree[item.domain]) tree[item.domain] = { items: [], categories: {} };
+            tree[item.domain].items.push(item);
+            if (!tree[item.domain].categories[item.category]) tree[item.domain].categories[item.category] = { items: [] };
+            tree[item.domain].categories[item.category].items.push(item);
+        });
+
+        // Build column header list
+        const cols = [];
+        if (opts.code)     cols.push({ label: 'Standard',    w: '12%' });
+        if (opts.desc)     cols.push({ label: 'Description', w: opts.details ? '28%' : '40%' });
+        if (opts.details)  cols.push({ label: 'Details',     w: '28%' });
+        if (opts.mapping)  cols.push({ label: 'OSE Mapping', w: '20%' });
+
+        let body = '';
+
+        Object.keys(tree).sort().forEach(domainName => {
+            if (opts.domain) {
+                body += `<tr><td colspan="${cols.length}" class="domain-hdr">${domainName}</td></tr>`;
+            }
+
+            Object.keys(tree[domainName].categories).sort().forEach(catName => {
+                if (opts.subdomain) {
+                    body += `<tr><td colspan="${cols.length}" class="cat-hdr">${catName}</td></tr>`;
+                }
+
+                tree[domainName].categories[catName].items.forEach(item => {
+                    let row = '<tr>';
+
+                    if (opts.code) row += `<td class="code-cell"><strong>${item.code}</strong></td>`;
+
+                    if (opts.desc) row += `<td>${item.desc}</td>`;
+
+                    if (opts.details) {
+                        let det = '';
+                        if (opts.cando    && item.cando)    det += `<div class="det-block"><span class="det-lbl">🎯 Can-Do:</span> ${item.cando}</div>`;
+                        if (opts.clar     && item.clar)     det += `<div class="det-block"><span class="det-lbl">ℹ️ Clarification:</span> ${item.clar}</div>`;
+                        if (opts.boundary && item.boundary) det += `<div class="det-block"><span class="det-lbl">🛑 Boundary:</span> ${item.boundary}</div>`;
+                        row += `<td>${det || '<span class="muted">—</span>'}</td>`;
+                    }
+
+                    if (opts.mapping || opts.coverage) {
+                        let mapCell = '';
+                        item.units.forEach(u => {
+                            mapCell += '<div class="map-row">';
+                            if (opts.mapping)  mapCell += `<span class="unit-name">${u.name}</span>`;
+                            if (opts.coverage) mapCell += ' ' + printBadge(u.status);
+                            mapCell += '</div>';
+                        });
+                        row += `<td>${mapCell}</td>`;
+                    }
+
+                    row += '</tr>';
+                    body += row;
+                });
+            });
+        });
+
+        const colHeaders = cols.map(c => `<th style="width:${c.w}">${c.label}</th>`).join('');
+        // append mapping col header if either mapping or coverage selected but not already in cols
+        const hasMapCol = opts.mapping || opts.coverage;
+        const mapColHeader = hasMapCol ? `<th style="width:20%">OSE Mapping${opts.coverage ? ' / Coverage' : ''}</th>` : '';
+
+        // Rebuild properly (cols above already merged mapping+coverage)
+        const finalCols = [];
+        if (opts.code)    finalCols.push(`<th style="width:12%">Standard</th>`);
+        if (opts.desc)    finalCols.push(`<th style="width:${opts.details ? '28%' : '38%'}">Description</th>`);
+        if (opts.details) finalCols.push(`<th style="width:28%">Details</th>`);
+        if (hasMapCol)    finalCols.push(`<th style="width:22%">OSE Mapping${opts.coverage ? ' / Coverage' : ''}</th>`);
+
+        return { tableHeaders: finalCols.join(''), tableBody: body, colCount: finalCols.length };
+    }
+
+    // ── GENERATE PRINT WINDOW: UNIT VIEW ──────────────────────────────────
+    function generateUnitPrint(opts, data) {
+        // Build units bucket
+        const units = {};
+        data.forEach(item => {
+            item.units.forEach(u => {
+                if (activeGrade !== 'all' && !u.name.startsWith(activeGrade + '.')) return;
+                if (!units[u.name]) units[u.name] = [];
+                if (!units[u.name].some(e => e.code === item.code))
+                    units[u.name].push({ ...item, currentStatus: u.status });
+            });
+        });
+
+        const finalCols = [];
+        if (opts.code)      finalCols.push(`<th style="width:14%">Standard</th>`);
+        if (opts.subdomain) finalCols.push(`<th style="width:16%">Subdomain</th>`);
+        if (opts.desc)      finalCols.push(`<th style="width:${opts.details ? '22%' : '38%'}">Description</th>`);
+        if (opts.details)   finalCols.push(`<th style="width:26%">Details</th>`);
+        if (opts.coverage)  finalCols.push(`<th style="width:12%">Coverage</th>`);
+
+        let body = '';
+
+        Object.keys(units).sort().forEach(unitName => {
+            const unitStandards = units[unitName];
+            const details       = unitDetails[unitName] ||
+                Object.values(unitDetails).find(v => v === unitDetails[Object.keys(unitDetails).find(k => k.replace(/\s/g,'') === unitName.replace(/\s/g,''))]);
+
+            // Grade color
+            let gradeColor = '#1a237e';
+            if      (unitName.startsWith('6.')) gradeColor = '#8CAD68';
+            else if (unitName.startsWith('7.')) gradeColor = '#2E76AF';
+            else if (unitName.startsWith('8.')) gradeColor = '#A13340';
+            else if (unitName.toLowerCase().includes('no ose')) gradeColor = '#c62828';
+
+            // Unit header row spanning all cols
+            if (opts.unitName) {
+                body += `<tr><td colspan="${finalCols.length}" class="unit-hdr" style="background:${gradeColor};">${unitName} <span style="font-weight:normal;font-size:9pt;">[${unitStandards.length} standards]</span></td></tr>`;
+            }
+
+            // Phenomenon / DQ / link info row
+            if (details && (opts.phenomenon || opts.drivingQ || opts.link)) {
+                let infoHtml = '';
+                if (opts.phenomenon && details.ap) infoHtml += `<span class="det-lbl">Anchoring Phenomenon:</span> ${details.ap}  `;
+                if (opts.drivingQ   && details.dq) infoHtml += `<span class="det-lbl">Driving Question:</span> ${details.dq}  `;
+                if (opts.link       && details.link) infoHtml += `<span class="det-lbl">Link:</span> ${details.link}`;
+                body += `<tr><td colspan="${finalCols.length}" class="unit-info">${infoHtml}</td></tr>`;
+            }
+
+            // Column headers for this unit's table
+            body += `<tr class="col-hdr-row">${finalCols.join('')}</tr>`;
+
+            // Standard rows
+            unitStandards.forEach(item => {
+                let row = '<tr>';
+                if (opts.code)      row += `<td class="code-cell"><strong>${item.code}</strong></td>`;
+                if (opts.subdomain) row += `<td class="muted-cell">${item.category}</td>`;
+                if (opts.desc)      row += `<td>${item.desc}</td>`;
+                if (opts.details) {
+                    let det = '';
+                    if (opts.cando    && item.cando)    det += `<div class="det-block"><span class="det-lbl">🎯 Can-Do:</span> ${item.cando}</div>`;
+                    if (opts.clar     && item.clar)     det += `<div class="det-block"><span class="det-lbl">ℹ️ Clarification:</span> ${item.clar}</div>`;
+                    if (opts.boundary && item.boundary) det += `<div class="det-block"><span class="det-lbl">🛑 Boundary:</span> ${item.boundary}</div>`;
+                    row += `<td>${det || '<span class="muted">—</span>'}</td>`;
+                }
+                if (opts.coverage)  row += `<td style="text-align:center;vertical-align:middle;">${printBadge(item.currentStatus)}</td>`;
+                row += '</tr>';
+                body += row;
+            });
+
+            // Spacer
+            body += `<tr><td colspan="${finalCols.length}" style="height:10pt;border:none;"></td></tr>`;
+        });
+
+        return { tableHeaders: finalCols.join(''), tableBody: body, colCount: finalCols.length };
+    }
+
+    // ── EXECUTE PRINT ──────────────────────────────────────────────────────
+    function executePrint() {
+        const inUnitView = !document.getElementById('unitView').classList.contains('hidden');
+        closePrintModal();
+
+        // Gather current filtered data
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const data = standardsData.filter(item => {
+            const textMatch = !query ||
+                item.code.toLowerCase().includes(query) ||
+                item.desc.toLowerCase().includes(query) ||
+                item.cando.toLowerCase().includes(query) ||
+                item.category.toLowerCase().includes(query);
+            if (!textMatch) return false;
+            if (activeGrade !== 'all') {
+                const gradeMatch = inUnitView
+                    ? item.units.some(u => u.name.startsWith(activeGrade + '.'))
+                    : item.code.startsWith(activeGrade + '.');
+                if (!gradeMatch) return false;
+            }
+            if (activeFilter) {
+                if (!item.units.some(u => getStatusCategory(u.status) === activeFilter)) return false;
+            }
+            return true;
+        });
+
+        let result, subtitle;
+
+        if (!inUnitView) {
+            const opts = {
+                domain:    chk('pDomain'),
+                subdomain: chk('pSubdomain'),
+                code:      chk('pCode'),
+                desc:      chk('pDesc'),
+                details:   chk('pDetails'),
+                cando:     chk('pCando'),
+                clar:      chk('pClar'),
+                boundary:  chk('pBoundary'),
+                mapping:   chk('pMapping'),
+                coverage:  chk('pCoverage'),
+            };
+            result = generateStdPrint(opts, data);
+            subtitle = 'Standards-First View';
+        } else {
+            const opts = {
+                unitName:   chk('uUnitName'),
+                phenomenon: chk('uPhenomenon'),
+                drivingQ:   chk('uDrivingQ'),
+                link:       chk('uLink'),
+                code:       chk('uCode'),
+                subdomain:  chk('uSubdomain'),
+                desc:       chk('uDesc'),
+                details:    chk('uDetails'),
+                cando:      chk('uCando'),
+                clar:       chk('uClar'),
+                boundary:   chk('uBoundary'),
+                coverage:   chk('uCoverage'),
+            };
+            result = generateUnitPrint(opts, data);
+            subtitle = 'OpenSciEd Unit-First View';
+        }
+
+        const gradeLabel = activeGrade === 'all' ? 'All Grades' : `Grade ${activeGrade}`;
+        const filterLabel = activeFilter ? ` · Coverage: ${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}` : '';
+        const searchLabel = document.getElementById('searchInput').value.trim() ? ` · Search: "${document.getElementById('searchInput').value.trim()}"` : '';
+
+        const html = [
+            '<!DOCTYPE html>',
+            '<html>',
+            '<head>',
+            '<meta charset="UTF-8">',
+            '<title>MA STE Curriculum Map \u2014 Print<\/title>',
+            '<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Slab:wght@700&display=swap" rel="stylesheet">',
+            '<style>',
+            '  * { box-sizing: border-box; margin: 0; padding: 0; }',
+            '  body { font-family: \'Roboto\', sans-serif; font-size: 9.5pt; color: #1a1a1a; padding: 14mm; }',
+            '  h1 { font-family: \'Roboto Slab\', serif; font-size: 15pt; color: #1a237e; margin-bottom: 2pt; }',
+            '  .meta { font-size: 8pt; color: #555; margin-bottom: 10pt; }',
+            '  table { width: 100%; border-collapse: collapse; }',
+            '  th { background: #1a237e; color: white; padding: 5pt 7pt; text-align: left; font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4pt; }',
+            '  td { padding: 5pt 7pt; border-bottom: 1px solid #e0e0e0; vertical-align: top; font-size: 8.5pt; line-height: 1.4; }',
+            '  tr:nth-child(even) td { background: #f9f9fb; }',
+            '  .domain-hdr { background: #1a237e !important; color: white; font-weight: 700; font-size: 10pt; padding: 7pt 9pt; border: none; }',
+            '  .cat-hdr { background: #e8eaf6 !important; color: #1a237e; font-weight: 700; font-size: 9pt; padding: 5pt 9pt; border-bottom: 1px solid #c5cae9; }',
+            '  .unit-hdr { color: white; font-weight: 700; font-size: 10.5pt; padding: 7pt 9pt; border: none; }',
+            '  .unit-info { background: #f0f4ff !important; font-size: 8pt; color: #333; padding: 5pt 9pt; border-bottom: 1px solid #c5cae9; }',
+            '  .col-hdr-row th { background: #3949ab; }',
+            '  .code-cell { font-weight: 700; white-space: nowrap; color: #1a237e; }',
+            '  .muted-cell { color: #555; font-size: 8pt; }',
+            '  .det-block { margin-bottom: 4pt; font-size: 8pt; }',
+            '  .det-block:last-child { margin-bottom: 0; }',
+            '  .det-lbl { font-weight: 700; color: #1a237e; }',
+            '  .map-row { margin-bottom: 3pt; font-size: 8pt; }',
+            '  .unit-name { color: #1a237e; font-weight: 600; }',
+            '  .muted { color: #aaa; }',
+            '  @page { margin: 14mm; }',
+            '  @media print { body { padding: 0; } }',
+            '<\/style>',
+            '<\/head>',
+            '<body>',
+            '<h1>Grades 6\u20138 MA STE Curriculum Map<\/h1>',
+            `<p class="meta">${subtitle} &nbsp;&middot;&nbsp; ${gradeLabel}${filterLabel}${searchLabel} &nbsp;&middot;&nbsp; Printed ${new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})}<\/p>`,
+            '<table>',
+            `<thead><tr>${result.tableHeaders}<\/tr><\/thead>`,
+            `<tbody>${result.tableBody}<\/tbody>`,
+            '<\/table>',
+            '<\/body>',
+            '<\/html>'
+        ].join('\n');
+
+        const win = window.open('', '_blank');
+        win.document.write(html);
+        win.document.close();
+        win.onload = () => { win.focus(); win.print(); };
+    }
+
+    // alias for modal open (button calls openPrintDialog)
+    function openPrintDialog() { openPrintModal(); }
+    function goToUnit(unitName) {
+        if (unitName === 'No OSE Units mapped') return;
+        document.getElementById('searchInput').value = '';
+        activeFilter = null;
+        filterData();
+        setView('unit');
+
+        const safeId = "acc-" + unitName.replace(/[^a-zA-Z0-9]/g, '-');
+        setTimeout(() => {
+            const accordionItem = document.getElementById(safeId);
+            if (accordionItem) {
+                const header  = accordionItem.querySelector('.accordion-header');
+                const content = accordionItem.querySelector('.accordion-content');
+                if (content.style.display !== 'block') { toggleAccordion(header); }
+                accordionItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100);
+    }
+</script>
+
+</body>
+</html>
