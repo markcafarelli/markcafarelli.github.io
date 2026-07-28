@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assignment Portal — Teacher Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --surface2: #f8fafc;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --muted: #64748b;
+  --accent: #7c3aed;
+  --accent-light: #ede9fe;
+  --accent-mid: #c4b5fd;
+  --nav: #0f172a;
+  --nav-text: #f8fafc;
+  --success: #22c55e;
+  --success-bg: #f0fdf4;
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
+  --warning: #f59e0b;
+  --shadow: 0 2px 8px rgba(0,0,0,0.07);
+  --radius: 10px;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);font-size:17px;min-height:100vh}
+
+/* ── AUTH ── */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e1b4b 0%,#0f172a 60%,#1e293b 100%)}
+.auth-card{background:var(--surface);border-radius:18px;padding:48px 44px;width:380px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.35)}
+.auth-logo{font-size:2.8em;margin-bottom:14px}
+.auth-title{font-family:'Outfit',sans-serif;font-size:1.7em;font-weight:800;color:var(--text);margin-bottom:4px}
+.auth-sub{font-size:0.95em;color:var(--muted);margin-bottom:28px}
+.auth-input{width:100%;padding:13px 16px;border:2px solid var(--border);border-radius:8px;font-size:1em;font-family:'Nunito',sans-serif;outline:none;transition:border-color .2s;margin-bottom:12px;color:var(--text)}
+.auth-input:focus{border-color:var(--accent)}
+.auth-btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:1em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;transition:background .2s}
+.auth-btn:hover{background:#6d28d9}
+.auth-error{color:var(--danger);font-size:0.9em;margin-top:10px}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--nav);color:var(--nav-text);display:flex;align-items:center;gap:12px;padding:0 20px;height:62px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.brand{display:flex;align-items:center;gap:8px;font-family:'Outfit',sans-serif;font-weight:800;font-size:1.1em;white-space:nowrap;flex-shrink:0}
+.brand-icon{font-size:1.3em}
+.class-nav{display:flex;gap:4px;overflow-x:auto;flex:1;scrollbar-width:none}
+.class-nav::-webkit-scrollbar{display:none}
+.class-tab{padding:7px 14px;border-radius:6px;border:none;background:transparent;color:rgba(255,255,255,.55);font-size:0.9em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;white-space:nowrap;transition:all .2s}
+.class-tab:hover{background:rgba(255,255,255,.1);color:#fff}
+.class-tab.active{background:var(--accent);color:#fff}
+.topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.mode-toggle{display:flex;background:rgba(255,255,255,.1);border-radius:7px;padding:3px;gap:2px}
+.mode-btn{padding:6px 14px;border-radius:5px;border:none;background:transparent;color:rgba(255,255,255,.65);font-size:0.88em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .2s;white-space:nowrap}
+.mode-btn.active{background:#fff;color:var(--nav)}
+.topbar-icon-btn{background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.8);width:38px;height:38px;border-radius:7px;cursor:pointer;font-size:1.15em;transition:background .2s;display:flex;align-items:center;justify-content:center}
+.topbar-icon-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* ── LAYOUT ── */
+.page{display:flex;min-height:calc(100vh - 62px)}
+.main{flex:1;padding:22px 26px;max-width:960px;margin:0 auto;width:100%}
+
+/* ── SECTION CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-family:'Outfit',sans-serif;font-size:0.95em;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:7px}
+.card-title span{font-size:1.15em}
+
+/* ── PERIOD SELECTOR ── */
+.period-grid{display:flex;flex-wrap:wrap;gap:9px}
+.period-btn{width:52px;height:52px;border:2px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--muted);font-weight:800;font-size:1.1em;cursor:pointer;transition:all .2s;font-family:'Outfit',sans-serif}
+.period-btn:hover{border-color:var(--accent-mid);color:var(--accent)}
+.period-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff}
+.period-btn.not-configured{opacity:.4;cursor:not-allowed;border-style:dashed}
+.period-hint{font-size:0.88em;color:var(--muted);margin-top:10px}
+
+/* ── FORM FIELDS ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid.cols3{grid-template-columns:1fr 1fr 1fr}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:1/-1}
+label{font-size:0.85em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.req{color:var(--danger);margin-left:2px}
+input[type=text],input[type=date],input[type=url],select,textarea{
+  width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:7px;
+  font-size:1em;font-family:'Nunito',sans-serif;color:var(--text);background:var(--surface);
+  outline:none;transition:border-color .2s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:76px}
+select{cursor:pointer}
+input::placeholder,textarea::placeholder{color:#bbb}
+
+/* ── RESOURCES ── */
+.resource-row{display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center;margin-bottom:9px}
+.resource-row input{margin:0}
+.remove-btn{background:none;border:none;color:var(--danger);cursor:pointer;font-size:1.3em;padding:4px;line-height:1;border-radius:4px;transition:background .2s}
+.remove-btn:hover{background:var(--danger-bg)}
+.add-resource-btn{background:none;border:1.5px dashed var(--border);color:var(--muted);border-radius:7px;padding:9px 16px;cursor:pointer;font-size:0.9em;font-weight:700;font-family:'Nunito',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:5px;margin-top:4px}
+.add-resource-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+
+/* ── BLOCK OVERRIDES ── */
+.override-grid{display:grid;gap:12px}
+.override-card{border:1.5px solid var(--border);border-radius:9px;overflow:hidden;transition:border-color .2s}
+.override-card.has-overrides{border-color:var(--accent-mid)}
+.override-header{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--surface2);cursor:pointer;user-select:none}
+.override-header:hover{background:var(--border)}
+.override-title{display:flex;align-items:center;gap:9px;font-weight:700;font-size:1em}
+.period-badge{color:#fff;border-radius:6px;padding:4px 10px;font-size:0.85em;font-weight:800;font-family:'Outfit',sans-serif}
+.period-badge[data-period="A"],.ali-period[data-period="A"],.period-btn.selected[data-period="A"]{background:#ef4444;border-color:#ef4444}
+.period-badge[data-period="B"],.ali-period[data-period="B"],.period-btn.selected[data-period="B"]{background:#f97316;border-color:#f97316}
+.period-badge[data-period="C"],.ali-period[data-period="C"],.period-btn.selected[data-period="C"]{background:#eab308;border-color:#eab308;color:#1e293b}
+.period-badge[data-period="D"],.ali-period[data-period="D"],.period-btn.selected[data-period="D"]{background:#22c55e;border-color:#22c55e}
+.period-badge[data-period="E"],.ali-period[data-period="E"],.period-btn.selected[data-period="E"]{background:#3b82f6;border-color:#3b82f6}
+.period-badge[data-period="F"],.ali-period[data-period="F"],.period-btn.selected[data-period="F"]{background:#8b5cf6;border-color:#8b5cf6}
+.period-badge[data-period="G"],.ali-period[data-period="G"],.period-btn.selected[data-period="G"]{background:#ec4899;border-color:#ec4899}
+.period-btn.selected{color:#fff}
+.override-card[data-period="A"].has-overrides{border-color:#ef4444}
+.override-card[data-period="B"].has-overrides{border-color:#f97316}
+.override-card[data-period="C"].has-overrides{border-color:#eab308}
+.override-card[data-period="D"].has-overrides{border-color:#22c55e}
+.override-card[data-period="E"].has-overrides{border-color:#3b82f6}
+.override-card[data-period="F"].has-overrides{border-color:#8b5cf6}
+.override-card[data-period="G"].has-overrides{border-color:#ec4899}
+.override-badges{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.customized-badge{background:var(--accent-light);color:var(--accent);border-radius:99px;padding:3px 9px;font-size:0.78em;font-weight:800}
+.default-badge{background:#f1f5f9;color:var(--muted);border-radius:99px;padding:3px 9px;font-size:0.78em;font-weight:700}
+.chevron{transition:transform .2s;color:var(--muted);font-size:0.9em}
+.override-body{padding:14px;display:none}
+.override-body.open{display:block}
+.override-field{margin-bottom:10px}
+.override-field label{display:flex;align-items:center;justify-content:space-between}
+.reset-override{font-size:0.75em;font-weight:700;color:var(--accent);cursor:pointer;text-decoration:underline;margin-left:8px}
+.override-input-wrap{position:relative}
+.override-indicator{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:0.72em;font-weight:800;color:var(--accent);pointer-events:none}
+
+/* ── SUBMIT AREA ── */
+.submit-area{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}
+.btn{padding:12px 24px;border-radius:8px;font-size:1em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:7px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#6d28d9;transform:translateY(-1px)}
+.btn-secondary{background:var(--surface);color:var(--text);border:1.5px solid var(--border)}
+.btn-secondary:hover{background:var(--surface2)}
+.btn-danger{background:var(--danger-bg);color:var(--danger);border:1.5px solid #fca5a5}
+.btn-danger:hover{background:#fee2e2}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{background:#16a34a}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* ── EDIT MODE ── */
+.edit-class-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}
+.edit-class-btn{padding:11px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--muted);font-weight:700;font-size:0.85em;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .2s;text-align:center;line-height:1.3}
+.edit-class-btn:hover{border-color:var(--accent-mid);color:var(--accent);background:var(--accent-light)}
+.edit-class-btn.active{border-color:var(--accent);background:var(--accent);color:#fff}
+.edit-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.list-search{flex:2;min-width:200px;padding:10px 13px;border:1.5px solid var(--border);border-radius:7px;font-size:0.95em;font-family:'Nunito',sans-serif;outline:none;transition:border-color .2s}
+.list-search:focus{border-color:var(--accent)}
+.quarter-filter{display:flex;gap:6px;flex-wrap:wrap}
+.qf-btn{padding:7px 14px;border:1.5px solid var(--border);border-radius:20px;background:var(--surface);color:var(--muted);font-size:0.85em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .2s;white-space:nowrap}
+.qf-btn:hover{border-color:var(--accent-mid);color:var(--accent)}
+.qf-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.empty-list{text-align:center;color:var(--muted);padding:36px 12px;font-size:0.95em}
+.load-btn{padding:10px 18px;background:var(--accent-light);color:var(--accent);border:1.5px dashed var(--accent-mid);border-radius:7px;cursor:pointer;font-weight:700;font-family:'Nunito',sans-serif;font-size:0.95em;transition:all .2s;white-space:nowrap}
+.load-btn:hover{background:var(--accent);color:#fff;border-style:solid}
+
+/* Assignment cards in edit list */
+.asgn-list{display:flex;flex-direction:column;gap:10px}
+.asgn-card{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:15px 18px;display:flex;justify-content:space-between;align-items:center;gap:14px;transition:all .2s}
+.asgn-card:hover{border-color:var(--accent-mid);box-shadow:0 3px 10px rgba(0,0,0,.07)}
+.asgn-card.selected{border-color:var(--accent);background:var(--accent-light)}
+.asgn-left{flex:1;min-width:0}
+.asgn-name{font-weight:800;font-size:1em;color:var(--text);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.asgn-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:5px}
+.tag{border-radius:20px;padding:3px 10px;font-size:0.75em;font-weight:700;white-space:nowrap}
+.tag-q{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.tag-type{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.tag-eng-req{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.tag-eng-opt{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1}
+.tag-all{background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe}
+.asgn-dates{font-size:0.82em;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
+.asgn-dates span strong{color:var(--text);font-weight:700}
+.asgn-edit-btn{flex-shrink:0;background:var(--surface2);color:var(--accent);border:1.5px solid var(--accent-mid);border-radius:7px;padding:9px 16px;font-size:0.88em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .2s}
+.asgn-edit-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ── SETTINGS PANEL ── */
+.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;justify-content:flex-end}
+.settings-overlay.open{display:flex}
+.settings-panel{background:var(--surface);width:460px;max-width:95vw;height:100%;overflow-y:auto;padding:24px;box-shadow:-8px 0 24px rgba(0,0,0,.15)}
+.settings-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.settings-title{font-family:'Outfit',sans-serif;font-size:1.25em;font-weight:800}
+.close-btn{background:none;border:none;font-size:1.5em;cursor:pointer;color:var(--muted);line-height:1;padding:2px}
+.close-btn:hover{color:var(--text)}
+.settings-section{margin-bottom:24px}
+.settings-section-title{font-size:0.86em;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.class-period-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.class-period-label{font-weight:700;font-size:0.92em;min-width:150px}
+.period-toggles{display:flex;gap:5px}
+.period-toggle{width:35px;height:35px;border:1.5px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--muted);font-weight:800;font-size:0.82em;cursor:pointer;transition:all .2s;font-family:'Outfit',sans-serif}
+.period-toggle.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.settings-footer{margin-top:20px;display:flex;justify-content:flex-end;gap:8px}
+.url-note{font-size:0.78em;color:var(--muted);margin-top:5px}
+
+/* ── SETUP MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal-box{background:var(--surface);border-radius:14px;width:680px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3)}
+.modal-top{padding:22px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:'Outfit',sans-serif;font-size:1.15em;font-weight:800}
+.modal-body-inner{padding:20px 24px}
+.setup-step{display:flex;gap:14px;margin-bottom:18px}
+.step-num{width:28px;height:28px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85em;flex-shrink:0;margin-top:2px}
+.step-content h4{font-weight:700;margin-bottom:5px;font-size:0.95em}
+.step-content p{font-size:0.85em;color:var(--muted);line-height:1.6}
+.code-block{background:#0f172a;color:#e2e8f0;border-radius:8px;padding:14px 16px;font-family:monospace;font-size:0.78em;line-height:1.6;overflow-x:auto;margin:10px 0;position:relative}
+.copy-btn{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:0.75em;font-family:'Nunito',sans-serif;font-weight:700;transition:background .2s}
+.copy-btn:hover{background:rgba(255,255,255,.2)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:13px 20px;border-radius:9px;font-weight:700;font-size:0.95em;z-index:500;transform:translateY(80px);opacity:0;transition:all .3s;max-width:320px;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:#166534;border-left:4px solid var(--success)}
+.toast.error{background:#7f1d1d;border-left:4px solid var(--danger)}
+
+/* ── MISC ── */
+.no-class-msg{text-align:center;color:var(--muted);padding:60px 20px}
+.no-class-msg h2{font-family:'Outfit',sans-serif;font-size:1.4em;margin-bottom:8px}
+.divider{border:none;border-top:1px solid var(--border);margin:4px 0 14px}
+
+/* ── CLASS PICKER MODAL ── */
+.cp-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:none;align-items:center;justify-content:center;padding:20px}
+.cp-modal-bg.open{display:flex}
+.cp-box{background:var(--surface);border-radius:16px;padding:32px 28px;width:520px;max-width:100%;box-shadow:0 24px 64px rgba(0,0,0,.3);animation:modal-pop .2s ease}
+.cp-title{font-family:'Outfit',sans-serif;font-size:1.3em;font-weight:800;margin-bottom:6px;text-align:center}
+.cp-sub{font-size:.88em;color:var(--muted);text-align:center;margin-bottom:22px}
+.cp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cp-class-btn{padding:14px 16px;border:2px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);font-weight:700;font-size:.95em;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .2s;text-align:left}
+.cp-class-btn:hover{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
+.cp-class-btn.selected{border-color:var(--accent);background:var(--accent);color:#fff}
+
+/* ── EDIT CLASS SELECTOR ── */
+.edit-class-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.edit-class-btn{padding:10px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--muted);font-weight:700;font-size:.82em;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .2s;text-align:center;line-height:1.3}
+.edit-class-btn:hover{border-color:var(--accent-mid);color:var(--accent);background:var(--accent-light)}
+.edit-class-btn.active{border-color:var(--accent);background:var(--accent);color:#fff}
+
+/* ── DRAFTS ── */
+.draft-list{display:flex;flex-direction:column;gap:10px}
+.draft-card{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:border-color .2s}
+.draft-card:hover{border-color:var(--accent-mid)}
+.draft-info{flex:1}
+.draft-name{font-weight:700;font-size:.95em;margin-bottom:3px}
+.draft-meta{font-size:.78em;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.draft-class-tag{background:var(--accent-light);color:var(--accent);border-radius:5px;padding:2px 7px;font-weight:700;font-size:.75em}
+.draft-actions{display:flex;gap:7px;flex-shrink:0}
+.draft-empty{text-align:center;color:var(--muted);padding:40px 20px;font-size:.95em}
+
+@media(max-width:900px){
+  .edit-layout{grid-template-columns:1fr}
+  .assignment-list{max-height:300px}
+  .form-grid{grid-template-columns:1fr}
+  .form-grid.cols3{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .main{padding:14px 14px}
+  .card{padding:14px 14px}
+  .form-grid.cols3{grid-template-columns:1fr}
+  .topbar{padding:0 12px;gap:8px}
+  .resource-row{grid-template-columns:1fr 1fr auto}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ AUTH ═══ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">📋</div>
+    <h1 class="auth-title">Assignment Portal</h1>
+    <p class="auth-sub">Teacher Tool &nbsp;·&nbsp; 8th Grade Team</p>
+    <input type="password" id="pw-input" class="auth-input" placeholder="Enter password"
+      onkeydown="if(event.key==='Enter')checkAuth()">
+    <button class="auth-btn" onclick="checkAuth()">Sign In →</button>
+    <p id="auth-error" class="auth-error" style="display:none">Incorrect password. Please try again.</p>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app" style="display:none">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon">📋</span>Assignment Portal</div>
+    <nav class="class-nav" id="class-nav"></nav>
+    <div class="topbar-right">
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-create-btn" onclick="onNewBtnClick()">＋ New</button>
+        <button class="mode-btn" id="mode-edit-btn" onclick="setMode('edit')">✏️ Edit</button>
+        <button class="mode-btn" id="mode-drafts-btn" onclick="setMode('drafts')">📝 Drafts</button>
+      </div>
+      <button class="topbar-icon-btn" onclick="openSettings()" title="Period Settings">⚙️</button>
+      <button class="topbar-icon-btn" onclick="openSetup()" title="Apps Script Setup">🔧</button>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <div class="page">
+    <div class="main" id="main-area">
+      <!-- content rendered here by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CLASS PICKER MODAL ═══ -->
+<div class="cp-modal-bg" id="cp-modal">
+  <div class="cp-box">
+    <div class="cp-title" id="cp-title">Which class are you posting for?</div>
+    <p class="cp-sub" id="cp-sub">Select your class to continue. You can change this any time from the top bar.</p>
+    <div class="cp-grid" id="cp-grid"></div>
+  </div>
+</div>
+
+<!-- ═══ SETTINGS PANEL ═══ -->
+<div class="settings-overlay" id="settings-overlay" onclick="overlayClose(event)">
+  <div class="settings-panel">
+    <div class="settings-header">
+      <span class="settings-title">⚙️ Settings</span>
+      <button class="close-btn" onclick="closeSettings()">×</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Apps Script URL</div>
+      <div class="form-group">
+        <input type="url" id="setting-url" placeholder="https://script.google.com/macros/s/…/exec">
+        <p class="url-note">Paste your deployed Apps Script URL here. Click 🔧 above for setup instructions.</p>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Period Configuration</div>
+      <p style="font-size:.82em;color:var(--muted);margin-bottom:12px">Select which period(s) each class meets in. You can update this once the schedule is announced.</p>
+      <div id="period-config-rows"></div>
+    </div>
+
+    <div class="settings-footer">
+      <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SETUP MODAL ═══ -->
+<div class="modal-bg" id="setup-modal" onclick="setupOverlayClose(event)">
+  <div class="modal-box">
+    <div class="modal-top">
+      <span class="modal-title">🔧 Apps Script Setup Guide</span>
+      <button class="close-btn" onclick="closeSetup()">×</button>
+    </div>
+    <div class="modal-body-inner">
+
+      <div class="setup-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Create your Google Sheet</h4>
+          <p>Create a new Google Sheet and note its ID from the URL:<br>
+          <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:.85em">docs.google.com/spreadsheets/d/<strong>THIS_IS_YOUR_ID</strong>/edit</code><br>
+          You do not need to create any tabs — the script will create them automatically on first use.</p>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Open Apps Script</h4>
+          <p>In your Google Sheet, go to <strong>Extensions → Apps Script</strong>. Delete any existing code in the editor.</p>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Paste this code</h4>
+          <p>Replace <code style="background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:.85em">YOUR_SHEET_ID_HERE</code> with your actual Sheet ID before pasting.</p>
+          <div class="code-block" id="apps-script-code">
+            <button class="copy-btn" onclick="copyCode()">Copy</button>
+            <pre id="code-pre"></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Deploy as Web App</h4>
+          <p>Click <strong>Deploy → New deployment</strong>. Set:<br>
+          • Type: <strong>Web app</strong><br>
+          • Execute as: <strong>Me</strong><br>
+          • Who has access: <strong>Anyone</strong><br>
+          Click Deploy, authorize when prompted, then copy the Web App URL.</p>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <h4>Paste URL into Settings</h4>
+          <p>Click the ⚙️ icon in the top bar, paste your Web App URL into the Apps Script URL field, and click Save Settings. You're ready to go!</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONSTANTS
+// ══════════════════════════════════════════
+const PASSWORD        = '8thgrade2627';
+const CLASSES         = ['Science 8','Math 8','Algebra I','Honors Algebra I','Spanish II','Civics','English 8'];
+const ALL_PERIODS     = ['A','B','C','D','E','F','G'];
+const ENGAGEMENTS     = ['Required','Optional'];
+const ASSIGNMENT_TYPES = ['Homework','Quiz / Test','Project','Classwork','Lab','Extra Credit'];
+const QUARTERS        = ['Quarter 1','Quarter 2','Quarter 3','Quarter 4'];
+const WHERE_OPTS      = ['Google Classroom','Keep in Binder','Paper - turn in bin','No submission needed'];
+
+const APPS_SCRIPT_CODE = `const SHEET_ID = 'YOUR_SHEET_ID_HERE';
+const PASSWORD = '8thgrade2627';
+const HEADERS  = ['ID','Block','Assignment Name','Engagement','Assignment Type','Quarter','Date Assigned','Date Due','Where to Submit','Notes','Resources'];
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    if (data.password !== PASSWORD) return respond({success:false,error:'Unauthorized'});
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    let result;
+    if      (data.action === 'add')    result = addRows(ss, data.className, data.rows);
+    else if (data.action === 'update') result = updateRows(ss, data.className, data.rows);
+    else if (data.action === 'delete') result = deleteById(ss, data.className, data.assignmentId);
+    else if (data.action === 'get')    result = getRows(ss, data.className);
+    else result = {success:false,error:'Unknown action'};
+    return respond(result);
+  } catch(err) { return respond({success:false,error:err.message}); }
+}
+
+function doGet(e) {
+  try {
+    const p = e.parameter;
+    if (p.password !== PASSWORD) return respond({success:false,error:'Unauthorized'});
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    return respond(getRows(ss, p.className));
+  } catch(err) { return respond({success:false,error:err.message}); }
+}
+
+function respond(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getOrCreateSheet(ss, className) {
+  let sheet = ss.getSheetByName(className);
+  if (!sheet) {
+    sheet = ss.insertSheet(className);
+    sheet.appendRow(HEADERS);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function addRows(ss, className, rows) {
+  const sheet = getOrCreateSheet(ss, className);
+  rows.forEach(r => sheet.appendRow([r.id,r.block,r.assignmentName,r.engagement,r.assignmentType,r.quarter,r.dateAssigned,r.dateDue,r.whereToSubmit,r.notes,r.resources]));
+  return {success:true,count:rows.length};
+}
+
+function updateRows(ss, className, rows) {
+  const sheet = getOrCreateSheet(ss, className);
+  const id    = rows[0].id;
+  deleteById(ss, className, id);
+  rows.forEach(r => sheet.appendRow([r.id,r.block,r.assignmentName,r.engagement,r.assignmentType,r.quarter,r.dateAssigned,r.dateDue,r.whereToSubmit,r.notes,r.resources]));
+  return {success:true};
+}
+
+function deleteById(ss, className, assignmentId) {
+  const sheet = getOrCreateSheet(ss, className);
+  const data  = sheet.getDataRange().getValues();
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][0]) === String(assignmentId)) sheet.deleteRow(i + 1);
+  }
+  return {success:true};
+}
+
+function formatDateCell(val) {
+  if (val instanceof Date) {
+    const y = val.getFullYear();
+    const m = String(val.getMonth()+1).padStart(2,'0');
+    const d = String(val.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+d;
+  }
+  return String(val===null||val===undefined?'':val);
+}
+function getRows(ss, className) {
+  const sheet = ss.getSheetByName(className);
+  if (!sheet) return {success:true,rows:[]};
+  const vals = sheet.getDataRange().getValues();
+  if (vals.length <= 1) return {success:true,rows:[]};
+  const hdrs = vals[0];
+  const dateCols = ['Date Assigned','Date Due'];
+  return {success:true, rows: vals.slice(1).map(r => {
+    const o = {};
+    hdrs.forEach((h,i) => { o[h] = dateCols.includes(h) ? formatDateCell(r[i]) : String(r[i]===null||r[i]===undefined?'':r[i]); });
+    return o;
+  })};
+}`;
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let currentClass  = CLASSES[0];
+let currentMode   = 'create';
+let settings      = loadSettings();
+
+// Create form
+let selectedPeriods = [];
+let sharedResources = []; // [{label,url}]
+let blockOverrides  = {}; // {A:{dateDue,notes,resources}}
+let editingId       = null; // null = new, string = editing existing
+
+// Edit mode
+let editAssignments = []; // grouped by ID
+let editSelectedId  = null;
+let quarterFilter   = 'all';
+
+// ══════════════════════════════════════════
+//  STORAGE
+// ══════════════════════════════════════════
+function loadSettings() {
+  try {
+    return JSON.parse(localStorage.getItem('apSettings') || '{}');
+  } catch { return {}; }
+}
+function saveSettingsToStorage() {
+  localStorage.setItem('apSettings', JSON.stringify(settings));
+}
+function getScriptUrl() { return settings.scriptUrl || ''; }
+function getClassPeriods(cls) { return (settings.classPeriods || {})[cls] || []; }
+function getDefaultPeriods(cls) { return [...getClassPeriods(cls)]; }
+
+// ══════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════
+function checkAuth() {
+  const val = document.getElementById('pw-input').value;
+  if (val === PASSWORD) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+    showClassPicker('welcome'); // prompt for class on first load
+  } else {
+    document.getElementById('auth-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+function initApp() {
+  buildClassNav();
+  currentMode = 'create';
+  document.getElementById('mode-create-btn').classList.add('active');
+  document.getElementById('mode-edit-btn').classList.remove('active');
+  document.getElementById('mode-drafts-btn').classList.remove('active');
+  populateAppsScriptCode();
+}
+
+function buildClassNav() {
+  const nav = document.getElementById('class-nav');
+  nav.innerHTML = CLASSES.map(cls =>
+    `<button class="class-tab${cls===currentClass?' active':''}" onclick="selectClass('${cls}')">${cls}</button>`
+  ).join('');
+}
+
+function selectClass(cls) {
+  currentClass    = cls;
+  selectedPeriods = getDefaultPeriods(cls);
+  sharedResources = [];
+  blockOverrides  = {};
+  editingId       = null;
+  editAssignments = [];
+  editSelectedId  = null;
+  buildClassNav();
+  renderMain();
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('mode-create-btn').classList.toggle('active',  mode==='create');
+  document.getElementById('mode-edit-btn').classList.toggle('active',    mode==='edit');
+  document.getElementById('mode-drafts-btn').classList.toggle('active',  mode==='drafts');
+  renderMain();
+}
+
+// ══════════════════════════════════════════
+//  MAIN RENDER DISPATCHER
+// ══════════════════════════════════════════
+function renderMain() {
+  if      (currentMode === 'create') renderCreateMode();
+  else if (currentMode === 'edit')   renderEditMode();
+  else if (currentMode === 'drafts') renderDraftsMode();
+}
+
+// ══════════════════════════════════════════
+//  CREATE MODE
+// ══════════════════════════════════════════
+function renderCreateMode() {
+  const configured = getClassPeriods(currentClass);
+  const isEditing  = !!editingId;
+
+  let html = '';
+
+  // ── Period selector
+  html += `<div class="card">
+    <div class="card-title"><span>📅</span> ${isEditing ? 'Editing assignment for' : 'Post to periods —'} <strong>${currentClass}</strong> <span class="req" style="font-size:.85em;margin-left:2px">*</span></div>
+    <div class="period-grid">`;
+  ALL_PERIODS.forEach(p => {
+    const notConf  = configured.length > 0 && !configured.includes(p);
+    const selected = selectedPeriods.includes(p);
+    html += `<button class="period-btn${selected?' selected':''}${notConf?' not-configured':''}"
+      data-period="${p}"
+      onclick="${notConf?'':'togglePeriod(\''+p+'\')'}"
+      title="${notConf?'Not configured for '+currentClass:'Period '+p}">
+      ${p}
+    </button>`;
+  });
+  html += `</div>`;
+  if (configured.length === 0) {
+    html += `<p class="period-hint">⚙️ No periods configured for ${currentClass} yet — open Settings to set them. At least one period must be selected before posting.</p>`;
+  } else {
+    html += `<p class="period-hint">Configured periods are pre-selected. Deselect any that don't apply, or click an unlit period to add it. At least one period is required.</p>`;
+  }
+  html += `</div>`;
+
+  // ── Shared assignment details
+  html += `<div class="card">
+    <div class="card-title"><span>📝</span>Assignment Details</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Assignment Name <span class="req">*</span></label>
+        <input type="text" id="f-name" placeholder="e.g. Chapter 5 Worksheet" oninput="syncOverridePreviews()">
+      </div>
+      <div class="form-group">
+        <label>Engagement <span class="req">*</span></label>
+        <select id="f-engagement">
+          <option value="" disabled selected>— Select —</option>
+          ${ENGAGEMENTS.map(e=>`<option>${e}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Assignment Type <span class="req">*</span></label>
+        <select id="f-atype">
+          <option value="" disabled selected>— Select —</option>
+          ${ASSIGNMENT_TYPES.map(t=>`<option>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Quarter <span class="req">*</span></label>
+        <select id="f-quarter">
+          <option value="" disabled selected>— Select —</option>
+          ${QUARTERS.map(q=>`<option>${q}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Where to Submit <span class="req">*</span></label>
+        <select id="f-where">
+          <option value="" disabled selected>— Select —</option>
+          ${WHERE_OPTS.map(w=>`<option>${w}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date Assigned <span class="req">*</span></label>
+        <input type="date" id="f-assigned">
+      </div>
+      <div class="form-group">
+        <label>Date Due <span class="req">*</span></label>
+        <input type="date" id="f-due" oninput="syncOverridePreviews()">
+      </div>
+      <div class="form-group full">
+        <label>Notes <span style="font-size:.8em;font-weight:400;text-transform:none;color:var(--muted);letter-spacing:0">(optional)</span></label>
+        <textarea id="f-notes" placeholder="Optional notes for students…" oninput="syncOverridePreviews()"></textarea>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Resources
+  html += `<div class="card">
+    <div class="card-title"><span>🔗</span>Resources <span style="font-size:.78em;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">(optional — links, videos, docs)</span></div>
+    <div id="resources-container"></div>
+    <button class="add-resource-btn" onclick="addResourceRow()">＋ Add Resource</button>
+  </div>`;
+
+  // ── Per-block overrides (only if periods selected)
+  if (selectedPeriods.length > 0) {
+    html += `<div class="card">
+      <div class="card-title"><span>✏️</span>Per-Period Customization
+        <span style="font-size:.78em;font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">— override any field for a specific period</span>
+      </div>
+      <div class="override-grid" id="override-grid">`;
+    selectedPeriods.forEach(p => {
+      html += buildOverrideCard(p);
+    });
+    html += `</div></div>`;
+  }
+
+  // ── Submit
+  html += `<div class="card" style="background:var(--surface2)">
+    <div class="submit-area">
+      ${isEditing ? `<button class="btn btn-danger" onclick="cancelEdit()">Cancel Edit</button>
+        <button class="btn btn-danger" onclick="deleteAssignment()">🗑 Delete</button>
+        <button class="btn btn-success" onclick="submitForm(true)">💾 Save Changes</button>` :
+        `<button class="btn btn-secondary" onclick="resetForm()">Clear Form</button>
+        <button class="btn btn-secondary" onclick="saveDraft()" title="Save and post later">📝 Save Draft</button>
+        <button class="btn btn-primary" onclick="submitForm(false)">📤 Post Assignment</button>`}
+    </div>
+  </div>`;
+
+  document.getElementById('main-area').innerHTML = html;
+  renderResourceRows();
+  restoreFormValues();
+}
+
+function buildOverrideCard(period) {
+  const ov  = blockOverrides[period] || {};
+  const hasDue      = ov.dateDue      !== undefined;
+  const hasAssigned = ov.dateAssigned !== undefined;
+  const hasNotes    = ov.notes        !== undefined;
+  const hasRes      = ov.resources    !== undefined;
+  const count       = [hasDue,hasAssigned,hasNotes,hasRes].filter(Boolean).length;
+  const dueVal      = hasDue      ? formatDateInput(ov.dateDue)      : '';
+  const assignedVal = hasAssigned ? formatDateInput(ov.dateAssigned) : '';
+  return `<div class="override-card${count>0?' has-overrides':''}" id="oc-${period}" data-period="${period}">
+    <div class="override-header" onclick="toggleOverrideCard('${period}')">
+      <div class="override-title">
+        <span class="period-badge" data-period="${period}">Period ${period}</span>
+        <span style="color:var(--muted);font-size:.85em">Customizations:</span>
+        <span class="override-badges" id="ob-${period}">
+          ${renderOverrideBadges(period)}
+        </span>
+      </div>
+      <span class="chevron" id="chev-${period}">▼</span>
+    </div>
+    <div class="override-body" id="obody-${period}">
+      <div class="form-grid" style="margin-bottom:10px">
+        <div class="override-field">
+          <label>
+            Date Assigned
+            ${hasAssigned?`<a class="reset-override" onclick="resetOverride('${period}','dateAssigned')">Reset</a>`:''}
+          </label>
+          <div class="override-input-wrap">
+            <input type="date" id="ov-${period}-assigned" value="${assignedVal}"
+              oninput="setOverride('${period}','dateAssigned',this.value)">
+            ${hasAssigned?`<span class="override-indicator">✏️</span>`:''}
+          </div>
+        </div>
+        <div class="override-field">
+          <label>
+            Date Due
+            ${hasDue?`<a class="reset-override" onclick="resetOverride('${period}','dateDue')">Reset</a>`:''}
+          </label>
+          <div class="override-input-wrap">
+            <input type="date" id="ov-${period}-due" value="${dueVal}"
+              oninput="setOverride('${period}','dateDue',this.value)">
+            ${hasDue?`<span class="override-indicator">✏️</span>`:''}
+          </div>
+        </div>
+      </div>
+      <div class="override-field">
+        <label>
+          Notes
+          ${hasNotes?`<a class="reset-override" onclick="resetOverride('${period}','notes')">Reset</a>`:''}
+        </label>
+        <div class="override-input-wrap">
+          <textarea id="ov-${period}-notes" oninput="setOverride('${period}','notes',this.value)" style="min-height:56px" placeholder="Leave blank to use shared notes">${ov.notes||''}</textarea>
+          ${hasNotes?`<span class="override-indicator" style="top:16px;transform:none">✏️</span>`:''}
+        </div>
+      </div>
+      <div class="override-field">
+        <label>
+          Resources (override)
+          ${hasRes?`<a class="reset-override" onclick="resetOverride('${period}','resources')">Use shared resources</a>`:''}
+        </label>
+        <div id="ovres-${period}"></div>
+        <button class="add-resource-btn" style="margin-top:4px" onclick="addOverrideResource('${period}')">＋ Add Period-Specific Resource</button>
+        ${!hasRes?`<p style="font-size:.78em;color:var(--muted);margin-top:5px">Using shared resources. Add one above to override.</p>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderOverrideBadges(period) {
+  const ov = blockOverrides[period] || {};
+  const items = [];
+  if (ov.dateAssigned !== undefined) items.push(`<span class="customized-badge">Assigned ✏️</span>`);
+  if (ov.dateDue      !== undefined) items.push(`<span class="customized-badge">Due date ✏️</span>`);
+  if (ov.notes        !== undefined) items.push(`<span class="customized-badge">Notes ✏️</span>`);
+  if (ov.resources    !== undefined) items.push(`<span class="customized-badge">Resources ✏️</span>`);
+  if (items.length === 0) items.push(`<span class="default-badge">All defaults</span>`);
+  return items.join('');
+}
+
+function toggleOverrideCard(period) {
+  const body = document.getElementById(`obody-${period}`);
+  const chev = document.getElementById(`chev-${period}`);
+  const open = body.classList.toggle('open');
+  chev.style.transform = open ? 'rotate(180deg)' : '';
+  if (open && blockOverrides[period]?.resources !== undefined) {
+    renderOverrideResources(period);
+  }
+}
+
+function setOverride(period, field, value) {
+  if (!blockOverrides[period]) blockOverrides[period] = {};
+  if (value === '') {
+    delete blockOverrides[period][field];
+    if (Object.keys(blockOverrides[period]).length === 0) delete blockOverrides[period];
+  } else {
+    blockOverrides[period][field] = value;
+  }
+  refreshOverrideCardUI(period);
+}
+
+function resetOverride(period, field) {
+  if (blockOverrides[period]) {
+    delete blockOverrides[period][field];
+    if (Object.keys(blockOverrides[period]).length === 0) delete blockOverrides[period];
+  }
+  // Re-render the whole card to reflect reset
+  const grid = document.getElementById('override-grid');
+  if (grid) {
+    const existingCard = document.getElementById(`oc-${period}`);
+    if (existingCard) {
+      existingCard.outerHTML = buildOverrideCard(period);
+    }
+  }
+}
+
+function refreshOverrideCardUI(period) {
+  const ov   = blockOverrides[period] || {};
+  const count = Object.keys(ov).length;
+  const card  = document.getElementById(`oc-${period}`);
+  if (card) card.classList.toggle('has-overrides', count > 0);
+  const badges = document.getElementById(`ob-${period}`);
+  if (badges) badges.innerHTML = renderOverrideBadges(period);
+  // Update indicators
+  [{el:'assigned',key:'dateAssigned',top:''},{el:'due',key:'dateDue',top:''},{el:'notes',key:'notes',top:'16px'}].forEach(({el,key,top}) => {
+    const wrap = document.querySelector(`#ov-${period}-${el}`)?.parentElement;
+    if (!wrap) return;
+    const existing = wrap.querySelector('.override-indicator');
+    if (ov[key] !== undefined) {
+      if (!existing) { const s=document.createElement('span'); s.className='override-indicator'; if(top) s.style.top=top; if(top) s.style.transform='none'; s.textContent='✏️'; wrap.appendChild(s); }
+    } else { existing?.remove(); }
+  });
+}
+
+function syncOverridePreviews() {} // placeholder for future live preview
+
+// ── PERIOD TOGGLE
+function togglePeriod(p) {
+  if (selectedPeriods.includes(p)) {
+    selectedPeriods = selectedPeriods.filter(x => x !== p);
+    delete blockOverrides[p];
+  } else {
+    selectedPeriods.push(p);
+    selectedPeriods.sort((a,b) => ALL_PERIODS.indexOf(a) - ALL_PERIODS.indexOf(b));
+  }
+  renderMain();
+}
+
+// ── RESOURCES (shared)
+function renderResourceRows() {
+  const c = document.getElementById('resources-container');
+  if (!c) return;
+  if (sharedResources.length === 0) {
+    c.innerHTML = `<p style="font-size:.85em;color:var(--muted);margin-bottom:10px">No resources added yet. Use the button below to add links.</p>`;
+    return;
+  }
+  c.innerHTML = sharedResources.map((r,i) => `
+    <div class="resource-row">
+      <input type="text" placeholder="Label (e.g. Worksheet)" value="${esc(r.label)}"
+        oninput="sharedResources[${i}].label=this.value">
+      <input type="url" placeholder="https://…" value="${esc(r.url)}"
+        oninput="sharedResources[${i}].url=this.value">
+      <button class="remove-btn" onclick="removeResource(${i})">×</button>
+    </div>`).join('');
+}
+
+function addResourceRow() {
+  sharedResources.push({label:'',url:''});
+  renderResourceRows();
+}
+function removeResource(i) {
+  sharedResources.splice(i,1);
+  renderResourceRows();
+}
+
+// ── OVERRIDE RESOURCES
+function renderOverrideResources(period) {
+  const c = document.getElementById(`ovres-${period}`);
+  if (!c) return;
+  const res = (blockOverrides[period]?.resources) || [];
+  if (res.length === 0) { c.innerHTML=''; return; }
+  c.innerHTML = res.map((r,i) => `
+    <div class="resource-row" style="margin-top:6px">
+      <input type="text" placeholder="Label" value="${esc(r.label)}"
+        oninput="setOverrideResource('${period}',${i},'label',this.value)">
+      <input type="url" placeholder="https://…" value="${esc(r.url)}"
+        oninput="setOverrideResource('${period}',${i},'url',this.value)">
+      <button class="remove-btn" onclick="removeOverrideResource('${period}',${i})">×</button>
+    </div>`).join('');
+}
+
+function addOverrideResource(period) {
+  if (!blockOverrides[period]) blockOverrides[period] = {};
+  if (!blockOverrides[period].resources) blockOverrides[period].resources = [];
+  blockOverrides[period].resources.push({label:'',url:''});
+  refreshOverrideCardUI(period);
+  renderOverrideResources(period);
+}
+
+function setOverrideResource(period, i, key, val) {
+  blockOverrides[period].resources[i][key] = val;
+}
+function removeOverrideResource(period, i) {
+  blockOverrides[period].resources.splice(i,1);
+  if (blockOverrides[period].resources.length === 0) delete blockOverrides[period].resources;
+  if (Object.keys(blockOverrides[period]||{}).length === 0) delete blockOverrides[period];
+  renderOverrideResources(period);
+  refreshOverrideCardUI(period);
+}
+
+// ── RESTORE form values after re-render
+function restoreFormValues() {
+  // called after renderCreateMode when editing
+  if (!editingId) return;
+  // values are set in loadAssignmentForEdit()
+}
+
+// ── FORM SUBMIT
+async function submitForm(isUpdate) {
+  const name     = document.getElementById('f-name')?.value?.trim();
+  const engage   = document.getElementById('f-engagement')?.value;
+  const atype    = document.getElementById('f-atype')?.value;
+  const quarter  = document.getElementById('f-quarter')?.value;
+  const where    = document.getElementById('f-where')?.value;
+  const assigned = document.getElementById('f-assigned')?.value;
+  const due      = document.getElementById('f-due')?.value;
+
+  if (!name)                 { showToast('Assignment name is required.','error'); return; }
+  if (!engage)               { showToast('Engagement is required.','error'); return; }
+  if (!atype)                { showToast('Assignment Type is required.','error'); return; }
+  if (!quarter)              { showToast('Quarter is required.','error'); return; }
+  if (!where)                { showToast('Where to Submit is required.','error'); return; }
+  if (!assigned)             { showToast('Date Assigned is required.','error'); return; }
+  if (!due)                  { showToast('Date Due is required.','error'); return; }
+  if (selectedPeriods.length === 0) { showToast('Select at least one period.','error'); return; }
+
+  const url = getScriptUrl();
+  if (!url) { showToast('Add your Apps Script URL in Settings (⚙️) first.','error'); return; }
+
+  const assignedId     = isUpdate && editingId ? editingId : generateId();
+  const sharedAssigned = assigned;
+  const rows = selectedPeriods.map(p => {
+    const ov  = blockOverrides[p] || {};
+    const res = ov.resources !== undefined ? ov.resources : sharedResources;
+    const filteredRes = res.filter(r => r.url);
+    return {
+      id:             assignedId,
+      block:          p,
+      assignmentName: name,
+      engagement:     engage,
+      assignmentType: atype,
+      quarter:        quarter,
+      dateAssigned:   ov.dateAssigned !== undefined ? ov.dateAssigned : sharedAssigned,
+      dateDue:        ov.dateDue      !== undefined ? ov.dateDue      : due,
+      whereToSubmit:  where,
+      notes:          ov.notes        !== undefined ? ov.notes        : (document.getElementById('f-notes')?.value?.trim()||''),
+      resources:      filteredRes.length > 0 ? JSON.stringify(filteredRes) : ''
+    };
+  });
+
+  try {
+    const btn = document.querySelector('.btn-primary, .btn-success');
+    if (btn) { btn.disabled=true; btn.textContent='Posting…'; }
+    const resp = await apiFetch(isUpdate ? 'update' : 'add', {rows});
+    if (resp.success) {
+      showToast(isUpdate ? 'Assignment updated!' : `Posted to ${rows.length} period(s)!`, 'success');
+      resetForm();
+    } else {
+      showToast('Error: ' + (resp.error||'Unknown'), 'error');
+    }
+  } catch(err) {
+    showToast('Network error: ' + err.message, 'error');
+  }
+}
+
+function resetForm() {
+  selectedPeriods = getDefaultPeriods(currentClass);
+  sharedResources = [];
+  blockOverrides  = {};
+  editingId       = null;
+  renderMain();
+}
+
+function cancelEdit() { resetForm(); }
+
+async function deleteAssignment() {
+  if (!editingId) return;
+  if (!confirm('Delete this assignment from all periods? This cannot be undone.')) return;
+  const url = getScriptUrl();
+  if (!url) { showToast('Apps Script URL not set.','error'); return; }
+  try {
+    const resp = await apiFetch('delete', {assignmentId: editingId});
+    if (resp.success) {
+      showToast('Assignment deleted.','success');
+      editAssignments = editAssignments.filter(a => a.id !== editingId);
+      resetForm();
+      setMode('edit');
+    } else { showToast('Error: '+(resp.error||'Unknown'),'error'); }
+  } catch(err) { showToast('Network error: '+err.message,'error'); }
+}
+
+// ══════════════════════════════════════════
+//  EDIT MODE
+// ══════════════════════════════════════════
+function renderEditMode() {
+  const hasData = editAssignments.length > 0;
+
+  let html = `<div class="card" style="margin-bottom:14px">
+    <div class="card-title"><span>🏫</span>Select a class to manage</div>
+    <div class="edit-class-grid">
+      ${CLASSES.map(cls=>`
+        <button class="edit-class-btn${cls===currentClass?' active':''}" onclick="selectClassForEdit('${cls}')">
+          ${cls}
+        </button>`).join('')}
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px;padding:16px 20px">
+    <div class="edit-controls">
+      <button class="load-btn" onclick="loadAssignments()">🔄 Load ${currentClass}</button>
+      ${hasData ? `<input type="text" class="list-search" id="list-search" placeholder="Search assignments…" oninput="filterList()">` : ''}
+    </div>
+    ${hasData ? `<div class="quarter-filter">
+      <button class="qf-btn${quarterFilter==='all'?' active':''}" onclick="setQuarterFilter('all')">All Quarters</button>
+      ${QUARTERS.map(q=>`<button class="qf-btn${quarterFilter===q?' active':''}" onclick="setQuarterFilter('${q}')">${q}</button>`).join('')}
+    </div>` : ''}
+  </div>
+
+  <div id="assignment-list-container">
+    ${hasData ? renderAssignmentCards() : `<div class="card"><div class="empty-list">Click "Load ${currentClass}" above to fetch assignments.</div></div>`}
+  </div>`;
+
+  document.getElementById('main-area').innerHTML = html;
+}
+
+function renderAssignmentCards(search='') {
+  const configured = getClassPeriods(currentClass);
+  const s = (search || document.getElementById('list-search')?.value || '').toLowerCase().trim();
+
+  const filtered = editAssignments.filter(a => {
+    const matchQ = quarterFilter === 'all' || a.quarter === quarterFilter;
+    const matchS = !s || a.name.toLowerCase().includes(s) ||
+                   (a.quarter||'').toLowerCase().includes(s) ||
+                   (a.assignmentType||'').toLowerCase().includes(s);
+    return matchQ && matchS;
+  });
+
+  if (!filtered.length) return `<div class="card"><div class="empty-list">No assignments match your filters.</div></div>`;
+
+  const cards = filtered.map(a => {
+    // "All Periods" logic: matches all configured periods (or all 7 if none configured)
+    const ref = configured.length > 0 ? configured : ALL_PERIODS;
+    const isAll = a.periods.length === ref.length && a.periods.every(p => ref.includes(p));
+    const periodsHtml = isAll
+      ? `<span class="tag tag-all">All Periods</span>`
+      : a.periods.map(p=>`<span class="ali-period" data-period="${p}">${p}</span>`).join('');
+
+    const qTag   = a.quarter        ? `<span class="tag tag-q">${a.quarter}</span>` : '';
+    const tTag   = a.assignmentType ? `<span class="tag tag-type">${a.assignmentType}</span>` : '';
+    const eTag   = a.engagement === 'Required'
+                    ? `<span class="tag tag-eng-req">Required</span>`
+                    : a.engagement === 'Optional'
+                    ? `<span class="tag tag-eng-opt">Optional</span>` : '';
+
+    const assignedStr = a.assigned ? `<span>Assigned <strong>${a.assigned}</strong></span>` : '';
+    const dueStr      = a.due      ? `<span>Due <strong>${a.due}</strong></span>` : '';
+
+    return `<div class="asgn-card${a.id===editSelectedId?' selected':''}" onclick="selectEditAssignment('${a.id}')">
+      <div class="asgn-left">
+        <div class="asgn-name">${esc(a.name)}</div>
+        <div class="asgn-tags">${qTag}${tTag}${eTag}${periodsHtml}</div>
+        <div class="asgn-dates">${assignedStr}${dueStr}</div>
+      </div>
+      <button class="asgn-edit-btn" onclick="event.stopPropagation();selectEditAssignment('${a.id}')">Edit ✏️</button>
+    </div>`;
+  }).join('');
+
+  return `<div class="asgn-list">${cards}</div>`;
+}
+
+function renderAssignmentList(filter='') { return renderAssignmentCards(filter); }
+
+function filterList() {
+  const container = document.getElementById('assignment-list-container');
+  if (container) container.innerHTML = renderAssignmentCards();
+}
+
+function setQuarterFilter(q) {
+  quarterFilter = q;
+  // Update button states
+  document.querySelectorAll('.qf-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.trim() === (q === 'all' ? 'All Quarters' : q));
+  });
+  filterList();
+}
+
+async function loadAssignments() {
+  const url = getScriptUrl();
+  if (!url) { showToast('Add your Apps Script URL in Settings first.','error'); return; }
+  try {
+    showToast('Loading…');
+    const resp = await apiFetch('get', {});
+    if (!resp.success) { showToast('Error: '+(resp.error||'Unknown'),'error'); return; }
+
+    // Group rows by assignment ID
+    const groups = {};
+    resp.rows.forEach(row => {
+      const id = row['ID'] || row.id;
+      if (!groups[id]) groups[id] = [];
+      groups[id].push(row);
+    });
+
+    editAssignments = Object.entries(groups).map(([id,rows]) => ({
+      id,
+      name:           rows[0]['Assignment Name']  || rows[0].assignmentName  || '',
+      periods:        rows.map(r=>r['Block']||r.block).sort((a,b)=>ALL_PERIODS.indexOf(a)-ALL_PERIODS.indexOf(b)),
+      quarter:        rows[0]['Quarter']           || rows[0].quarter         || '',
+      engagement:     rows[0]['Engagement']        || rows[0].engagement      || '',
+      assignmentType: rows[0]['Assignment Type']   || rows[0].assignmentType  || '',
+      assigned:       formatDateInput(rows[0]['Date Assigned']||rows[0].dateAssigned||''),
+      due:            formatDateInput(rows[0]['Date Due']      ||rows[0].dateDue     ||''),
+      rows
+    }));
+
+    editAssignments.sort((a,b)=>a.name.localeCompare(b.name));
+    showToast(`Loaded ${editAssignments.length} assignment(s).`,'success');
+    renderEditMode();
+  } catch(err) { showToast('Network error: '+err.message,'error'); }
+}
+
+function selectEditAssignment(id) {
+  editSelectedId = id;
+  const group = editAssignments.find(a=>a.id===id);
+  if (!group) return;
+
+  // Load data into create form state
+  editingId       = id;
+  selectedPeriods = [...group.periods];
+  blockOverrides  = {};
+
+  const first = group.rows[0];
+  sharedResources = [];
+  try {
+    const parsed = JSON.parse(first['Resources']||first.resources||'[]');
+    if (Array.isArray(parsed)) sharedResources = parsed;
+  } catch {}
+
+  // Normalize a value from the sheet for comparison
+  const norm = v => String(v === null || v === undefined ? '' : v).trim();
+  const normDate = v => formatDateInput(norm(v));
+
+  const firstDue      = normDate(first['Date Due']      || first.dateDue      || '');
+  const firstAssigned = normDate(first['Date Assigned'] || first.dateAssigned || '');
+  const firstNotes    = norm(first['Notes'] || first.notes || '');
+  const firstResStr   = norm(first['Resources'] || first.resources || '');
+
+  // Find per-period overrides by comparing each row to the first row
+  group.rows.forEach(row => {
+    const p  = row['Block'] || row.block;
+    const ov = {};
+    const due      = normDate(row['Date Due']      || row.dateDue      || '');
+    const assigned = normDate(row['Date Assigned'] || row.dateAssigned || '');
+    const notes    = norm(row['Notes']    || row.notes    || '');
+    const resStr   = norm(row['Resources']|| row.resources|| '');
+    if (due      && due      !== firstDue)      ov.dateDue      = due;
+    if (assigned && assigned !== firstAssigned) ov.dateAssigned = assigned;
+    if (notes    !== firstNotes)                ov.notes        = notes;
+    if (resStr   !== firstResStr && resStr !== '' && resStr !== '[]') {
+      try { ov.resources = JSON.parse(resStr); } catch {}
+    }
+    if (Object.keys(ov).length) blockOverrides[p] = ov;
+  });
+
+  setMode('create'); // switch to create mode with form pre-filled
+  // fill fields after render
+  setTimeout(() => {
+    const s = (id,val) => { const el=document.getElementById(id); if(el) el.value=val; };
+    s('f-name',       first['Assignment Name']||first.assignmentName||'');
+    s('f-engagement', first['Engagement']||first.engagement||'');
+    s('f-atype',      first['Assignment Type']||first.assignmentType||'');
+    s('f-quarter',    first['Quarter']||first.quarter||'');
+    s('f-where',      first['Where to Submit']||first.whereToSubmit||'');
+    s('f-assigned', formatDateInput(first['Date Assigned']||first.dateAssigned||''));
+    s('f-due',   formatDateInput(first['Date Due']||first.dateDue||''));
+    s('f-notes', first['Notes']||first.notes||'');
+  }, 50);
+}
+
+function formatDateInput(str) {
+  if (!str || str === '-' || str === '') return '';
+  const s = String(str).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(s);
+  if (isNaN(d)) return '';
+  // Use local date parts to avoid UTC timezone shifting the day
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// ══════════════════════════════════════════
+//  SETTINGS
+// ══════════════════════════════════════════
+function openSettings() {
+  // Build period config rows
+  const rows = document.getElementById('period-config-rows');
+  rows.innerHTML = CLASSES.map(cls => {
+    const configured = getClassPeriods(cls);
+    return `<div class="class-period-row">
+      <span class="class-period-label">${cls}</span>
+      <div class="period-toggles">
+        ${ALL_PERIODS.map(p=>`
+          <button class="period-toggle${configured.includes(p)?' on':''}"
+            onclick="toggleSettingPeriod('${cls}','${p}',this)">${p}</button>
+        `).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  // Set URL
+  document.getElementById('setting-url').value = getScriptUrl();
+  document.getElementById('settings-overlay').classList.add('open');
+}
+
+function toggleSettingPeriod(cls, p, btn) {
+  btn.classList.toggle('on');
+}
+
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('open');
+}
+
+function overlayClose(e) {
+  if (e.target === document.getElementById('settings-overlay')) closeSettings();
+}
+
+function saveSettings() {
+  settings.scriptUrl = document.getElementById('setting-url').value.trim();
+  settings.classPeriods = settings.classPeriods || {};
+  CLASSES.forEach(cls => {
+    const row = [...document.querySelectorAll('.class-period-row')].find(r=>r.querySelector('.class-period-label')?.textContent===cls);
+    if (!row) return;
+    settings.classPeriods[cls] = ALL_PERIODS.filter(p => {
+      const btns = [...row.querySelectorAll('.period-toggle')];
+      const btn  = btns.find(b=>b.textContent.trim()===p);
+      return btn?.classList.contains('on');
+    });
+  });
+  saveSettingsToStorage();
+  closeSettings();
+  showToast('Settings saved!','success');
+  renderMain();
+}
+
+// ══════════════════════════════════════════
+//  SETUP MODAL
+// ══════════════════════════════════════════
+function populateAppsScriptCode() {
+  document.getElementById('code-pre').textContent = APPS_SCRIPT_CODE;
+}
+function openSetup() { document.getElementById('setup-modal').classList.add('open'); }
+function closeSetup() { document.getElementById('setup-modal').classList.remove('open'); }
+function setupOverlayClose(e) { if(e.target===document.getElementById('setup-modal')) closeSetup(); }
+function copyCode() {
+  navigator.clipboard.writeText(APPS_SCRIPT_CODE).then(()=>showToast('Code copied!','success'));
+}
+
+// ══════════════════════════════════════════
+//  API
+// ══════════════════════════════════════════
+async function apiFetch(action, payload) {
+  const url = getScriptUrl();
+  if (!url) throw new Error('Apps Script URL not configured.');
+  const body = JSON.stringify({ password:PASSWORD, action, className:currentClass, ...payload });
+  const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'text/plain'}, body });
+  return resp.json();
+}
+
+// ══════════════════════════════════════════
+//  UTILITIES
+// ══════════════════════════════════════════
+function generateId() {
+  return 'ASN-' + Date.now() + '-' + Math.random().toString(36).substr(2,5).toUpperCase();
+}
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+// ══════════════════════════════════════════
+//  CLASS PICKER MODAL
+// ══════════════════════════════════════════
+function onNewBtnClick() {
+  showClassPicker('new');
+}
+
+function showClassPicker(context) {
+  const titleEl = document.getElementById('cp-title');
+  const subEl   = document.getElementById('cp-sub');
+  if (context === 'welcome') {
+    titleEl.textContent = 'Welcome! Which class are you posting for?';
+    subEl.textContent   = 'Select your class to get started. You can switch classes any time from the top bar.';
+  } else {
+    titleEl.textContent = 'Which class are you posting for?';
+    subEl.textContent   = 'Select your class before creating a new assignment.';
+  }
+  const grid = document.getElementById('cp-grid');
+  grid.innerHTML = CLASSES.map(cls => `
+    <button class="cp-class-btn${cls===currentClass?' selected':''}" onclick="selectClassFromPicker('${cls}')">
+      ${cls}
+    </button>`).join('');
+  document.getElementById('cp-modal').classList.add('open');
+}
+
+function selectClassFromPicker(cls) {
+  currentClass = cls;
+  document.getElementById('cp-modal').classList.remove('open');
+  buildClassNav();
+  // Pre-select configured periods for this class; teacher can adjust before posting
+  selectedPeriods = getDefaultPeriods(cls);
+  sharedResources = [];
+  blockOverrides  = {};
+  editingId       = null;
+  setMode('create');
+}
+
+// ══════════════════════════════════════════
+//  EDIT CLASS SELECTOR
+// ══════════════════════════════════════════
+function selectClassForEdit(cls) {
+  currentClass    = cls;
+  editAssignments = [];
+  editSelectedId  = null;
+  quarterFilter   = 'all';
+  buildClassNav();
+  renderEditMode();
+}
+
+// ══════════════════════════════════════════
+//  DRAFTS
+// ══════════════════════════════════════════
+const DRAFTS_KEY = 'ap_drafts';
+
+function loadDraftsFromStorage() {
+  try { return JSON.parse(localStorage.getItem(DRAFTS_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveDraftsToStorage(drafts) {
+  localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+}
+
+function saveDraft() {
+  const name = document.getElementById('f-name')?.value?.trim();
+  if (!name) { showToast('Add an assignment name before saving a draft.','error'); return; }
+
+  const draft = {
+    id:          'draft-' + Date.now(),
+    savedAt:     new Date().toISOString(),
+    className:   currentClass,
+    selectedPeriods: [...selectedPeriods],
+    sharedResources: [...sharedResources],
+    blockOverrides:  JSON.parse(JSON.stringify(blockOverrides)),
+    formData: {
+      name,
+      engagement:     document.getElementById('f-engagement')?.value  || '',
+      assignmentType: document.getElementById('f-atype')?.value       || '',
+      quarter:        document.getElementById('f-quarter')?.value     || '',
+      where:    document.getElementById('f-where')?.value    || '',
+      assigned: document.getElementById('f-assigned')?.value || '',
+      due:      document.getElementById('f-due')?.value      || '',
+      notes:    document.getElementById('f-notes')?.value    || ''
+    }
+  };
+
+  const drafts = loadDraftsFromStorage();
+  drafts.unshift(draft);
+  saveDraftsToStorage(drafts);
+  showToast(`Draft saved for ${currentClass}!`, 'success');
+}
+
+function renderDraftsMode() {
+  const drafts = loadDraftsFromStorage();
+  let html = `<div class="card">
+    <div class="card-title"><span>📝</span>Saved Drafts</div>`;
+
+  if (drafts.length === 0) {
+    html += `<div class="draft-empty">
+      No drafts saved yet.<br>
+      <span style="font-size:.85em">Use "Save Draft" on the New Assignment form to save work in progress.</span>
+    </div>`;
+  } else {
+    html += `<div class="draft-list">`;
+    drafts.forEach(d => {
+      const saved = new Date(d.savedAt);
+      const dateStr = saved.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      const timeStr = saved.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      const periods = d.selectedPeriods.length ? d.selectedPeriods.join(', ') : 'No periods selected';
+      html += `<div class="draft-card">
+        <div class="draft-info">
+          <div class="draft-name">${esc(d.formData.name||'Untitled Draft')}</div>
+          <div class="draft-meta">
+            <span class="draft-class-tag">${esc(d.className)}</span>
+            <span>Periods: ${periods}</span>
+            ${d.formData.due ? `<span>Due: ${d.formData.due}</span>` : ''}
+            <span>Saved ${dateStr} at ${timeStr}</span>
+          </div>
+        </div>
+        <div class="draft-actions">
+          <button class="btn btn-secondary" style="padding:7px 12px;font-size:.82em" onclick="loadDraft('${d.id}')">Load</button>
+          <button class="btn btn-danger"    style="padding:7px 12px;font-size:.82em" onclick="deleteDraft('${d.id}')">Delete</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  html += `</div>`;
+  document.getElementById('main-area').innerHTML = html;
+}
+
+function loadDraft(draftId) {
+  const drafts = loadDraftsFromStorage();
+  const draft  = drafts.find(d => d.id === draftId);
+  if (!draft) { showToast('Draft not found.','error'); return; }
+
+  // Restore state
+  currentClass    = draft.className;
+  selectedPeriods = draft.selectedPeriods || [];
+  sharedResources = draft.sharedResources || [];
+  blockOverrides  = draft.blockOverrides  || {};
+  editingId       = null;
+
+  buildClassNav();
+  setMode('create');
+
+  // Fill form fields after render
+  setTimeout(() => {
+    const s = (id,val) => { const el=document.getElementById(id); if(el) el.value=val; };
+    const fd = draft.formData || {};
+    s('f-name',       fd.name           || '');
+    s('f-engagement', fd.engagement     || '');
+    s('f-atype',      fd.assignmentType || '');
+    s('f-quarter',    fd.quarter        || '');
+    s('f-where',      fd.where          || '');
+    s('f-assigned',   fd.assigned       || '');
+    s('f-due',        fd.due            || '');
+    s('f-notes',      fd.notes          || '');
+    renderResourceRows();
+    showToast(`Draft loaded for ${currentClass}.`, 'success');
+  }, 60);
+}
+
+function deleteDraft(draftId) {
+  if (!confirm('Delete this draft? This cannot be undone.')) return;
+  const drafts = loadDraftsFromStorage().filter(d => d.id !== draftId);
+  saveDraftsToStorage(drafts);
+  renderDraftsMode();
+  showToast('Draft deleted.','success');
+}
+</script>
+</body>
+</html>
