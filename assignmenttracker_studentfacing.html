@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8th Grade Assignment Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+<style>
+/* ── TOKENS ── */
+:root {
+  --bg: #f1f5f9; --surface: #fff; --surface2: #f8fafc; --border: #e2e8f0;
+  --text: #1e293b; --muted: #64748b;
+  --accent: #7c3aed; --accent-d: #6d28d9; --accent-light: #ede9fe; --accent-mid: #c4b5fd;
+  --nav: #0f172a; --nav-text: #f8fafc;
+  --success: #22c55e; --danger: #ef4444; --warning: #f59e0b;
+  --overdue-bg:#fef2f2; --overdue-b:#fca5a5;
+  --today-bg:#fff7ed;   --today-b:#fed7aa;
+  --tmrw-bg:#fefce8;    --tmrw-b:#fde68a;
+  --week-bg:#eff6ff;    --week-b:#bfdbfe;
+  --shadow: 0 2px 8px rgba(0,0,0,.07);
+}
+[data-theme="dark"] {
+  --bg:#0f172a; --surface:#1e293b; --surface2:#162032; --border:#334155;
+  --text:#f1f5f9; --muted:#94a3b8;
+  --overdue-bg:#2d1212; --overdue-b:#7f1d1d;
+  --today-bg:#2d1f0a;   --today-b:#78350f;
+  --tmrw-bg:#2a2400;    --tmrw-b:#713f12;
+  --week-bg:#101e35;    --week-b:#1e3a5f;
+}
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text); font-size:17px; min-height:100vh; transition:background .3s,color .3s; }
+
+/* ── TOPBAR ── */
+.topbar { background:var(--nav); color:var(--nav-text); display:flex; align-items:center; gap:10px; padding:0 20px; height:58px; position:sticky; top:0; z-index:200; box-shadow:0 2px 8px rgba(0,0,0,.3); }
+.brand { font-family:'Outfit',sans-serif; font-weight:800; font-size:1.25em; white-space:nowrap; flex-shrink:0; display:flex; align-items:center; gap:8px; letter-spacing:-.3px; }
+.topbar-spacer { flex:1; }
+.topbar-btn { background:rgba(255,255,255,.1); border:none; color:rgba(255,255,255,.85); border-radius:7px; padding:7px 14px; cursor:pointer; font-size:.88em; font-weight:700; font-family:'Nunito',sans-serif; display:flex; align-items:center; gap:6px; transition:background .2s; white-space:nowrap; }
+.topbar-btn:hover { background:rgba(255,255,255,.2); color:#fff; }
+.topbar-btn.accent { background:var(--accent); color:#fff; }
+.topbar-btn.accent:hover { background:var(--accent-d); }
+
+/* ── MAIN WRAPPER ── */
+.page { max-width:1400px; margin:0 auto; padding:20px 20px; }
+
+/* ── WELCOME SCREEN ── */
+.welcome-screen { text-align:center; padding:60px 20px; }
+.welcome-screen h2 { font-family:'Outfit',sans-serif; font-size:1.8em; font-weight:800; margin-bottom:10px; }
+.welcome-screen p { color:var(--muted); margin-bottom:24px; font-size:1.05em; }
+
+/* ── STATS BAR ── */
+.stats-bar { display:none; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 16px; margin-bottom:14px; gap:7px 20px; align-items:center; flex-wrap:wrap; box-shadow:var(--shadow); }
+.stat-item { display:flex; align-items:center; gap:6px; font-size:.9em; font-weight:700; color:var(--muted); }
+.stat-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.progress-wrap { flex:1; min-width:120px; background:var(--border); border-radius:99px; height:7px; overflow:hidden; }
+.progress-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#22c55e,#16a34a); transition:width .4s; }
+
+/* ── CONTROLS ── */
+.controls { display:none; background:var(--surface); border:1px solid var(--border); border-radius:10px 10px 0 0; border-bottom:none; padding:12px 16px; gap:10px; flex-wrap:wrap; align-items:center; }
+.search-wrap { position:relative; flex:1; min-width:180px; max-width:300px; }
+.search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; }
+.search-input { width:100%; padding:10px 10px 10px 34px; border:1.5px solid var(--border); border-radius:7px; font-size:1em; font-family:'Nunito',sans-serif; background:var(--surface2); color:var(--text); outline:none; transition:border-color .2s; }
+.search-input:focus { border-color:var(--accent); }
+.search-input::placeholder { color:var(--muted); }
+.view-pills { display:flex; gap:5px; flex-wrap:wrap; }
+.vpill { padding:8px 16px; border:1.5px solid var(--border); background:var(--surface); border-radius:20px; cursor:pointer; font-size:.93em; font-weight:700; color:var(--muted); transition:all .2s; font-family:'Nunito',sans-serif; white-space:nowrap; }
+.vpill:hover { border-color:var(--muted); color:var(--text); }
+.vpill.active { background:var(--text); color:var(--surface); border-color:var(--text); }
+.qpill.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.clear-btn { background:none; border:none; color:var(--danger); font-size:.9em; font-weight:700; cursor:pointer; padding:7px 12px; border-radius:7px; font-family:'Nunito',sans-serif; transition:background .2s; }
+.clear-btn:hover { background:#fef2f2; }
+
+/* ── DROPDOWN FILTER ── */
+.filter-dd { position:relative; display:inline-block; }
+.filter-dd-btn { display:flex; align-items:center; gap:6px; padding:8px 15px; border:1.5px solid var(--border); background:var(--surface); border-radius:20px; cursor:pointer; font-size:.93em; font-weight:700; color:var(--muted); transition:all .2s; font-family:'Nunito',sans-serif; white-space:nowrap; user-select:none; }
+.filter-dd-btn:hover { border-color:var(--muted); color:var(--text); }
+.filter-dd-btn.active-filter { background:var(--accent); color:#fff; border-color:var(--accent); }
+.filter-dd-btn .dd-caret { font-size:.72em; transition:transform .2s; }
+.filter-dd.open .dd-caret { transform:rotate(180deg); }
+.filter-dd-menu { position:absolute; top:calc(100% + 6px); left:0; background:var(--surface); border:1.5px solid var(--border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:300; min-width:180px; overflow:hidden; display:none; }
+.filter-dd.open .filter-dd-menu { display:block; }
+.filter-dd-item { display:block; width:100%; padding:11px 18px; text-align:left; background:none; border:none; cursor:pointer; font-family:'Nunito',sans-serif; font-size:.95em; font-weight:700; color:var(--text); transition:background .15s; white-space:nowrap; }
+.filter-dd-item:hover { background:var(--accent-light); color:var(--accent); }
+.filter-dd-item.selected { background:var(--accent-light); color:var(--accent); }
+.filter-dd-item.selected::after { content:' ✓'; }
+
+/* ── TRACKER SURFACE ── */
+.tracker-surface { background:var(--surface); border:1px solid var(--border); border-radius:0 0 10px 10px; box-shadow:var(--shadow); overflow:hidden; }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align:center; color:var(--muted); padding:48px 20px; font-size:1em; }
+
+/* ── CARD GRID ── */
+.card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; padding:16px; }
+
+.acard {
+  background:var(--surface2); border:2px solid var(--border); border-radius:10px;
+  padding:15px 16px; transition:box-shadow .2s,border-color .2s,background .2s;
+}
+.acard:hover { box-shadow:0 4px 18px rgba(0,0,0,.12); }
+.acard.done { opacity:.5; }
+.acard.done .acard-name { text-decoration:line-through; color:var(--muted); }
+
+/* Urgency: subtle background tint only — border stays as block color */
+.acard.overdue   { background:#fef2f2; }
+.acard.due-today { background:#fff7ed; }
+.acard.due-tmrw  { background:#fefce8; }
+.acard.due-week  { background:#eff6ff; }
+[data-theme="dark"] .acard.overdue   { background:#2d1212; }
+[data-theme="dark"] .acard.due-today { background:#2d1f0a; }
+[data-theme="dark"] .acard.due-tmrw  { background:#2a2400; }
+[data-theme="dark"] .acard.due-week  { background:#101e35; }
+
+.acard-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:9px; }
+.acard-name { font-weight:800; font-size:1.15em; line-height:1.35; flex:1; color:var(--text); }
+.done-check { width:20px; height:20px; cursor:pointer; accent-color:var(--success); flex-shrink:0; margin-top:2px; }
+
+.acard-class { display:inline-block; border-radius:6px; padding:5px 12px; font-size:.86em; font-weight:800; margin-bottom:9px; }
+
+.acard-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+.tag { border-radius:20px; padding:5px 12px; font-size:.86em; font-weight:700; white-space:nowrap; }
+.tag-q    { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
+.tag-type { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
+.tag-req  { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
+.tag-opt  { background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; }
+.tag-sub  { background:#f5f3ff; color:#6d28d9; border:1px solid #ddd6fe; }
+.tag-ec   { background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; }
+
+/* ── DARK MODE: muted tags (keep class badge vivid) ── */
+[data-theme="dark"] .tag { background:rgba(255,255,255,.07); color:var(--muted); border-color:rgba(255,255,255,.12); }
+
+.acard-dates { font-size:.93em; color:var(--muted); display:flex; gap:12px; flex-wrap:wrap; margin-bottom:9px; }
+.acard-dates strong { color:var(--text); font-weight:700; }
+
+.due-badge { font-weight:800; font-size:.95em; white-space:nowrap; }
+.due-badge.overdue   { color:var(--danger); }
+.due-badge.due-today { color:#f97316; }
+.due-badge.due-tmrw  { color:#ca8a04; }
+.due-badge.due-week  { color:#3b82f6; }
+.due-badge.future    { color:var(--muted); }
+
+.acard-notes { font-size:.92em; color:var(--muted); font-style:italic; margin-bottom:10px; line-height:1.55; }
+.acard-resources { display:flex; gap:7px; flex-wrap:wrap; margin-top:6px; }
+.res-link { display:inline-flex; align-items:center; gap:5px; background:var(--accent-light); color:var(--accent); border:1px solid var(--accent-mid); border-radius:6px; padding:6px 13px; font-size:.9em; font-weight:700; text-decoration:none; transition:all .2s; white-space:nowrap; }
+.res-link:hover { background:var(--accent); color:#fff; }
+
+/* ── CARD EXPAND / COLLAPSE ── */
+.acard { cursor:pointer; }
+.acard .done-check,.acard .drag-handle,.acard .res-link { cursor:pointer; }
+.expand-chev { font-size:.7em; color:var(--muted); transition:transform .22s; flex-shrink:0; margin-left:4px; }
+.acard.expanded .expand-chev { transform:rotate(180deg); }
+.acard-secondary {
+  display:none; border-top:1px solid var(--border); padding-top:10px; margin-top:10px;
+}
+.acard.expanded .acard-secondary { display:block; }
+.card-top-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+
+/* ── CONFETTI ── */
+#confetti-canvas { position:fixed; inset:0; pointer-events:none; z-index:9999; }
+
+/* ── DRAG AND DROP ── */
+.drag-card { touch-action:none; user-select:none; }
+.drag-handle { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:6px; color:var(--muted); cursor:grab; flex-shrink:0; font-size:1.1em; transition:background .15s,color .15s; margin-right:4px; margin-top:1px; }
+.drag-handle:hover { background:rgba(0,0,0,.07); color:var(--text); }
+[data-theme="dark"] .drag-handle:hover { background:rgba(255,255,255,.1); }
+.drag-handle:active { cursor:grabbing; }
+.acard.dnd-source { opacity:.18; pointer-events:none; }
+.dnd-ghost {
+  position:fixed; pointer-events:none; z-index:9999;
+  box-shadow:0 20px 50px rgba(0,0,0,.28);
+  border-radius:10px;
+  transform:rotate(2deg) scale(1.03);
+  opacity:.92;
+}
+.dnd-placeholder {
+  border:2.5px dashed var(--accent);
+  border-radius:10px;
+  background:var(--accent-light);
+  opacity:.55;
+  transition:none;
+}
+
+/* ── MODALS ── */
+.modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.5); backdrop-filter:blur(4px); z-index:1000; display:none; align-items:center; justify-content:center; padding:20px; }
+.modal-bg.open { display:flex; }
+.modal-box { background:var(--surface); border-radius:14px; width:600px; max-width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 24px 60px rgba(0,0,0,.3); animation:mpop .2s ease; }
+.modal-box.admin-box { background:transparent; box-shadow:none; overflow:visible; }
+@keyframes mpop { from{transform:scale(.92);opacity:0} to{transform:scale(1);opacity:1} }
+.modal-hdr { padding:20px 24px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.modal-title { font-family:'Outfit',sans-serif; font-size:1.2em; font-weight:800; }
+.modal-close { background:none; border:none; font-size:1.5em; cursor:pointer; color:var(--muted); line-height:1; }
+.modal-close:hover { color:var(--text); }
+.modal-body { padding:20px 24px; }
+.modal-footer { padding:14px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:8px; }
+.mbtn { padding:10px 20px; border-radius:8px; font-size:.95em; font-weight:700; font-family:'Nunito',sans-serif; cursor:pointer; border:none; transition:all .2s; }
+.mbtn-primary { background:var(--accent); color:#fff; }
+.mbtn-primary:hover { background:var(--accent-d); }
+.mbtn-cancel { background:var(--surface2); color:var(--muted); border:1px solid var(--border); }
+.mbtn-cancel:hover { background:var(--border); color:var(--text); }
+.mbtn-green { background:#22c55e; color:#fff; }
+.mbtn-green:hover { background:#16a34a; }
+
+/* ── SCHEDULE MODAL ── */
+.sched-row { display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.sched-row:last-child { border-bottom:none; }
+.sched-name { font-weight:700; font-size:.95em; min-width:150px; }
+.sched-blocks { display:flex; gap:6px; flex-wrap:wrap; }
+.sblock { width:36px; height:34px; border:1.5px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--muted); cursor:pointer; font-weight:800; font-size:.88em; font-family:'Outfit',sans-serif; transition:all .2s; }
+.sblock:hover { border-color:var(--muted); color:var(--text); }
+.sblock.active[data-b="A"] { background:#ef4444; border-color:#ef4444; color:#fff; }
+.sblock.active[data-b="B"] { background:#f97316; border-color:#f97316; color:#fff; }
+.sblock.active[data-b="C"] { background:#eab308; border-color:#eab308; color:#1e293b; }
+.sblock.active[data-b="D"] { background:#22c55e; border-color:#22c55e; color:#fff; }
+.sblock.active[data-b="E"] { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+.sblock.active[data-b="F"] { background:#8b5cf6; border-color:#8b5cf6; color:#fff; }
+.sblock.active[data-b="G"] { background:#ec4899; border-color:#ec4899; color:#fff; }
+.snone { padding:5px 12px; border:1.5px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--muted); cursor:pointer; font-size:.85em; font-weight:700; font-family:'Nunito',sans-serif; transition:all .2s; }
+.snone:hover { border-color:var(--muted); }
+.snone.active { background:var(--border); color:var(--text); border-color:var(--muted); }
+
+/* ── CALENDAR MODAL ── */
+.cal-box { width:min(96vw, 1100px); }
+.cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.cal-nav-btn { background:var(--surface2); border:1px solid var(--border); border-radius:7px; padding:7px 14px; cursor:pointer; font-weight:700; font-family:'Nunito',sans-serif; font-size:.9em; color:var(--text); transition:background .2s; }
+.cal-nav-btn:hover { background:var(--border); }
+.cal-month-title { font-family:'Outfit',sans-serif; font-size:1.2em; font-weight:800; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:14px; }
+.cal-dow { text-align:center; font-size:.76em; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); padding:6px 0; }
+.cal-day { min-height:110px; border:1.5px solid var(--border); border-radius:8px; padding:6px 7px; cursor:pointer; transition:border-color .15s,background .15s; background:var(--surface); overflow:hidden; }
+.cal-day:hover:not(.other-month) { border-color:var(--accent-mid); background:var(--accent-light); }
+.cal-day.other-month { opacity:.3; cursor:default; background:var(--surface2); }
+.cal-day.today { border-color:var(--accent); }
+.cal-day.today .cal-day-num { background:var(--accent); color:#fff; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; }
+.cal-day-num { font-size:.82em; font-weight:700; margin-bottom:4px; color:var(--text); }
+.cal-events { display:flex; flex-direction:column; gap:2px; }
+.cal-event { border-radius:4px; padding:2px 5px; font-size:.7em; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff; line-height:1.4; }
+.cal-event.done-event { opacity:.45; text-decoration:line-through; }
+.cal-more { font-size:.68em; color:var(--muted); font-weight:700; padding:1px 4px; }
+.cal-detail { border-top:1px solid var(--border); padding-top:14px; margin-top:4px; }
+.cal-detail-title { font-weight:800; margin-bottom:10px; font-size:.95em; }
+.cal-aitem { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; margin-bottom:7px; border:1px solid var(--border); background:var(--surface2); }
+.cal-class-bar { width:4px; height:36px; border-radius:3px; flex-shrink:0; }
+.cal-aname { font-weight:700; font-size:.92em; }
+.cal-aclass { font-size:.78em; color:var(--muted); margin-top:2px; }
+
+/* ── PRINT MODAL ── */
+.pm-body { text-align:center; padding:30px 24px; }
+.pm-icon { font-size:2.5em; margin-bottom:10px; }
+.pm-title { font-family:'Outfit',sans-serif; font-size:1.2em; font-weight:800; margin-bottom:8px; }
+.pm-text { font-size:.92em; color:var(--muted); margin-bottom:20px; }
+.pm-btns { display:flex; flex-direction:column; gap:9px; }
+.pm-btn { padding:11px 20px; border-radius:9px; font-size:.95em; font-weight:700; font-family:'Nunito',sans-serif; cursor:pointer; border:none; transition:all .2s; }
+
+/* ── PRINT ── */
+#print-container { display:none; }
+@media print {
+  body { background:white !important; color:black !important; font-size:12px; }
+  .modal-bg,.topbar,.controls,.stats-bar,#confetti-canvas { display:none !important; }
+  .page > *:not(#print-container) { display:none !important; }
+  #print-container { display:block !important; }
+  .print-hdr { margin-bottom:12px; border-bottom:2px solid #333; padding-bottom:8px; }
+  .print-hdr h2 { font-size:1.3em; font-weight:800; }
+  .print-hdr p { font-size:.82em; color:#555; margin-top:3px; }
+  .print-section { margin-bottom:16px; }
+  .print-section-lbl { font-size:.9em; font-weight:800; text-transform:uppercase; padding:5px 8px; margin-bottom:4px; border-radius:3px; }
+  .print-section-lbl.upcoming  { background:#e8f4fd; color:#1a5276; border-left:4px solid #3b82f6; }
+  .print-section-lbl.overdue   { background:#fdf2f2; color:#7b241c; border-left:4px solid #ef4444; }
+  .print-section-lbl.completed { background:#eafaf1; color:#1e8449; border-left:4px solid #22c55e; }
+  .ptable { width:100%; border-collapse:collapse; font-size:.88em; }
+  .ptable th { background:#f5f5f5; padding:5px 7px; text-align:left; border:1px solid #ddd; font-size:.8em; text-transform:uppercase; }
+  .ptable td { padding:5px 7px; border:1px solid #ddd; vertical-align:top; }
+  .ptable tr.pdone td { color:#888; text-decoration:line-through; }
+  .ptable tr:nth-child(even) td { background:#fafafa; }
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:880px) {
+  .card-grid { grid-template-columns:1fr; }
+  .controls { flex-direction:column; align-items:stretch; }
+  .search-wrap { max-width:100%; }
+}
+@media(max-width:540px) {
+  .topbar { padding:0 12px; gap:7px; }
+  .topbar-btn span { display:none; }
+  .page { padding:14px 12px; }
+}
+
+/* ── ADMIN BUTTON ── */
+.admin-btn { background:rgba(255,255,255,.05); border:none; color:rgba(255,255,255,.3); border-radius:6px; width:30px; height:30px; cursor:pointer; font-size:.95em; display:flex; align-items:center; justify-content:center; transition:all .3s; }
+.admin-btn:hover { background:rgba(255,255,255,.15); color:rgba(255,255,255,.8); }
+
+/* ── ADMIN MODAL ── */
+.admin-box { width:660px; }
+.admin-pw-screen { text-align:center; padding:32px 24px 24px; }
+.admin-pw-screen h3 { font-family:'Outfit',sans-serif; font-size:1.2em; font-weight:800; margin-bottom:6px; }
+.admin-pw-screen p { color:var(--muted); font-size:.9em; margin-bottom:20px; }
+.admin-pw-input { width:100%; padding:11px 14px; border:2px solid var(--border); border-radius:8px; font-size:1em; font-family:'Nunito',sans-serif; outline:none; transition:border-color .2s; margin-bottom:10px; color:var(--text); background:var(--surface); }
+.admin-pw-input:focus { border-color:var(--accent); }
+.admin-pw-err { color:var(--danger); font-size:.85em; margin-bottom:10px; display:none; }
+
+.admin-section-title { font-size:.8em; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+.admin-section { margin-bottom:22px; }
+
+.url-row { display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+.url-class-label { font-weight:700; font-size:.9em; min-width:150px; display:flex; align-items:center; gap:7px; flex-shrink:0; }
+.url-class-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.url-input { flex:1; padding:8px 12px; border:1.5px solid var(--border); border-radius:7px; font-size:.88em; font-family:'Nunito',sans-serif; color:var(--text); background:var(--surface); outline:none; transition:border-color .2s; }
+.url-input:focus { border-color:var(--accent); }
+.url-input.has-url { border-color:#22c55e; background:var(--surface); }
+.url-status { font-size:.78em; font-weight:700; white-space:nowrap; }
+.url-status.ok  { color:#22c55e; }
+.url-status.empty { color:var(--muted); }
+
+.period-row-admin { display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.quarter-date-row { display:flex; align-items:center; gap:8px; margin-bottom:9px; flex-wrap:wrap; }
+.quarter-date-label { font-weight:700; font-size:.9em; min-width:88px; flex-shrink:0; }
+.period-row-label { font-weight:700; font-size:.88em; min-width:150px; flex-shrink:0; }
+.period-toggles-admin { display:flex; gap:5px; }
+.ptoggle { width:32px; height:32px; border:1.5px solid var(--border); border-radius:6px; background:var(--surface2); color:var(--muted); font-weight:800; font-size:.82em; cursor:pointer; transition:all .2s; font-family:'Outfit',sans-serif; }
+.ptoggle:hover { border-color:var(--muted); }
+.ptoggle.on[data-p="A"] { background:#ef4444; border-color:#ef4444; color:#fff; }
+.ptoggle.on[data-p="B"] { background:#f97316; border-color:#f97316; color:#fff; }
+.ptoggle.on[data-p="C"] { background:#eab308; border-color:#eab308; color:#1e293b; }
+.ptoggle.on[data-p="D"] { background:#22c55e; border-color:#22c55e; color:#fff; }
+.ptoggle.on[data-p="E"] { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+.ptoggle.on[data-p="F"] { background:#8b5cf6; border-color:#8b5cf6; color:#fff; }
+.ptoggle.on[data-p="G"] { background:#ec4899; border-color:#ec4899; color:#fff; }
+.admin-note { font-size:.82em; color:var(--muted); margin-top:4px; line-height:1.5; }
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+
+<!-- ── TOPBAR ── -->
+<header class="topbar">
+  <div class="brand"><span>8th Grade Assignment Tracker</span> 📝</div>
+  <div class="topbar-spacer"></div>
+  <button class="topbar-btn accent" onclick="openSchedule()">👤 <span>My Schedule</span></button>
+  <button class="topbar-btn" id="cal-btn" onclick="openCalendar()" style="display:none">📅 <span>Calendar</span></button>
+  <button class="topbar-btn" onclick="buildAndPrint()" id="print-btn" style="display:none">🖨️ <span>Print</span></button>
+  <button class="topbar-btn" id="expand-btn" onclick="toggleExpandAll()" style="display:none">⊞ <span>Expand All</span></button>
+  <button class="topbar-btn" id="dm-btn" onclick="toggleDark()">🌙 <span>Dark</span></button>
+  <button class="admin-btn" onclick="openAdmin()" title="Admin Settings">⚙️</button>
+</header>
+
+<!-- ── PAGE ── -->
+<div class="page">
+
+  <!-- Stats -->
+  <div class="stats-bar" id="stats-bar"></div>
+
+  <!-- Controls -->
+  <div class="controls" id="controls">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" id="search-input" placeholder="Search assignments…" oninput="applyAndRender()">
+    </div>
+    <!-- Date view dropdown -->
+    <div class="filter-dd" id="date-dd">
+      <button class="filter-dd-btn" id="date-dd-btn" onclick="toggleDd('date-dd', event)">
+        📋 <span id="date-dd-label">All Assignments</span> <span class="dd-caret">▾</span>
+      </button>
+      <div class="filter-dd-menu" id="date-dd-menu">
+        <button class="filter-dd-item selected" onclick="setDateView('all','All Assignments')">All Assignments</button>
+        <button class="filter-dd-item" onclick="setDateView('active','Upcoming')">Upcoming</button>
+        <button class="filter-dd-item" onclick="setDateView('week','This Week')">This Week</button>
+        <button class="filter-dd-item" onclick="setDateView('past','Overdue')">Overdue</button>
+      </div>
+    </div>
+    <!-- Quarter dropdown -->
+    <div class="filter-dd" id="q-dd">
+      <button class="filter-dd-btn" id="q-dd-btn" onclick="toggleDd('q-dd', event)">
+        📅 <span id="q-dd-label">All Quarters</span> <span class="dd-caret">▾</span>
+      </button>
+      <div class="filter-dd-menu" id="q-dd-menu">
+        <button class="filter-dd-item selected" onclick="setQuarter('all','All Quarters')">All Quarters</button>
+        <button class="filter-dd-item" onclick="setQuarter('Quarter 1','Q1')">Quarter 1</button>
+        <button class="filter-dd-item" onclick="setQuarter('Quarter 2','Q2')">Quarter 2</button>
+        <button class="filter-dd-item" onclick="setQuarter('Quarter 3','Q3')">Quarter 3</button>
+        <button class="filter-dd-item" onclick="setQuarter('Quarter 4','Q4')">Quarter 4</button>
+      </div>
+    </div>
+    <!-- Class dropdown -->
+    <div class="filter-dd" id="cls-dd">
+      <button class="filter-dd-btn" id="cls-dd-btn" onclick="toggleDd('cls-dd', event)">
+        🏫 <span id="cls-dd-label">All Classes</span> <span class="dd-caret">▾</span>
+      </button>
+      <div class="filter-dd-menu" id="cls-dd-menu">
+        <!-- populated dynamically after data loads -->
+      </div>
+    </div>
+    <!-- Sort dropdown -->
+    <div class="filter-dd" id="sort-dd">
+      <button class="filter-dd-btn" id="sort-dd-btn" onclick="toggleDd('sort-dd', event)">
+        ↕ <span id="sort-dd-label">Due Date ↑</span> <span class="dd-caret">▾</span>
+      </button>
+      <div class="filter-dd-menu">
+        <button class="filter-dd-item selected" onclick="setSortMode('due-asc')">📅 Due Date ↑</button>
+        <button class="filter-dd-item" onclick="setSortMode('due-desc')">📅 Due Date ↓</button>
+        <button class="filter-dd-item" onclick="setSortMode('class')">🏫 Group by Class</button>
+        <button class="filter-dd-item" onclick="setSortMode('custom')">✋ Custom Order</button>
+      </div>
+    </div>
+    <!-- Engagement dropdown -->
+    <div class="filter-dd" id="eng-dd">
+      <button class="filter-dd-btn" id="eng-dd-btn" onclick="toggleDd('eng-dd', event)">
+        ✅ <span id="eng-dd-label">All</span> <span class="dd-caret">▾</span>
+      </button>
+      <div class="filter-dd-menu">
+        <button class="filter-dd-item selected" onclick="setEngFilter('all','All')">All Assignments</button>
+        <button class="filter-dd-item" onclick="setEngFilter('Required','Required')">Required Only</button>
+        <button class="filter-dd-item" onclick="setEngFilter('Optional','Optional')">Optional Only</button>
+        <button class="filter-dd-item" onclick="setEngFilter('Extra Credit','Extra Credit')">Extra Credit Only</button>
+      </div>
+    </div>
+    <button class="clear-btn" id="clear-btn" onclick="clearFilters()" style="display:none">Clear ✕</button>
+  </div>
+
+  <!-- Tracker surface -->
+  <div class="tracker-surface" id="tracker-surface">
+    <div class="welcome-screen">
+      <p style="font-size:2em;margin-bottom:12px">🎓</p>
+      <h2>Welcome to your Assignment Tracker</h2>
+      <p>Tap <strong>My Schedule</strong> above to choose your classes and get started.</p>
+    </div>
+  </div>
+
+  <div id="print-container"></div>
+</div>
+
+<!-- ── SCHEDULE MODAL ── -->
+<div class="modal-bg" id="sched-modal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <span class="modal-title">👤 My Schedule</span>
+      <button class="modal-close" onclick="closeSchedule()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--muted);font-size:.9em;margin-bottom:14px">For each class, select the period you meet in. Choose <strong>None</strong> if you don't have that class.</p>
+      <div id="sched-grid"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="mbtn mbtn-cancel" onclick="closeSchedule()">Cancel</button>
+      <button class="mbtn mbtn-primary" onclick="saveSchedule()">Save Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CALENDAR MODAL ── -->
+<div class="modal-bg" id="cal-modal">
+  <div class="modal-box cal-box">
+    <div class="modal-hdr">
+      <span class="modal-title">📅 Assignment Calendar</span>
+      <button class="modal-close" onclick="closeCalendar()">×</button>
+    </div>
+    <div class="modal-body" id="cal-body"></div>
+  </div>
+</div>
+
+<!-- ── ADMIN MODAL ── -->
+<div class="modal-bg" id="admin-modal">
+  <div class="modal-box admin-box">
+    <div class="modal-hdr">
+      <span class="modal-title">⚙️ Admin Settings</span>
+      <button class="modal-close" onclick="closeAdmin()">×</button>
+    </div>
+    <div id="admin-content">
+      <!-- password screen or settings panel injected here -->
+    </div>
+  </div>
+</div>
+
+<!-- ── PRINT MODAL ── -->
+<div class="modal-bg" id="print-modal">
+  <div class="modal-box" style="max-width:400px">
+    <div class="pm-body">
+      <div class="pm-icon">🖨️</div>
+      <div class="pm-title">Include completed assignments?</div>
+      <div class="pm-text">There are <strong id="pm-count">0</strong> completed assignment(s). Including them may use extra paper.</div>
+      <div class="pm-btns">
+        <button class="pm-btn mbtn-green" id="pm-yes">✅ Yes — Include completed</button>
+        <button class="pm-btn mbtn-cancel" id="pm-no">⏭️ No — Skip completed</button>
+        <button class="pm-btn" style="color:var(--muted);background:none" id="pm-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  ⚙️ DEFAULTS — overridden by Admin Settings (stored in localStorage)
+// ══════════════════════════════════════════
+const ADMIN_KEY = '8thTracker_AdminSettings';
+const ADMIN_PASS = '8thgrade2627';
+const CLASSES = ['Science 8','Math 8','Algebra I','Honors Algebra I','Spanish II','Civics','English 8'];
+
+// Runtime config — populated from localStorage by loadAdminSettings()
+let SHEET_URLS = {
+    'Science 8': '', 'Math 8': '', 'Algebra I': '',
+    'Honors Algebra I': '', 'Spanish II': '', 'Civics': '', 'English 8': ''
+};
+let CLASS_PERIODS = {
+    'Science 8': ['A','B','C','D','E','F','G'],
+    'Math 8': ['A','B','C','D','E','F','G'],
+    'Algebra I': ['A','B','C','D','E','F','G'],
+    'Honors Algebra I': ['A','B','C','D','E','F','G'],
+    'Spanish II': ['A','B','C','D','E','F','G'],
+    'Civics': ['A','B','C','D','E','F','G'],
+    'English 8': ['A','B','C','D','E','F','G']
+};
+
+function loadAdminSettings() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(ADMIN_KEY) || '{}');
+        if (saved.sheetUrls)    Object.assign(SHEET_URLS, saved.sheetUrls);
+        if (saved.classPeriods) Object.assign(CLASS_PERIODS, saved.classPeriods);
+        if (saved.quarterDates) quarterDates = saved.quarterDates;
+    } catch {}
+}
+function saveAdminToStorage(urls, periods, qDates) {
+    localStorage.setItem(ADMIN_KEY, JSON.stringify({ sheetUrls: urls, classPeriods: periods, quarterDates: qDates }));
+}
+
+// ── ADMIN MODAL ──
+let adminAuthed = false;
+
+function openAdmin() {
+    adminAuthed = false;
+    document.getElementById('admin-modal').classList.add('open');
+    // Hide the standard header during auth — renderAdminAuth provides its own
+    document.querySelector('#admin-modal .modal-hdr').style.display = 'none';
+    renderAdminAuth();
+}
+function closeAdmin() {
+    document.getElementById('admin-modal').classList.remove('open');
+    document.querySelector('#admin-modal .modal-hdr').style.display = '';
+    const box = document.querySelector('#admin-modal .modal-box');
+    if (box) { box.style.background=''; box.style.boxShadow=''; box.style.overflow=''; box.style.maxHeight=''; }
+    adminAuthed = false;
+}
+
+function renderAdminAuth() {
+    document.getElementById('admin-content').innerHTML = `
+        <div style="background:linear-gradient(135deg,#1e1b4b 0%,#0f172a 60%,#1e293b 100%);padding:48px 30px 36px;border-radius:14px">
+            <div style="background:var(--surface);border-radius:14px;padding:38px 34px;max-width:340px;margin:0 auto;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5)">
+                <div style="font-size:2.6em;margin-bottom:12px">📋</div>
+                <div style="font-family:'Outfit',sans-serif;font-size:1.5em;font-weight:800;margin-bottom:5px;color:var(--text)">Admin Settings</div>
+                <div style="color:var(--muted);font-size:.9em;margin-bottom:24px;line-height:1.5">Enter the password to configure class sheet URLs and period settings.</div>
+                <input type="password" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:8px;font-size:1em;font-family:'Nunito',sans-serif;outline:none;margin-bottom:10px;color:var(--text);background:var(--surface);transition:border-color .2s"
+                    id="admin-pw" placeholder="Enter password…"
+                    onkeydown="if(event.key==='Enter')checkAdminPass()"
+                    onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                <div style="color:#ef4444;font-size:.85em;margin-bottom:10px;display:none" id="admin-pw-err">Incorrect password. Please try again.</div>
+                <button style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:1em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;transition:background .2s;margin-bottom:10px"
+                    onmouseover="this.style.background='var(--accent-d)'" onmouseout="this.style.background='var(--accent)'"
+                    onclick="checkAdminPass()">Unlock →</button>
+                <button style="width:100%;padding:8px;background:none;color:var(--muted);border:none;font-size:.9em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;transition:color .2s"
+                    onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'"
+                    onclick="closeAdmin()">Cancel</button>
+            </div>
+        </div>`;
+    setTimeout(() => document.getElementById('admin-pw')?.focus(), 50);
+}
+
+function checkAdminPass() {
+    const val = document.getElementById('admin-pw')?.value || '';
+    if (val === ADMIN_PASS) {
+        adminAuthed = true;
+        // Restore normal modal-box styling for the settings panel
+        const box = document.querySelector('#admin-modal .modal-box');
+        if (box) { box.style.background = 'var(--surface)'; box.style.boxShadow = '0 24px 60px rgba(0,0,0,.3)'; box.style.overflow = 'hidden'; box.style.maxHeight = '90vh'; }
+        document.querySelector('#admin-modal .modal-hdr').style.display = '';
+        renderAdminPanel();
+    } else {
+        document.getElementById('admin-pw-err').style.display = 'block';
+        document.getElementById('admin-pw').value = '';
+        document.getElementById('admin-pw').focus();
+    }
+}
+
+function renderAdminPanel() {
+    // Use index-based IDs to avoid btoa encoding issues with special characters
+    const urlRows = CLASSES.map((cls, idx) => {
+        const url = SHEET_URLS[cls] || '';
+        const hasUrl = url && url.length > 10;
+        return `<div class="url-row">
+            <div class="url-class-label">
+                <div class="url-class-dot" style="background:${CLASS_COLORS[cls]||'#64748b'}"></div>
+                ${cls}
+            </div>
+            <input type="url" class="url-input ${hasUrl?'has-url':''}" id="aurl-${idx}"
+                value="${hasUrl ? url : ''}"
+                placeholder="Paste published CSV URL…"
+                oninput="this.classList.toggle('has-url', this.value.length > 10);
+                         this.nextElementSibling.textContent=this.value.length>10?'✓ Set':'Not set';
+                         this.nextElementSibling.className='url-status '+(this.value.length>10?'ok':'empty')">
+            <span class="url-status ${hasUrl?'ok':'empty'}">${hasUrl ? '✓ Set' : 'Not set'}</span>
+        </div>`;
+    }).join('');
+
+    const periodRows = CLASSES.map((cls, idx) => {
+        const configured = CLASS_PERIODS[cls] || [];
+        // Use a global toggle function referenced by index to avoid closure issues
+        const toggles = ALL_PERIODS.map(p =>
+            `<button class="ptoggle ${configured.includes(p)?'on':''}" data-p="${p}"
+                onclick="adminTogglePeriod(this)">${p}</button>`
+        ).join('');
+        return `<div class="period-row-admin">
+            <div class="period-row-label" style="border-left:3px solid ${CLASS_COLORS[cls]||'#ccc'};padding-left:8px">${cls}</div>
+            <div class="period-toggles-admin" id="apt-${idx}">${toggles}</div>
+        </div>`;
+    }).join('');
+
+    const QUARTERS = ['Quarter 1','Quarter 2','Quarter 3','Quarter 4'];
+    const quarterDateRows = QUARTERS.map((q, idx) => {
+        const range = quarterDates[q] || {};
+        return `<div class="quarter-date-row">
+            <div class="quarter-date-label">${q}</div>
+            <input type="date" class="url-input" id="qstart-${idx}" value="${range.start||''}" style="flex:1;min-width:130px" placeholder="Start date">
+            <span style="color:var(--muted);font-weight:700;font-size:.9em;flex-shrink:0">→</span>
+            <input type="date" class="url-input" id="qend-${idx}" value="${range.end||''}" style="flex:1;min-width:130px" placeholder="End date">
+        </div>`;
+    }).join('');
+
+    document.getElementById('admin-content').innerHTML = `
+        <div class="modal-body" style="max-height:65vh;overflow-y:auto">
+            <div class="admin-section">
+                <div class="admin-section-title">📋 Google Sheet CSV URLs</div>
+                <p class="admin-note" style="margin-bottom:12px">
+                    In your Google Sheet go to <strong>File → Share → Publish to web</strong>,
+                    select each class tab, choose <strong>CSV</strong>, and paste the URL here.
+                </p>
+                ${urlRows}
+            </div>
+            <div class="admin-section">
+                <div class="admin-section-title">🗓️ Quarter Date Ranges</div>
+                <p class="admin-note" style="margin-bottom:12px">
+                    Set the start and end date for each quarter. The tracker will automatically filter
+                    to the current quarter when students open it.
+                </p>
+                ${quarterDateRows}
+            </div>
+            <div class="admin-section">
+                <div class="admin-section-title">📅 Periods Each Class Meets In</div>
+                <p class="admin-note" style="margin-bottom:12px">
+                    Click each period to toggle it on/off. Should match your teacher tool Settings.
+                </p>
+                ${periodRows}
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="mbtn mbtn-cancel" onclick="closeAdmin()">Cancel</button>
+            <button class="mbtn mbtn-primary" onclick="saveAdminSettings()">💾 Save & Reload</button>
+        </div>`;
+}
+
+// Global toggle so inline onclick works reliably in injected HTML
+function adminTogglePeriod(btn) { btn.classList.toggle('on'); }
+
+async function saveAdminSettings() {
+    const newUrls = {};
+    CLASSES.forEach((cls, idx) => {
+        const el = document.getElementById('aurl-' + idx);
+        newUrls[cls] = el ? el.value.trim() : '';
+    });
+
+    const newPeriods = {};
+    CLASSES.forEach((cls, idx) => {
+        const container = document.getElementById('apt-' + idx);
+        newPeriods[cls] = container
+            ? [...container.querySelectorAll('.ptoggle.on')].map(b => b.dataset.p)
+            : [];
+    });
+
+    // Collect quarter date ranges
+    const QUARTER_NAMES = ['Quarter 1','Quarter 2','Quarter 3','Quarter 4'];
+    const newQDates = {};
+    QUARTER_NAMES.forEach((q, idx) => {
+        const start = document.getElementById('qstart-' + idx)?.value || '';
+        const end   = document.getElementById('qend-'   + idx)?.value || '';
+        if (start || end) newQDates[q] = { start, end };
+    });
+    quarterDates = newQDates;
+
+    // Persist and apply
+    saveAdminToStorage(newUrls, newPeriods, newQDates);
+    Object.assign(SHEET_URLS, newUrls);
+    Object.assign(CLASS_PERIODS, newPeriods);
+
+    closeAdmin();
+    showToast('Settings saved! Reloading data…');
+
+    // Re-render schedule modal in case periods changed, then reload data
+    if (Object.keys(userSchedule).length > 0) {
+        await loadData();
+    }
+}
+
+function showToast(msg, dur = 3000) {
+    let t = document.getElementById('_toast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = '_toast';
+        t.style.cssText = 'position:fixed;bottom:22px;right:22px;background:#1e293b;color:#fff;padding:11px 18px;border-radius:9px;font-weight:700;font-size:.92em;z-index:9999;transition:opacity .3s;box-shadow:0 4px 16px rgba(0,0,0,.25)';
+        document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.style.opacity = '0'; }, dur);
+}
+
+// Consistent color per class (used in calendar dots + class badges)
+const CLASS_COLORS = {
+    'Science 8'       : '#0891b2',
+    'Math 8'          : '#2563eb',
+    'Algebra I'       : '#4f46e5',
+    'Honors Algebra I': '#7c3aed',
+    'Spanish II'      : '#16a34a',
+    'Civics'          : '#d97706',
+    'English 8'       : '#db2777'
+};
+
+const ALL_PERIODS  = ['A','B','C','D','E','F','G'];
+const PERIOD_COLORS = {
+    A: { bg:'#ef4444', text:'#fff' },
+    B: { bg:'#f97316', text:'#fff' },
+    C: { bg:'#eab308', text:'#1e293b' },
+    D: { bg:'#22c55e', text:'#fff' },
+    E: { bg:'#3b82f6', text:'#fff' },
+    F: { bg:'#8b5cf6', text:'#fff' },
+    G: { bg:'#ec4899', text:'#fff' }
+};
+const SCHED_KEY        = '8thTracker_Schedule_v2';
+const DONE_KEY         = '8thTracker_Done_v2';
+const THEME_KEY        = '8thTracker_Theme';
+const EXPAND_KEY       = '8thTracker_Expanded';
+const CUSTOM_ORDER_KEY = '8thTracker_CustomOrder';
+
+// ── STATE ──
+let allData      = [];
+let userSchedule = {};
+let tempSchedule = {};
+let dateView     = 'all';
+let quarterView  = 'all';
+let classFilter  = 'all';
+let engFilter    = 'all';
+let sortMode     = 'due-asc';
+let customOrder  = [];
+let dragSrcId    = null;
+let doneList     = [];
+let expandedCards = new Set();
+let quarterDates  = {};   // { 'Quarter 1': {start:'YYYY-MM-DD', end:'YYYY-MM-DD'}, ... }
+let calMonth, calYear, calSelected = null;
+
+// ── DARK MODE ──
+(function(){ const t=localStorage.getItem(THEME_KEY)||'light'; document.documentElement.setAttribute('data-theme',t); if(t==='dark')document.getElementById('dm-btn').innerHTML='☀️ <span>Light</span>'; })();
+function toggleDark(){
+    const isDark=document.documentElement.getAttribute('data-theme')=='dark';
+    const n=isDark?'light':'dark';
+    document.documentElement.setAttribute('data-theme',n);
+    document.getElementById('dm-btn').innerHTML=isDark?'🌙 <span>Dark</span>':'☀️ <span>Light</span>';
+    localStorage.setItem(THEME_KEY,n);
+}
+
+// ── DATE UTILS ──
+function parseDate(s){
+    if(!s||s==='-'||s==='')return null;
+    s=String(s).trim();
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s)){const d=new Date(s+'T12:00:00');return isNaN(d)?null:d;}
+    const d=new Date(s); return isNaN(d)?null:d;
+}
+function daysBetween(d){
+    if(!d)return null;
+    const t=new Date();t.setHours(0,0,0,0);d=new Date(d);d.setHours(0,0,0,0);
+    return Math.round((d-t)/86400000);
+}
+function urgencyClass(d,done,ec){
+    if(done||ec||!d)return'';
+    const days=daysBetween(d);
+    if(days<0)return'overdue';
+    if(days===0)return'due-today';
+    if(days===1)return'due-tmrw';
+    if(days<=7)return'due-week';
+    return'';
+}
+function formatDays(d){
+    if(d===null)return{text:'—',cls:'future'};
+    if(d<0)return{text:`${Math.abs(d)}d overdue`,cls:'overdue'};
+    if(d===0)return{text:'🔥 Today!',cls:'due-today'};
+    if(d===1)return{text:'⚡ Tomorrow',cls:'due-tmrw'};
+    if(d<=7)return{text:`${d} days`,cls:'due-week'};
+    return{text:`${d} days`,cls:'future'};
+}
+function isEC(item){ return (item['Engagement']||item['Assignment Type']||''). toLowerCase().includes('extra'); }
+
+function fmtDate(s){
+    const d=parseDate(s); if(!d)return s||'—';
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+
+// ── INIT ──
+window.addEventListener('load', async ()=>{
+    loadAdminSettings();
+    doneList    = JSON.parse(localStorage.getItem(DONE_KEY)||'[]');
+    customOrder = JSON.parse(localStorage.getItem(CUSTOM_ORDER_KEY)||'[]');
+    expandedCards = new Set(JSON.parse(localStorage.getItem(EXPAND_KEY)||'[]'));
+    const saved = localStorage.getItem(SCHED_KEY);
+    if(saved){ userSchedule=JSON.parse(saved); }
+    if(Object.keys(userSchedule).length>0){
+        await loadData();
+    }
+});
+
+// ── DATA LOADING ──
+async function loadData(){
+    const classes = Object.entries(userSchedule).filter(([cls,blk])=>blk&&SHEET_URLS[cls]&&!SHEET_URLS[cls].includes('YOUR_'));
+    if(classes.length===0){ renderEmpty('No class sheets configured yet. See the SHEET_URLS in the HTML file.'); return; }
+
+    allData = [];
+    try {
+        const results = await Promise.all(classes.map(async([cls,blk])=>{
+            const url = SHEET_URLS[cls];
+            const resp = await fetch(url);
+            const text = await resp.text();
+            const parsed = Papa.parse(text,{header:true,skipEmptyLines:true});
+            return parsed.data
+                .filter(r=>(r['Block']||r['block']||''). trim()===blk)
+                .map(r=>({...r,_class:cls,_block:blk}));
+        }));
+        allData = results.flat();
+    } catch(e){ renderEmpty('⚠️ Could not load assignments. Check your internet connection.'); return; }
+
+    document.getElementById('controls').style.display='flex';
+    document.getElementById('stats-bar').style.display='flex';
+    document.getElementById('cal-btn').style.display='';
+    document.getElementById('print-btn').style.display='';
+    document.getElementById('expand-btn').style.display='';
+    buildClassDropdown();
+    autoSetQuarter();
+    applyAndRender();
+}
+
+function renderEmpty(msg){
+    document.getElementById('tracker-surface').innerHTML=`<div class="welcome-screen"><p style="font-size:2em;margin-bottom:12px">📋</p><h2>Nothing to show</h2><p>${msg}</p></div>`;
+}
+
+// ── FILTERS / SORT ──
+function setDateView(v, label){
+    dateView=v;
+    const lbl=document.getElementById('date-dd-label');
+    if(lbl) lbl.textContent=label||v;
+    const btn=document.getElementById('date-dd-btn');
+    if(btn) btn.classList.toggle('active-filter', v!=='all');
+    document.querySelectorAll('#date-dd .filter-dd-item').forEach(it=>it.classList.remove('selected'));
+    document.querySelectorAll('#date-dd .filter-dd-item').forEach(it=>{
+        if(it.textContent.trim()===(label||v)) it.classList.add('selected');
+    });
+    closeDd('date-dd');
+    applyAndRender();
+}
+function setQuarter(q, label){
+    quarterView=q;
+    const btn=document.getElementById('q-dd-btn');
+    const lbl=document.getElementById('q-dd-label');
+    if(lbl)lbl.textContent=label||q;
+    if(btn)btn.classList.toggle('active-filter', q!=='all');
+    document.querySelectorAll('#q-dd-menu .filter-dd-item').forEach(it=>it.classList.remove('selected'));
+    document.querySelector(`#q-dd-menu .filter-dd-item[onclick*="${q}"]`)?.classList.add('selected');
+    closeDd('q-dd');
+    applyAndRender();
+}
+function setClassFilter(cls, label){
+    classFilter=cls;
+    const btn=document.getElementById('cls-dd-btn');
+    const lbl=document.getElementById('cls-dd-label');
+    if(lbl)lbl.textContent=label||cls;
+    if(btn)btn.classList.toggle('active-filter', cls!=='all');
+    document.querySelectorAll('#cls-dd-menu .filter-dd-item').forEach(it=>it.classList.remove('selected'));
+    document.querySelector(`#cls-dd-menu .filter-dd-item[data-cls="${cls}"]`)?.classList.add('selected');
+    closeDd('cls-dd');
+    applyAndRender();
+}
+function toggleDd(id, evt){
+    if(evt) evt.stopPropagation();
+    const dd=document.getElementById(id);
+    const isOpen=dd.classList.contains('open');
+    document.querySelectorAll('.filter-dd').forEach(d=>d.classList.remove('open'));
+    if(!isOpen)dd.classList.add('open');
+}
+function closeDd(id){ document.getElementById(id)?.classList.remove('open'); }
+// Close dropdowns when clicking outside
+document.addEventListener('click', e=>{
+    if(!e.target.closest('.filter-dd'))
+        document.querySelectorAll('.filter-dd').forEach(d=>d.classList.remove('open'));
+});
+function buildClassDropdown(){
+    const menu=document.getElementById('cls-dd-menu');
+    if(!menu)return;
+    const classes=[...new Set(allData.map(r=>r._class))].filter(Boolean).sort();
+    let html=`<button class="filter-dd-item${classFilter==='all'?' selected':''}" data-cls="all" onclick="setClassFilter('all','All Classes')">All Classes</button>`;
+    classes.forEach(cls=>{
+        // Use the student's actual block color for this class
+        const blk=userSchedule[cls];
+        const col=blk&&PERIOD_COLORS[blk]?PERIOD_COLORS[blk].bg:'#64748b';
+        html+=`<button class="filter-dd-item${classFilter===cls?' selected':''}" data-cls="${cls}" onclick="setClassFilter('${cls.replace(/'/g,"\\'")}','${cls.replace(/'/g,"\\'")}')">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:7px;vertical-align:middle"></span>${cls}
+        </button>`;
+    });
+    menu.innerHTML=html;
+}
+function setSortMode(mode){
+    sortMode=mode;
+    const labels={'due-asc':'Due Date ↑','due-desc':'Due Date ↓','class':'By Class','custom':'Custom ✋'};
+    const lbl=document.getElementById('sort-dd-label');
+    if(lbl) lbl.textContent=labels[mode]||mode;
+    const btn=document.getElementById('sort-dd-btn');
+    if(btn) btn.classList.toggle('active-filter', mode!=='due-asc');
+    document.querySelectorAll('#sort-dd .filter-dd-item').forEach(it=>it.classList.remove('selected'));
+    document.querySelector(`#sort-dd .filter-dd-item[onclick*="${mode}"]`)?.classList.add('selected');
+    closeDd('sort-dd');
+    if(mode==='custom'&&customOrder.length===0){
+        // Seed customOrder with current visible order
+        const cards=[...document.querySelectorAll('.acard[data-id]')];
+        if(cards.length) customOrder=cards.map(c=>c.dataset.id);
+    }
+    applyAndRender();
+}
+function setEngFilter(eng, label){
+    engFilter=eng;
+    const lbl=document.getElementById('eng-dd-label');
+    if(lbl) lbl.textContent=label||eng;
+    const btn=document.getElementById('eng-dd-btn');
+    if(btn) btn.classList.toggle('active-filter', eng!=='all');
+    document.querySelectorAll('#eng-dd .filter-dd-item').forEach(it=>it.classList.remove('selected'));
+    document.querySelectorAll('#eng-dd .filter-dd-item').forEach(it=>{
+        if(it.textContent.trim().startsWith(label||(eng==='all'?'All':eng))) it.classList.add('selected');
+    });
+    closeDd('eng-dd');
+    applyAndRender();
+}
+function clearFilters(){
+    document.getElementById('search-input').value='';
+    setDateView('all','All Assignments');
+    setQuarter('all','All Quarters');
+    setClassFilter('all','All Classes');
+    setEngFilter('all','All');
+}
+
+function applyAndRender(){
+    const today=new Date();today.setHours(0,0,0,0);
+    const week=new Date(today);week.setDate(today.getDate()+7);
+    const q=document.getElementById('search-input').value.toLowerCase().trim();
+    const norm=s=>s.toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+
+    let data=[...allData];
+
+    // Date view
+    if(dateView!=='all'){
+        data=data.filter(r=>{
+            const d=parseDate(r['Date Due']);
+            if(!d)return true;
+            if(dateView==='active')return d>=today;
+            if(dateView==='past')return d<today&&!isEC(r)&&!doneList.includes(safeId(r));
+            if(dateView==='week')return d>=today&&d<=week;
+            return true;
+        });
+    }
+
+    // Quarter filter
+    if(quarterView!=='all') data=data.filter(r=>(r['Quarter']||'')=== quarterView);
+
+    // Class filter
+    if(classFilter!=='all') data=data.filter(r=>r._class===classFilter);
+
+    // Engagement filter
+    if(engFilter!=='all') data=data.filter(r=>{
+        const e=(r['Engagement']||'').toLowerCase();
+        if(engFilter==='Required') return e.includes('req');
+        if(engFilter==='Optional') return e.includes('opt');
+        if(engFilter==='Extra Credit') return e.includes('extra');
+        return true;
+    });
+
+    // Search
+    if(q){
+        const words=norm(q).split(' ').filter(w=>w);
+        data=data.filter(r=>{ const txt=norm(Object.values(r).join(' ')); return words.every(w=>txt.includes(w)); });
+    }
+
+    // Sort
+    if(sortMode==='custom'){
+        data.sort((a,b)=>{
+            const ia=customOrder.indexOf(safeId(a));
+            const ib=customOrder.indexOf(safeId(b));
+            return (ia===-1?customOrder.length:ia)-(ib===-1?customOrder.length:ib);
+        });
+    } else {
+        data.sort((a,b)=>{
+            // Done items always last (except custom)
+            const da=doneList.includes(safeId(a))?1:0,db=doneList.includes(safeId(b))?1:0;
+            if(da!==db)return da-db;
+            if(sortMode==='class'){
+                const ca=a._class||'',cb=b._class||'';
+                if(ca!==cb)return ca.localeCompare(cb);
+            }
+            const pa=parseDate(a['Date Due']),pb=parseDate(b['Date Due']);
+            if(pa&&pb)return sortMode==='due-desc'?pb-pa:pa-pb;
+            return 0;
+        });
+    }
+
+    // Clear button
+    document.getElementById('clear-btn').style.display=(dateView!=='all'||quarterView!=='all'||classFilter!=='all'||engFilter!=='all'||q)?'inline-block':'none';
+
+    updateStats();
+    renderCards(data);
+    updateExpandBtn();
+}
+
+// ── SAFE ID ──
+function safeId(item){
+    const c=item._class||'';
+    const n=item['Assignment Name']||'';
+    const d=item['Date Due']||'';
+    return btoa(encodeURIComponent(`${c}||${n}||${d}`));
+}
+
+// ── STATS ──
+function updateStats(){
+    const today=new Date();today.setHours(0,0,0,0);
+    let total=allData.length, done=0, overdue=0;
+    allData.forEach(r=>{
+        const id=safeId(r);
+        if(doneList.includes(id)){done++;return;}
+        const d=parseDate(r['Date Due']);
+        if(d&&d<today&&!isEC(r))overdue++;
+    });
+    const remaining=total-done;
+    const pct=total>0?Math.round((done/total)*100):0;
+    document.getElementById('stats-bar').innerHTML=`
+        <div class="stat-item"><div class="stat-dot" style="background:#64748b"></div>${total} total</div>
+        <div class="stat-item"><div class="stat-dot" style="background:#22c55e"></div>${done} done</div>
+        <div class="stat-item"><div class="stat-dot" style="background:#7c3aed"></div>${remaining} left</div>
+        ${overdue>0?`<div class="stat-item"><div class="stat-dot" style="background:#ef4444"></div>${overdue} overdue</div>`:''}
+        <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <span style="font-size:.82em;font-weight:700;color:var(--muted)">${pct}%</span>
+    `;
+}
+
+// ── RESOURCES ──
+function renderResources(str){
+    if(!str||str==='-'||str==='[]')return'';
+    try{
+        const arr=JSON.parse(str);
+        if(!Array.isArray(arr)||arr.length===0)return'';
+        return arr.filter(r=>r.url).map(r=>`<a href="${r.url}" target="_blank" class="res-link">📎 ${r.label||'View'}</a>`).join('');
+    }catch{
+        if(String(str).startsWith('http'))return`<a href="${str}" target="_blank" class="res-link">📎 View</a>`;
+        return'';
+    }
+}
+
+// ── CARD RENDER ──
+function renderCards(data){
+    if(data.length===0){
+        document.getElementById('tracker-surface').innerHTML='<div class="empty-state">No assignments match your current filters.</div>';
+        return;
+    }
+    const isCustom = sortMode==='custom';
+    const banner = isCustom ? `<div style="background:var(--accent-light);color:var(--accent);padding:9px 16px;font-size:.88em;font-weight:700;border-bottom:1px solid var(--accent-mid);display:flex;align-items:center;gap:7px">✋ Drag cards to set your own order <span style="font-weight:400;color:var(--muted);margin-left:auto">Switch sort to save position</span></div>` : '';
+
+    const cards=data.map(item=>{
+        const id=safeId(item);
+        const done=doneList.includes(id);
+        const dueDate=parseDate(item['Date Due']);
+        const urg=urgencyClass(dueDate,done,isEC(item));
+        const days=dueDate?daysBetween(dueDate):null;
+        const df=formatDays(days);
+        const cls=item._class||'Unknown';
+        const blk=item._block||'';
+        const blkColor=PERIOD_COLORS[blk]||{bg:'#64748b',text:'#fff'};
+        const resources=renderResources(item['Resources']);
+        const notes=item['Notes']&&item['Notes']!=='-'?item['Notes']:'';
+        const eng=item['Engagement']||'Required';
+        const atype=item['Assignment Type']||'Homework';
+        const quarter=item['Quarter']||'Q?';
+        const submit=item['Where to Submit']||'—';
+        const name=item['Assignment Name']||'Untitled';
+
+        const engTag=eng.toLowerCase().includes('opt')?`<span class="tag tag-opt">${eng}</span>`:(eng.toLowerCase().includes('extra')?`<span class="tag tag-ec">${eng}</span>`:`<span class="tag tag-req">${eng}</span>`);
+        const typeTag=`<span class="tag tag-type">${atype}</span>`;
+        const qTag=`<span class="tag tag-q">${quarter}</span>`;
+        const subTag=`<span class="tag tag-sub">📥 ${submit}</span>`;
+
+        const assignedStr=item['Date Assigned']&&item['Date Assigned']!=='-'?`<span>Assigned <strong>${fmtDate(item['Date Assigned'])}</strong></span>`:'';
+        const dueStr=dueDate?`<span>Due <strong>${fmtDate(item['Date Due'])}</strong></span>`:'';
+
+        const dragHandle=isCustom?`<span class="drag-handle" title="Drag to reorder">⠿</span>`:'';
+        const isExpanded=expandedCards.has(id);
+
+        return `<div class="acard ${isCustom?'drag-card':''} ${urg} ${done?'done':''} ${isExpanded?'expanded':''}" data-id="${id}" style="border-color:${done?'var(--border)':blkColor.bg}" onclick="toggleExpand('${id}',event)">
+            <div class="acard-top">
+                ${dragHandle}<div class="acard-name" style="font-size:1.18em">${esc(name)}</div>
+                <div class="card-top-right">
+                    <input type="checkbox" class="done-check" ${done?'checked':''} onchange="toggleDone('${id}')">
+                    <span class="expand-chev">▾</span>
+                </div>
+            </div>
+            <div style="margin-bottom:7px">
+                <span class="acard-class" style="background:${blkColor.bg};color:${blkColor.text}">${cls} · ${blk}</span>
+            </div>
+            <div class="acard-dates" style="font-size:.95em">${assignedStr}${dueStr}<span class="due-badge ${df.cls}">${df.text}</span></div>
+            <div class="acard-secondary">
+                <div class="acard-tags">${qTag}${typeTag}${engTag}${subTag}</div>
+                ${notes?`<div class="acard-notes">${esc(notes)}</div>`:''}
+                ${resources?`<div class="acard-resources">${resources}</div>`:''}
+            </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('tracker-surface').innerHTML=banner+`<div class="card-grid">${cards}</div>`;
+}
+
+function esc(s){return String(s||''). replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── AUTO QUARTER DETECTION ──
+function autoSetQuarter() {
+    // If no quarter dates configured, leave filter at 'all'
+    if (!quarterDates || Object.keys(quarterDates).length === 0) return;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const quarters = ['Quarter 1','Quarter 2','Quarter 3','Quarter 4'];
+    for (const q of quarters) {
+        const range = quarterDates[q];
+        if (!range || !range.start || !range.end) continue;
+        const start = new Date(range.start + 'T00:00:00');
+        const end   = new Date(range.end   + 'T23:59:59');
+        if (today >= start && today <= end) {
+            // Silently pre-set the quarter filter without calling applyAndRender yet
+            quarterView = q;
+            const lbl = document.getElementById('q-dd-label');
+            if (lbl) lbl.textContent = q;
+            const btn = document.getElementById('q-dd-btn');
+            if (btn) btn.classList.add('active-filter');
+            document.querySelectorAll('#q-dd-menu .filter-dd-item').forEach(it => {
+                it.classList.toggle('selected', it.textContent.trim() === q);
+            });
+            return;
+        }
+    }
+    // Today falls outside all defined ranges — leave at 'all'
+}
+function toggleExpand(id, e){
+    if(e.target.closest('.done-check,.res-link,a,.drag-handle')) return;
+    if(expandedCards.has(id)) expandedCards.delete(id);
+    else expandedCards.add(id);
+    saveExpanded();
+    const card=document.querySelector(`.acard[data-id="${id}"]`);
+    if(card) card.classList.toggle('expanded', expandedCards.has(id));
+    updateExpandBtn();
+}
+function saveExpanded(){
+    localStorage.setItem(EXPAND_KEY, JSON.stringify([...expandedCards]));
+}
+function toggleExpandAll(){
+    const allCards=[...document.querySelectorAll('.acard[data-id]')];
+    const allExp=allCards.length>0&&allCards.every(c=>c.classList.contains('expanded'));
+    if(allExp){
+        allCards.forEach(c=>{ expandedCards.delete(c.dataset.id); c.classList.remove('expanded'); });
+    } else {
+        allCards.forEach(c=>{ expandedCards.add(c.dataset.id); c.classList.add('expanded'); });
+    }
+    saveExpanded();
+    updateExpandBtn();
+}
+function updateExpandBtn(){
+    const btn=document.getElementById('expand-btn');
+    if(!btn) return;
+    const allCards=[...document.querySelectorAll('.acard[data-id]')];
+    const allExp=allCards.length>0&&allCards.every(c=>c.classList.contains('expanded'));
+    btn.innerHTML=allExp?'⊟ <span>Collapse All</span>':'⊞ <span>Expand All</span>';
+}
+
+// ── DRAG AND DROP ──
+// ── DRAG AND DROP (Pointer Events — works on mouse AND touch) ──
+let _dnd = null; // active drag state
+
+function _dndDown(e) {
+    if (sortMode !== 'custom') return;
+    const handle = e.target.closest('.drag-handle');
+    if (!handle) return;
+    const card = handle.closest('.drag-card[data-id]');
+    if (!card) return;
+
+    e.preventDefault();
+
+    const rect = card.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+
+    // Ghost: clone the card visually
+    const ghost = card.cloneNode(true);
+    ghost.className = 'dnd-ghost';
+    ghost.style.cssText = `
+        position:fixed;left:${rect.left}px;top:${rect.top}px;
+        width:${rect.width}px;height:${rect.height}px;
+        pointer-events:none;z-index:9999;
+        box-shadow:0 20px 50px rgba(0,0,0,.28);border-radius:10px;
+        transform:rotate(2deg) scale(1.03);opacity:.9;
+        border:2px solid ${card.style.borderColor||'var(--accent)'};
+        background:var(--surface);padding:15px 16px;
+    `;
+    document.body.appendChild(ghost);
+
+    // Placeholder: size-matched empty slot
+    const ph = document.createElement('div');
+    ph.className = 'dnd-placeholder';
+    ph.style.height = rect.height + 'px';
+    card.parentNode.insertBefore(ph, card);
+    card.classList.add('dnd-source');
+
+    _dnd = { id: card.dataset.id, card, ghost, ph, offsetX, offsetY };
+
+    document.addEventListener('pointermove', _dndMove, { passive: false });
+    document.addEventListener('pointerup',   _dndUp);
+    document.addEventListener('pointercancel', _dndUp);
+}
+
+function _dndMove(e) {
+    if (!_dnd) return;
+    e.preventDefault();
+
+    const { ghost, ph, offsetX, offsetY } = _dnd;
+
+    // Move ghost
+    const gx = e.clientX - offsetX;
+    const gy = e.clientY - offsetY;
+    ghost.style.left = gx + 'px';
+    ghost.style.top  = gy + 'px';
+
+    // Auto-scroll at screen edges
+    const EDGE = 80, SPEED = 10;
+    if (e.clientY < EDGE) window.scrollBy(0, -SPEED);
+    else if (e.clientY > window.innerHeight - EDGE) window.scrollBy(0, SPEED);
+
+    // Find card under pointer (hide ghost temporarily)
+    ghost.style.display = 'none';
+    ph.style.display    = 'none';
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    ghost.style.display = '';
+    ph.style.display    = '';
+
+    const target = el?.closest('.drag-card[data-id]');
+    if (!target || target === _dnd.card) return;
+
+    const tRect = target.getBoundingClientRect();
+    const before = e.clientY < tRect.top + tRect.height / 2;
+    const grid = target.parentNode;
+    if (before) {
+        grid.insertBefore(ph, target);
+    } else {
+        grid.insertBefore(ph, target.nextSibling);
+    }
+}
+
+function _dndUp() {
+    document.removeEventListener('pointermove', _dndMove);
+    document.removeEventListener('pointerup',   _dndUp);
+    document.removeEventListener('pointercancel', _dndUp);
+
+    if (!_dnd) return;
+    const { id, card, ghost, ph } = _dnd;
+    _dnd = null;
+
+    // Derive new order from placeholder position in the grid
+    const grid = ph.parentNode;
+    if (grid) {
+        const items = [...grid.children];
+        const newOrder = [];
+        items.forEach(el => {
+            if (el === ph)             newOrder.push(id);          // dragged card goes here
+            else if (el.dataset?.id && el.dataset.id !== id)
+                                       newOrder.push(el.dataset.id);
+        });
+        if (!newOrder.includes(id)) newOrder.push(id); // fallback
+        customOrder = newOrder;
+        localStorage.setItem(CUSTOM_ORDER_KEY, JSON.stringify(customOrder));
+    }
+
+    // Clean up
+    ghost.remove();
+    ph.remove();
+    card.classList.remove('dnd-source');
+    dragSrcId = null;
+
+    applyAndRender();
+}
+
+// Attach the single pointerdown listener (once, via delegation on page)
+document.addEventListener('pointerdown', _dndDown, { passive: false });
+
+// ── TOGGLE DONE (in-place) ──
+function toggleDone(id){
+    const adding=!doneList.includes(id);
+    if(adding){doneList.push(id);launchConfetti();}
+    else doneList=doneList.filter(x=>x!==id);
+    localStorage.setItem(DONE_KEY,JSON.stringify(doneList));
+
+    // Update card in-place
+    const card=document.querySelector(`.acard[data-id="${id}"]`);
+    if(card){
+        card.classList.toggle('done',adding);
+        if(adding){card.style.borderColor='var(--border)';card.classList.remove('overdue','due-today','due-tmrw','due-week');} else {const blkBadge=card.querySelector('.acard-class');if(blkBadge)card.style.borderColor=blkBadge.style.background;}
+    }
+    updateStats();
+}
+
+// ── SCHEDULE MODAL ──
+function openSchedule(){
+    tempSchedule={...userSchedule};
+    renderSchedGrid();
+    document.getElementById('sched-modal').classList.add('open');
+}
+function closeSchedule(){ document.getElementById('sched-modal').classList.remove('open'); }
+
+function renderSchedGrid(){
+    const grid=document.getElementById('sched-grid');
+    grid.innerHTML=Object.entries(CLASS_PERIODS).map(([cls,periods])=>{
+        const sel=tempSchedule[cls];
+        const blockBtns=periods.map(b=>`<button class="sblock ${sel===b?'active':''}" data-b="${b}" onclick="pickBlock('${cls}','${b}')">${b}</button>`).join('');
+        return `<div class="sched-row">
+            <div class="sched-name" style="border-left:3px solid ${CLASS_COLORS[cls]||'#ccc'};padding-left:8px">${cls}</div>
+            <div class="sched-blocks">${blockBtns}
+                <button class="snone ${!sel?'active':''}" onclick="pickBlock('${cls}','')">None</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function pickBlock(cls,blk){
+    if(blk==='') delete tempSchedule[cls];
+    else tempSchedule[cls]=blk;
+    renderSchedGrid();
+}
+
+async function saveSchedule(){
+    userSchedule={...tempSchedule};
+    localStorage.setItem(SCHED_KEY,JSON.stringify(userSchedule));
+    closeSchedule();
+    await loadData();
+}
+
+// ── CALENDAR ──
+function openCalendar(){
+    const now=new Date();
+    calMonth=now.getMonth();calYear=now.getFullYear();calSelected=null;
+    document.getElementById('cal-modal').classList.add('open');
+    renderCalendar();
+}
+function closeCalendar(){ document.getElementById('cal-modal').classList.remove('open'); }
+
+function renderCalendar(){
+    const body=document.getElementById('cal-body');
+    const monthName=new Date(calYear,calMonth).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    const today=new Date();today.setHours(0,0,0,0);
+
+    // Build day cells
+    const firstDay=new Date(calYear,calMonth,1).getDay();
+    const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+    const daysInPrev=new Date(calYear,calMonth,0).getDate();
+
+    // Map due dates → items
+    const duemap={};
+    allData.forEach(item=>{
+        const d=parseDate(item['Date Due']);
+        if(!d)return;
+        const key=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        if(!duemap[key])duemap[key]=[];
+        duemap[key].push(item);
+    });
+
+    // Dow headers
+    const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    let html=`<div class="cal-nav">
+        <button class="cal-nav-btn" onclick="shiftMonth(-1)">← Prev</button>
+        <span class="cal-month-title">${monthName}</span>
+        <button class="cal-nav-btn" onclick="goToday()">Today</button>
+        <button class="cal-nav-btn" onclick="shiftMonth(1)">Next →</button>
+    </div>
+    <div class="cal-grid">
+        ${dows.map(d=>`<div class="cal-dow">${d}</div>`).join('')}`;
+
+    const totalCells=Math.ceil((firstDay+daysInMonth)/7)*7;
+    for(let i=0;i<totalCells;i++){
+        let day,month,year,isOther=false;
+        if(i<firstDay){day=daysInPrev-firstDay+i+1;month=calMonth-1;year=calYear;isOther=true;}
+        else if(i>=firstDay+daysInMonth){day=i-firstDay-daysInMonth+1;month=calMonth+1;year=calYear;isOther=true;}
+        else{day=i-firstDay+1;month=calMonth;year=calYear;}
+
+        const thisDate=new Date(year,month,day);thisDate.setHours(0,0,0,0);
+        const key=`${year}-${month}-${day}`;
+        const items=duemap[key]||[];
+        const isTod=thisDate.getTime()===today.getTime();
+        const isSel=calSelected&&calSelected.getTime()===thisDate.getTime();
+
+        const dots=items.slice(0,4).map(it=>{
+            const id=safeId(it);
+            const done=doneList.includes(id);
+            const blkC=(PERIOD_COLORS[it._block]||{bg:'#7c3aed'}).bg;
+            const shortName=(it['Assignment Name']||'Untitled').slice(0,22);
+            const cls=it._class||'';
+            return `<div class="cal-event${done?' done-event':''}" style="background:${blkC}" title="${it['Assignment Name']||''} · ${cls}">${shortName}</div>`;
+        }).join('');
+
+        const moreCount = items.length - 4;
+        const moreHtml = moreCount > 0 ? `<div class="cal-more">+${moreCount} more</div>` : '';
+        const cls2=`cal-day${isOther?' other-month':''}${isTod?' today':''}`;
+        html+=`<div class="${cls2}" ${!isOther?`onclick="selectCalDay(${year},${month},${day})"`:''}>
+            <div class="cal-day-num">${day}</div>
+            <div class="cal-events">${dots}${moreHtml}</div>
+        </div>`;
+    }
+
+    html+='</div><div class="cal-detail" id="cal-detail">';
+    if(calSelected) html+=renderCalDetail(calSelected);
+    else html+='<div style="color:var(--muted);font-size:.9em;text-align:center;padding:8px 0">Click a day to see assignments due.</div>';
+    html+='</div>';
+    body.innerHTML=html;
+}
+
+function selectCalDay(y,m,d){
+    calSelected=new Date(y,m,d);calSelected.setHours(0,0,0,0);
+    renderCalendar();
+}
+function shiftMonth(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}else if(calMonth<0){calMonth=11;calYear--;}calSelected=null;renderCalendar();}
+function goToday(){const n=new Date();calMonth=n.getMonth();calYear=n.getFullYear();calSelected=null;renderCalendar();}
+
+function renderCalDetail(date){
+    const key=`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    const ds=new Date(date.getFullYear(),date.getMonth(),date.getDate());
+    const items=allData.filter(it=>{const d=parseDate(it['Date Due']);if(!d)return false;d.setHours(0,0,0,0);return d.getTime()===ds.getTime();});
+    const label=date.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    if(items.length===0)return`<div class="cal-detail-title">${label}</div><div style="color:var(--muted);font-size:.9em">No assignments due.</div>`;
+    const itemsHtml=items.map(it=>{
+        const id=safeId(it);
+        const done=doneList.includes(id);
+        const blkC=(PERIOD_COLORS[it._block]||{bg:'#7c3aed'}).bg;
+        return `<div class="cal-aitem">
+            <div class="cal-class-bar" style="background:${blkC}"></div>
+            <div style="flex:1">
+                <div class="cal-aname" style="${done?'text-decoration:line-through;color:var(--muted)':''}">${esc(it['Assignment Name']||'Untitled')}</div>
+                <div class="cal-aclass">${it._class||''} · ${it._block||''} Block · ${it['Assignment Type']||''}</div>
+            </div>
+            <input type="checkbox" class="done-check" ${done?'checked':''} onchange="toggleDone('${id}');renderCalendar()">
+        </div>`;
+    }).join('');
+    return`<div class="cal-detail-title">📅 ${label}</div>${itemsHtml}`;
+}
+
+// ── CONFETTI ──
+function launchConfetti(){
+    const canvas=document.getElementById('confetti-canvas');
+    const ctx=canvas.getContext('2d');
+    canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+    const colors=['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#ec4899','#8b5cf6','#06b6d4'];
+    const pieces=Array.from({length:90},()=>({x:Math.random()*canvas.width,y:-12,r:Math.random()*7+3,color:colors[Math.floor(Math.random()*colors.length)],tiltAngle:Math.random()*Math.PI*2,tiltSpeed:Math.random()*.1+.04,speed:Math.random()*2+2}));
+    let frame=0;
+    function animate(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        const alpha=frame>90?1-(frame-90)/40:1;
+        ctx.globalAlpha=Math.max(0,alpha);
+        pieces.forEach(p=>{p.tiltAngle+=p.tiltSpeed;p.y+=p.speed;const tilt=Math.sin(p.tiltAngle)*13;ctx.beginPath();ctx.lineWidth=p.r/1.5;ctx.strokeStyle=p.color;ctx.moveTo(p.x+tilt+p.r,p.y);ctx.lineTo(p.x+tilt,p.y+p.r*2);ctx.stroke();});
+        frame++;if(frame<130)requestAnimationFrame(animate);else ctx.clearRect(0,0,canvas.width,canvas.height);
+    }
+    animate();
+}
+
+// ── PRINT ──
+function buildAndPrint(){
+    if(allData.length===0){alert('No assignments loaded yet.');return;}
+    _doPrint();
+}
+function showPrintModal(count){
+    return new Promise(resolve=>{
+        document.getElementById('pm-count').textContent=count;
+        document.getElementById('print-modal').classList.add('open');
+        const cleanup=ans=>{document.getElementById('print-modal').classList.remove('open');resolve(ans);};
+        document.getElementById('pm-yes').onclick=()=>cleanup('yes');
+        document.getElementById('pm-no').onclick=()=>cleanup('no');
+        document.getElementById('pm-cancel').onclick=()=>cleanup('cancel');
+        document.getElementById('print-modal').onclick=e=>{if(e.target===document.getElementById('print-modal'))cleanup('cancel');};
+    });
+}
+async function _doPrint(){
+    const today=new Date();today.setHours(0,0,0,0);
+    const upcoming=[],overdue=[],completed=[];
+    allData.forEach(item=>{
+        const id=safeId(item);
+        if(doneList.includes(id)){completed.push(item);return;}
+        const d=parseDate(item['Date Due']);
+        if(d&&d<today&&!isEC(item))overdue.push(item);
+        else upcoming.push(item);
+    });
+    upcoming.sort((a,b)=>{const da=parseDate(a['Date Due']),db=parseDate(b['Date Due']);return(da&&db)?da-db:0;});
+    overdue.sort((a,b)=>{const da=parseDate(a['Date Due']),db=parseDate(b['Date Due']);return(da&&db)?db-da:0;});
+    completed.sort((a,b)=>{const da=parseDate(a['Date Due']),db=parseDate(b['Date Due']);return(da&&db)?da-db:0;});
+
+    let printCompleted=false;
+    if(completed.length>0){const ans=await showPrintModal(completed.length);if(ans==='cancel')return;printCompleted=(ans==='yes');}
+
+    const cols=['_class','Assignment Name','Quarter','Assignment Type','Engagement','Date Assigned','Date Due','Where to Submit','Notes'];
+    const hdrs=['Class','Assignment','Quarter','Type','Engagement','Assigned','Due','Submit','Notes'];
+
+    function buildTable(rows,isDone){
+        if(!rows.length)return'<p style="font-style:italic;color:#888;padding:4px 0">None</p>';
+        let t=`<table class="ptable"><thead><tr>${hdrs.map(h=>`<th>${h}</th>`).join('')}<th>Due In</th></tr></thead><tbody>`;
+        rows.forEach(r=>{
+            const d=parseDate(r['Date Due']);
+            const days=d?daysBetween(d):null;
+            const df=formatDays(days);
+            t+=`<tr class="${isDone?'pdone':''}">`;
+            cols.forEach(c=>{ t+=`<td>${esc(r[c]||'—')}</td>`; });
+            t+=`<td>${df.text.replace('🔥 ','').replace('⚡ ','')}</td></tr>`;
+        });
+        return t+'</tbody></table>';
+    }
+
+    const now=new Date();
+    const dateStr=now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    let html=`<div class="print-hdr"><h2>🎓 8th Grade Assignment Tracker</h2><p>Printed ${dateStr} · ${allData.length} total · ${completed.length} completed · ${overdue.length} overdue</p></div>
+    <div class="print-section"><div class="print-section-lbl upcoming">📅 Upcoming (${upcoming.length})</div>${buildTable(upcoming,false)}</div>`;
+    if(overdue.length)html+=`<div class="print-section"><div class="print-section-lbl overdue">⚠️ Overdue (${overdue.length})</div>${buildTable(overdue,false)}</div>`;
+    if(printCompleted)html+=`<div class="print-section"><div class="print-section-lbl completed">✅ Completed (${completed.length})</div>${buildTable(completed,true)}</div>`;
+
+    document.getElementById('print-container').innerHTML=html;
+    window.print();
+}
+</script>
+</body>
+</html>
