@@ -207,6 +207,10 @@ input::placeholder,textarea::placeholder{color:#bbb}
 .modal-bg.open{display:flex}
 .modal-box{background:var(--surface);border-radius:14px;width:680px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3)}
 .modal-top{padding:22px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-hdr{padding:18px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.modal-close{background:none;border:none;font-size:1.4em;cursor:pointer;color:var(--muted);line-height:1}
+.modal-close:hover{color:var(--text)}
 .modal-title{font-family:'Outfit',sans-serif;font-size:1.15em;font-weight:800}
 .modal-body-inner{padding:20px 24px}
 .setup-step{display:flex;gap:14px;margin-bottom:18px}
@@ -269,6 +273,44 @@ input::placeholder,textarea::placeholder{color:#bbb}
   .topbar{padding:0 12px;gap:8px}
   .resource-row{grid-template-columns:1fr 1fr auto}
 }
+
+/* ── LOADING SPINNER ── */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:36px;height:36px;border:3.5px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+
+/* ── AUTO-FILL BADGE ── */
+.auto-badge{display:inline-flex;align-items:center;gap:4px;background:#f0fdf4;color:#16a34a;
+  border:1px solid #bbf7d0;border-radius:99px;padding:2px 8px;font-size:.75em;font-weight:700;
+  margin-left:7px;vertical-align:middle;white-space:nowrap}
+.auto-badge::before{content:'✦';font-size:.8em}
+
+/* ── CONFIRM MODAL BUTTONS ── */
+.mbtn{padding:9px 18px;border-radius:8px;font-size:.9em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;border:none;transition:all .2s;white-space:nowrap}
+.mbtn-ghost{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.mbtn-ghost:hover{background:var(--border);color:var(--text)}
+.mbtn-draft{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.mbtn-draft:hover{background:#dbeafe}
+.mbtn-edit{background:var(--accent-light);color:var(--accent);border:1px solid var(--accent-mid)}
+.mbtn-edit:hover{background:var(--accent);color:#fff}
+.mbtn-post{background:#16a34a;color:#fff}
+.mbtn-post:hover{background:#15803d}
+
+/* ── CONFIRM SUMMARY ── */
+.confirm-class-banner{background:var(--accent-light);border:1.5px solid var(--accent-mid);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.confirm-class-name{font-family:'Outfit',sans-serif;font-size:1.1em;font-weight:800;color:var(--accent)}
+.confirm-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);font-size:.9em}
+.confirm-row:last-child{border-bottom:none}
+.confirm-label{color:var(--muted);font-weight:700;flex-shrink:0;margin-right:12px}
+.confirm-value{font-weight:600;text-align:right;color:var(--text)}
+.confirm-periods{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.confirm-period-badge{color:#fff;border-radius:5px;padding:2px 8px;font-size:.8em;font-weight:800}
+
+/* ── CLASS CHANGE ── */
+.class-change-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:8px;margin-bottom:12px}
+.class-change-label{font-size:.85em;font-weight:700;color:#92400e;white-space:nowrap}
+.class-change-select{flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.9em;font-family:'Nunito',sans-serif;color:var(--text);background:var(--surface);outline:none}
+.class-change-select:focus{border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -299,8 +341,7 @@ input::placeholder,textarea::placeholder{color:#bbb}
         <button class="mode-btn" id="mode-edit-btn" onclick="setMode('edit')">✏️ Edit</button>
         <button class="mode-btn" id="mode-drafts-btn" onclick="setMode('drafts')">📝 Drafts</button>
       </div>
-      <button class="topbar-icon-btn" onclick="openSettings()" title="Period Settings">⚙️</button>
-      <button class="topbar-icon-btn" onclick="openSetup()" title="Apps Script Setup">🔧</button>
+
     </div>
   </header>
 
@@ -321,97 +362,7 @@ input::placeholder,textarea::placeholder{color:#bbb}
   </div>
 </div>
 
-<!-- ═══ SETTINGS PANEL ═══ -->
-<div class="settings-overlay" id="settings-overlay" onclick="overlayClose(event)">
-  <div class="settings-panel">
-    <div class="settings-header">
-      <span class="settings-title">⚙️ Settings</span>
-      <button class="close-btn" onclick="closeSettings()">×</button>
-    </div>
 
-    <div class="settings-section">
-      <div class="settings-section-title">Apps Script URL</div>
-      <div class="form-group">
-        <input type="url" id="setting-url" placeholder="https://script.google.com/macros/s/…/exec">
-        <p class="url-note">Paste your deployed Apps Script URL here. Click 🔧 above for setup instructions.</p>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <div class="settings-section-title">Period Configuration</div>
-      <p style="font-size:.82em;color:var(--muted);margin-bottom:12px">Select which period(s) each class meets in. You can update this once the schedule is announced.</p>
-      <div id="period-config-rows"></div>
-    </div>
-
-    <div class="settings-footer">
-      <button class="btn btn-secondary" onclick="closeSettings()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ SETUP MODAL ═══ -->
-<div class="modal-bg" id="setup-modal" onclick="setupOverlayClose(event)">
-  <div class="modal-box">
-    <div class="modal-top">
-      <span class="modal-title">🔧 Apps Script Setup Guide</span>
-      <button class="close-btn" onclick="closeSetup()">×</button>
-    </div>
-    <div class="modal-body-inner">
-
-      <div class="setup-step">
-        <div class="step-num">1</div>
-        <div class="step-content">
-          <h4>Create your Google Sheet</h4>
-          <p>Create a new Google Sheet and note its ID from the URL:<br>
-          <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:.85em">docs.google.com/spreadsheets/d/<strong>THIS_IS_YOUR_ID</strong>/edit</code><br>
-          You do not need to create any tabs — the script will create them automatically on first use.</p>
-        </div>
-      </div>
-
-      <div class="setup-step">
-        <div class="step-num">2</div>
-        <div class="step-content">
-          <h4>Open Apps Script</h4>
-          <p>In your Google Sheet, go to <strong>Extensions → Apps Script</strong>. Delete any existing code in the editor.</p>
-        </div>
-      </div>
-
-      <div class="setup-step">
-        <div class="step-num">3</div>
-        <div class="step-content">
-          <h4>Paste this code</h4>
-          <p>Replace <code style="background:#f1f5f9;padding:2px 5px;border-radius:3px;font-size:.85em">YOUR_SHEET_ID_HERE</code> with your actual Sheet ID before pasting.</p>
-          <div class="code-block" id="apps-script-code">
-            <button class="copy-btn" onclick="copyCode()">Copy</button>
-            <pre id="code-pre"></pre>
-          </div>
-        </div>
-      </div>
-
-      <div class="setup-step">
-        <div class="step-num">4</div>
-        <div class="step-content">
-          <h4>Deploy as Web App</h4>
-          <p>Click <strong>Deploy → New deployment</strong>. Set:<br>
-          • Type: <strong>Web app</strong><br>
-          • Execute as: <strong>Me</strong><br>
-          • Who has access: <strong>Anyone</strong><br>
-          Click Deploy, authorize when prompted, then copy the Web App URL.</p>
-        </div>
-      </div>
-
-      <div class="setup-step">
-        <div class="step-num">5</div>
-        <div class="step-content">
-          <h4>Paste URL into Settings</h4>
-          <p>Click the ⚙️ icon in the top bar, paste your Web App URL into the Apps Script URL field, and click Save Settings. You're ready to go!</p>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
 
 <!-- ═══ TOAST ═══ -->
 <div class="toast" id="toast"></div>
@@ -420,115 +371,64 @@ input::placeholder,textarea::placeholder{color:#bbb}
 // ══════════════════════════════════════════
 //  CONSTANTS
 // ══════════════════════════════════════════
+const SCRIPT_URL      = 'https://script.google.com/macros/s/AKfycbxYp4OaoIi2sbjl8ckqg2onmBOr_iJ9nhFGIlC59eeEeKiF3WJGX-q5CgzVVo5XjM3T/exec';
 const PASSWORD        = '8thgrade2627';
-const CLASSES         = ['Science 8','Math 8','Algebra I','Honors Algebra I','Spanish II','Civics','English 8'];
 const ALL_PERIODS     = ['A','B','C','D','E','F','G'];
 const ENGAGEMENTS     = ['Required','Optional'];
 const ASSIGNMENT_TYPES = ['Homework','Quiz / Test','Project','Classwork','Lab','Extra Credit'];
 const QUARTERS        = ['Quarter 1','Quarter 2','Quarter 3','Quarter 4'];
 const WHERE_OPTS      = ['Google Classroom','Keep in Binder','Paper - turn in bin','No submission needed'];
 
-const APPS_SCRIPT_CODE = `const SHEET_ID = 'YOUR_SHEET_ID_HERE';
-const PASSWORD = '8thgrade2627';
-const HEADERS  = ['ID','Block','Assignment Name','Engagement','Assignment Type','Quarter','Date Assigned','Date Due','Where to Submit','Notes','Resources'];
+// Loaded from Sheet on init
+let CLASSES           = [];
+let CLASS_PERIODS_MAP = {}; // { 'Science 8': ['A','B','C'], ... }
 
-function doPost(e) {
-  try {
-    const data = JSON.parse(e.postData.contents);
-    if (data.password !== PASSWORD) return respond({success:false,error:'Unauthorized'});
-    const ss = SpreadsheetApp.openById(SHEET_ID);
-    let result;
-    if      (data.action === 'add')    result = addRows(ss, data.className, data.rows);
-    else if (data.action === 'update') result = updateRows(ss, data.className, data.rows);
-    else if (data.action === 'delete') result = deleteById(ss, data.className, data.assignmentId);
-    else if (data.action === 'get')    result = getRows(ss, data.className);
-    else result = {success:false,error:'Unknown action'};
-    return respond(result);
-  } catch(err) { return respond({success:false,error:err.message}); }
-}
-
-function doGet(e) {
-  try {
-    const p = e.parameter;
-    if (p.password !== PASSWORD) return respond({success:false,error:'Unauthorized'});
-    const ss = SpreadsheetApp.openById(SHEET_ID);
-    return respond(getRows(ss, p.className));
-  } catch(err) { return respond({success:false,error:err.message}); }
-}
-
-function respond(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function getOrCreateSheet(ss, className) {
-  let sheet = ss.getSheetByName(className);
-  if (!sheet) {
-    sheet = ss.insertSheet(className);
-    sheet.appendRow(HEADERS);
-    sheet.setFrozenRows(1);
-  }
-  return sheet;
-}
-
-function addRows(ss, className, rows) {
-  const sheet = getOrCreateSheet(ss, className);
-  rows.forEach(r => sheet.appendRow([r.id,r.block,r.assignmentName,r.engagement,r.assignmentType,r.quarter,r.dateAssigned,r.dateDue,r.whereToSubmit,r.notes,r.resources]));
-  return {success:true,count:rows.length};
-}
-
-function updateRows(ss, className, rows) {
-  const sheet = getOrCreateSheet(ss, className);
-  const id    = rows[0].id;
-  deleteById(ss, className, id);
-  rows.forEach(r => sheet.appendRow([r.id,r.block,r.assignmentName,r.engagement,r.assignmentType,r.quarter,r.dateAssigned,r.dateDue,r.whereToSubmit,r.notes,r.resources]));
-  return {success:true};
-}
-
-function deleteById(ss, className, assignmentId) {
-  const sheet = getOrCreateSheet(ss, className);
-  const data  = sheet.getDataRange().getValues();
-  for (let i = data.length - 1; i >= 1; i--) {
-    if (String(data[i][0]) === String(assignmentId)) sheet.deleteRow(i + 1);
-  }
-  return {success:true};
-}
-
-function formatDateCell(val) {
-  if (val instanceof Date) {
-    const y = val.getFullYear();
-    const m = String(val.getMonth()+1).padStart(2,'0');
-    const d = String(val.getDate()).padStart(2,'0');
-    return y+'-'+m+'-'+d;
-  }
-  return String(val===null||val===undefined?'':val);
-}
-function getRows(ss, className) {
-  const sheet = ss.getSheetByName(className);
-  if (!sheet) return {success:true,rows:[]};
-  const vals = sheet.getDataRange().getValues();
-  if (vals.length <= 1) return {success:true,rows:[]};
-  const hdrs = vals[0];
-  const dateCols = ['Date Assigned','Date Due'];
-  return {success:true, rows: vals.slice(1).map(r => {
-    const o = {};
-    hdrs.forEach((h,i) => { o[h] = dateCols.includes(h) ? formatDateCell(r[i]) : String(r[i]===null||r[i]===undefined?'':r[i]); });
-    return o;
-  })};
-}`;
 
 // ══════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════
 let currentClass  = CLASSES[0];
 let currentMode   = 'create';
-let settings      = loadSettings();
-
 // Create form
 let selectedPeriods = [];
 let sharedResources = []; // [{label,url}]
 let blockOverrides  = {}; // {A:{dateDue,notes,resources}}
 let editingId       = null; // null = new, string = editing existing
+let reassignClass   = null; // set when moving an assignment to a different class
+let pendingPost     = null; // stores validated data while confirm modal is open
+let _savedFormState = null; // snapshot of form fields across re-renders
+
+// ── Save all form field values before a re-render
+function saveFormState() {
+  const v = id => document.getElementById(id)?.value || '';
+  _savedFormState = {
+    name:       v('f-name'),
+    engagement: v('f-engagement'),
+    atype:      v('f-atype'),
+    quarter:    v('f-quarter'),
+    where:      v('f-where'),
+    assigned:   v('f-assigned'),
+    due:        v('f-due'),
+    notes:      v('f-notes'),
+  };
+}
+
+// ── Restore form field values after a re-render
+function restoreFormState() {
+  if (!_savedFormState) return;
+  const s = (id, val) => { const el=document.getElementById(id); if(el&&val) el.value=val; };
+  s('f-name',       _savedFormState.name);
+  s('f-engagement', _savedFormState.engagement);
+  s('f-atype',      _savedFormState.atype);
+  s('f-quarter',    _savedFormState.quarter);
+  s('f-where',      _savedFormState.where);
+  s('f-assigned',   _savedFormState.assigned);
+  s('f-due',        _savedFormState.due);
+  s('f-notes',      _savedFormState.notes);
+  // Hide auto-badges since values are now user-confirmed
+  document.getElementById('assigned-auto-badge')?.style.setProperty('display','none');
+  _savedFormState = null;
+}
 
 // Edit mode
 let editAssignments = []; // grouped by ID
@@ -536,19 +436,54 @@ let editSelectedId  = null;
 let quarterFilter   = 'all';
 
 // ══════════════════════════════════════════
-//  STORAGE
+//  CONFIG — loaded from Google Sheet on init
 // ══════════════════════════════════════════
-function loadSettings() {
-  try {
-    return JSON.parse(localStorage.getItem('apSettings') || '{}');
-  } catch { return {}; }
-}
-function saveSettingsToStorage() {
-  localStorage.setItem('apSettings', JSON.stringify(settings));
-}
-function getScriptUrl() { return settings.scriptUrl || ''; }
-function getClassPeriods(cls) { return (settings.classPeriods || {})[cls] || []; }
+function getClassPeriods(cls) { return CLASS_PERIODS_MAP[cls] || []; }
 function getDefaultPeriods(cls) { return [...getClassPeriods(cls)]; }
+
+// Quarter dates loaded from config
+let QUARTER_DATES = {}; // { 'Quarter 1': {start:'YYYY-MM-DD', end:'YYYY-MM-DD'}, ... }
+
+async function loadConfigFromSheet() {
+  try {
+    const resp = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ password: PASSWORD, action: 'loadConfig' })
+    });
+    const result = await resp.json();
+    if (result.success && result.config) {
+      const courses = result.config.courses || [];
+      CLASSES = courses.map(c => c.name).filter(Boolean);
+      CLASS_PERIODS_MAP = {};
+      courses.forEach(c => { if (c.name) CLASS_PERIODS_MAP[c.name] = c.periods || []; });
+      if (result.config.quarterDates) QUARTER_DATES = result.config.quarterDates;
+    } else {
+      showToast('Could not load class config. Check your connection.', 'error');
+    }
+  } catch(err) {
+    showToast('Failed to load config: ' + err.message, 'error');
+  }
+}
+
+// Returns the quarter name that contains today, or '' if none match
+function autoDetectQuarter() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  for (const q of QUARTERS) {
+    const range = QUARTER_DATES[q];
+    if (!range || !range.start || !range.end) continue;
+    const start = new Date(range.start + 'T00:00:00');
+    const end   = new Date(range.end   + 'T23:59:59');
+    if (today >= start && today <= end) return q;
+  }
+  return '';
+}
+
+// Returns today's date as YYYY-MM-DD
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 
 // ══════════════════════════════════════════
 //  AUTH
@@ -558,8 +493,7 @@ function checkAuth() {
   if (val === PASSWORD) {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    initApp();
-    showClassPicker('welcome'); // prompt for class on first load
+    initApp(); // initApp manages the modal itself
   } else {
     document.getElementById('auth-error').style.display = 'block';
     document.getElementById('pw-input').value = '';
@@ -570,13 +504,28 @@ function checkAuth() {
 // ══════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════
-function initApp() {
+async function initApp() {
+  // Open the class picker immediately with a loading spinner
+  // so teachers see something right away rather than a blank screen
+  document.getElementById('cp-modal').classList.add('open');
+  document.getElementById('cp-title').textContent = 'Loading your classes…';
+  document.getElementById('cp-sub').textContent = 'Fetching configuration from Google Sheets — this only takes a moment.';
+  document.getElementById('cp-grid').innerHTML = `
+    <div style="grid-column:1/-1;text-align:center;padding:20px 0">
+      <div class="spinner"></div>
+      <p style="color:var(--muted);font-size:.9em">Connecting to Google Sheets…</p>
+    </div>`;
+
+  await loadConfigFromSheet();
+
   buildClassNav();
   currentMode = 'create';
   document.getElementById('mode-create-btn').classList.add('active');
   document.getElementById('mode-edit-btn').classList.remove('active');
   document.getElementById('mode-drafts-btn').classList.remove('active');
-  populateAppsScriptCode();
+
+  // Now replace the spinner with the actual class buttons
+  showClassPicker('welcome');
 }
 
 function buildClassNav() {
@@ -587,15 +536,16 @@ function buildClassNav() {
 }
 
 function selectClass(cls) {
+  saveFormState();
   currentClass    = cls;
   selectedPeriods = getDefaultPeriods(cls);
-  sharedResources = [];
-  blockOverrides  = {};
+  // Keep sharedResources and blockOverrides — user's content stays intact
   editingId       = null;
   editAssignments = [];
   editSelectedId  = null;
   buildClassNav();
   renderMain();
+  restoreFormState();
 }
 
 function setMode(mode) {
@@ -625,8 +575,16 @@ function renderCreateMode() {
   let html = '';
 
   // ── Period selector
+  const targetClass = reassignClass || currentClass;
   html += `<div class="card">
-    <div class="card-title"><span>📅</span> ${isEditing ? 'Editing assignment for' : 'Post to periods —'} <strong>${currentClass}</strong> <span class="req" style="font-size:.85em;margin-left:2px">*</span></div>
+    <div class="card-title"><span>📅</span> ${isEditing ? 'Editing assignment for' : 'Post to periods —'} <strong>${targetClass}</strong> <span class="req" style="font-size:.85em;margin-left:2px">*</span></div>
+    ${isEditing ? `<div class="class-change-row">
+      <span class="class-change-label">📦 Move to a different class?</span>
+      <select class="class-change-select" onchange="reassignClass=this.value==='__current__'?null:this.value">
+        <option value="__current__">${currentClass} (current)</option>
+        ${CLASSES.filter(c=>c!==currentClass).map(c=>`<option value="${c}" ${reassignClass===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+    </div>` : ''}
     <div class="period-grid">`;
   ALL_PERIODS.forEach(p => {
     const notConf  = configured.length > 0 && !configured.includes(p);
@@ -669,10 +627,10 @@ function renderCreateMode() {
         </select>
       </div>
       <div class="form-group">
-        <label>Quarter <span class="req">*</span></label>
-        <select id="f-quarter">
-          <option value="" disabled selected>— Select —</option>
-          ${QUARTERS.map(q=>`<option>${q}</option>`).join('')}
+        <label>Quarter <span class="req">*</span>${autoDetectQuarter() ? '<span class="auto-badge">Auto-filled</span>' : ''}</label>
+        <select id="f-quarter" oninput="this.previousElementSibling.querySelector('.auto-badge')&&(this.previousElementSibling.querySelector('.auto-badge').style.display='none')">
+          <option value="" disabled ${!autoDetectQuarter()?'selected':''}>— Select —</option>
+          ${QUARTERS.map(q=>`<option ${q===autoDetectQuarter()?'selected':''}>${q}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
@@ -683,8 +641,8 @@ function renderCreateMode() {
         </select>
       </div>
       <div class="form-group">
-        <label>Date Assigned <span class="req">*</span></label>
-        <input type="date" id="f-assigned">
+        <label>Date Assigned <span class="req">*</span><span class="auto-badge" id="assigned-auto-badge">Auto-filled</span></label>
+        <input type="date" id="f-assigned" value="${todayISO()}" oninput="document.getElementById('assigned-auto-badge').style.display='none'">
       </div>
       <div class="form-group">
         <label>Date Due <span class="req">*</span></label>
@@ -871,6 +829,7 @@ function syncOverridePreviews() {} // placeholder for future live preview
 
 // ── PERIOD TOGGLE
 function togglePeriod(p) {
+  saveFormState();
   if (selectedPeriods.includes(p)) {
     selectedPeriods = selectedPeriods.filter(x => x !== p);
     delete blockOverrides[p];
@@ -879,6 +838,7 @@ function togglePeriod(p) {
     selectedPeriods.sort((a,b) => ALL_PERIODS.indexOf(a) - ALL_PERIODS.indexOf(b));
   }
   renderMain();
+  restoreFormState();
 }
 
 // ── RESOURCES (shared)
@@ -950,7 +910,7 @@ function restoreFormValues() {
   // values are set in loadAssignmentForEdit()
 }
 
-// ── FORM SUBMIT
+// ── FORM SUBMIT — validates then shows confirmation modal
 async function submitForm(isUpdate) {
   const name     = document.getElementById('f-name')?.value?.trim();
   const engage   = document.getElementById('f-engagement')?.value;
@@ -969,11 +929,8 @@ async function submitForm(isUpdate) {
   if (!due)                  { showToast('Date Due is required.','error'); return; }
   if (selectedPeriods.length === 0) { showToast('Select at least one period.','error'); return; }
 
-  const url = getScriptUrl();
-  if (!url) { showToast('Add your Apps Script URL in Settings (⚙️) first.','error'); return; }
-
-  const assignedId     = isUpdate && editingId ? editingId : generateId();
-  const sharedAssigned = assigned;
+  const postClass    = reassignClass || currentClass;
+  const assignedId   = isUpdate && editingId ? editingId : generateId();
   const rows = selectedPeriods.map(p => {
     const ov  = blockOverrides[p] || {};
     const res = ov.resources !== undefined ? ov.resources : sharedResources;
@@ -985,7 +942,7 @@ async function submitForm(isUpdate) {
       engagement:     engage,
       assignmentType: atype,
       quarter:        quarter,
-      dateAssigned:   ov.dateAssigned !== undefined ? ov.dateAssigned : sharedAssigned,
+      dateAssigned:   ov.dateAssigned !== undefined ? ov.dateAssigned : assigned,
       dateDue:        ov.dateDue      !== undefined ? ov.dateDue      : due,
       whereToSubmit:  where,
       notes:          ov.notes        !== undefined ? ov.notes        : (document.getElementById('f-notes')?.value?.trim()||''),
@@ -993,12 +950,82 @@ async function submitForm(isUpdate) {
     };
   });
 
+  // Store data and show confirmation modal
+  pendingPost = { isUpdate, rows, postClass, name, engage, atype, quarter, where, assigned, due };
+  showConfirmModal();
+}
+
+// ── CONFIRMATION MODAL ──
+const PERIOD_COLORS_MAP = {A:'#ef4444',B:'#f97316',C:'#eab308',D:'#22c55e',E:'#3b82f6',F:'#8b5cf6',G:'#ec4899'};
+
+function showConfirmModal() {
+  const { isUpdate, rows, postClass, name, engage, atype, quarter, where, assigned, due } = pendingPost;
+  const fmtD = s => s ? new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+
+  const periodBadges = rows
+    .map(r => r.block)
+    .filter((v,i,a) => a.indexOf(v)===i)
+    .map(p => `<span class="confirm-period-badge" style="background:${PERIOD_COLORS_MAP[p]||'#64748b'}">${p}</span>`)
+    .join('');
+
+  const movingClass = isUpdate && reassignClass && reassignClass !== currentClass;
+
+  document.getElementById('confirm-body').innerHTML = `
+    <div class="confirm-class-banner">
+      <span style="font-size:1.4em">🏫</span>
+      <div>
+        <div class="confirm-class-name">${postClass}</div>
+        <div style="font-size:.8em;color:var(--muted)">${isUpdate ? (movingClass ? `Moving from ${currentClass}` : 'Updating existing assignment') : 'New assignment'}</div>
+      </div>
+    </div>
+    <div class="confirm-row"><span class="confirm-label">Assignment</span><span class="confirm-value">${esc(name)}</span></div>
+    <div class="confirm-row"><span class="confirm-label">Periods</span><span class="confirm-value confirm-periods">${periodBadges}</span></div>
+    <div class="confirm-row"><span class="confirm-label">Quarter</span><span class="confirm-value">${quarter}</span></div>
+    <div class="confirm-row"><span class="confirm-label">Type</span><span class="confirm-value">${atype} · ${engage}</span></div>
+    <div class="confirm-row"><span class="confirm-label">Dates</span><span class="confirm-value">Assigned ${fmtD(assigned)} → Due ${fmtD(due)}</span></div>
+    <div class="confirm-row"><span class="confirm-label">Submit via</span><span class="confirm-value">${where}</span></div>
+  `;
+
+  document.getElementById('confirm-post-btn').textContent = isUpdate ? '✅ Update' : '✅ Post';
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function closeConfirmModal() {
+  document.getElementById('confirm-modal').classList.remove('open');
+}
+
+function saveDraftFromConfirm() {
+  closeConfirmModal();
+  saveDraft();
+}
+
+async function executePost() {
+  if (!pendingPost) return;
+  const { isUpdate, rows, postClass } = pendingPost;
+  closeConfirmModal();
+
   try {
     const btn = document.querySelector('.btn-primary, .btn-success');
     if (btn) { btn.disabled=true; btn.textContent='Posting…'; }
-    const resp = await apiFetch(isUpdate ? 'update' : 'add', {rows});
+
+    // If moving to a different class, delete from old class first
+    if (isUpdate && reassignClass && reassignClass !== currentClass) {
+      await apiFetch('delete', { assignmentId: rows[0].id });
+    }
+
+    // Post to target class
+    const savedClass = currentClass;
+    currentClass = postClass;
+    const resp = await apiFetch(isUpdate && !(reassignClass && reassignClass !== savedClass) ? 'update' : 'add', { rows });
+    currentClass = savedClass;
+
     if (resp.success) {
-      showToast(isUpdate ? 'Assignment updated!' : `Posted to ${rows.length} period(s)!`, 'success');
+      const msg = isUpdate
+        ? (reassignClass && reassignClass !== savedClass ? `Moved to ${postClass}!` : 'Assignment updated!')
+        : `Posted to ${postClass} — ${rows.length} period(s)!`;
+      showToast(msg, 'success');
+      reassignClass = null;
+      pendingPost   = null;
       resetForm();
     } else {
       showToast('Error: ' + (resp.error||'Unknown'), 'error');
@@ -1013,6 +1040,9 @@ function resetForm() {
   sharedResources = [];
   blockOverrides  = {};
   editingId       = null;
+  reassignClass   = null;
+  pendingPost     = null;
+  _savedFormState = null;
   renderMain();
 }
 
@@ -1021,8 +1051,6 @@ function cancelEdit() { resetForm(); }
 async function deleteAssignment() {
   if (!editingId) return;
   if (!confirm('Delete this assignment from all periods? This cannot be undone.')) return;
-  const url = getScriptUrl();
-  if (!url) { showToast('Apps Script URL not set.','error'); return; }
   try {
     const resp = await apiFetch('delete', {assignmentId: editingId});
     if (resp.success) {
@@ -1130,8 +1158,6 @@ function setQuarterFilter(q) {
 }
 
 async function loadAssignments() {
-  const url = getScriptUrl();
-  if (!url) { showToast('Add your Apps Script URL in Settings first.','error'); return; }
   try {
     showToast('Loading…');
     const resp = await apiFetch('get', {});
@@ -1234,80 +1260,14 @@ function formatDateInput(str) {
   return `${y}-${m}-${day}`;
 }
 
-// ══════════════════════════════════════════
-//  SETTINGS
-// ══════════════════════════════════════════
-function openSettings() {
-  // Build period config rows
-  const rows = document.getElementById('period-config-rows');
-  rows.innerHTML = CLASSES.map(cls => {
-    const configured = getClassPeriods(cls);
-    return `<div class="class-period-row">
-      <span class="class-period-label">${cls}</span>
-      <div class="period-toggles">
-        ${ALL_PERIODS.map(p=>`
-          <button class="period-toggle${configured.includes(p)?' on':''}"
-            onclick="toggleSettingPeriod('${cls}','${p}',this)">${p}</button>
-        `).join('')}
-      </div>
-    </div>`;
-  }).join('');
-  // Set URL
-  document.getElementById('setting-url').value = getScriptUrl();
-  document.getElementById('settings-overlay').classList.add('open');
-}
 
-function toggleSettingPeriod(cls, p, btn) {
-  btn.classList.toggle('on');
-}
-
-function closeSettings() {
-  document.getElementById('settings-overlay').classList.remove('open');
-}
-
-function overlayClose(e) {
-  if (e.target === document.getElementById('settings-overlay')) closeSettings();
-}
-
-function saveSettings() {
-  settings.scriptUrl = document.getElementById('setting-url').value.trim();
-  settings.classPeriods = settings.classPeriods || {};
-  CLASSES.forEach(cls => {
-    const row = [...document.querySelectorAll('.class-period-row')].find(r=>r.querySelector('.class-period-label')?.textContent===cls);
-    if (!row) return;
-    settings.classPeriods[cls] = ALL_PERIODS.filter(p => {
-      const btns = [...row.querySelectorAll('.period-toggle')];
-      const btn  = btns.find(b=>b.textContent.trim()===p);
-      return btn?.classList.contains('on');
-    });
-  });
-  saveSettingsToStorage();
-  closeSettings();
-  showToast('Settings saved!','success');
-  renderMain();
-}
-
-// ══════════════════════════════════════════
-//  SETUP MODAL
-// ══════════════════════════════════════════
-function populateAppsScriptCode() {
-  document.getElementById('code-pre').textContent = APPS_SCRIPT_CODE;
-}
-function openSetup() { document.getElementById('setup-modal').classList.add('open'); }
-function closeSetup() { document.getElementById('setup-modal').classList.remove('open'); }
-function setupOverlayClose(e) { if(e.target===document.getElementById('setup-modal')) closeSetup(); }
-function copyCode() {
-  navigator.clipboard.writeText(APPS_SCRIPT_CODE).then(()=>showToast('Code copied!','success'));
-}
 
 // ══════════════════════════════════════════
 //  API
 // ══════════════════════════════════════════
 async function apiFetch(action, payload) {
-  const url = getScriptUrl();
-  if (!url) throw new Error('Apps Script URL not configured.');
   const body = JSON.stringify({ password:PASSWORD, action, className:currentClass, ...payload });
-  const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'text/plain'}, body });
+  const resp = await fetch(SCRIPT_URL, { method:'POST', headers:{'Content-Type':'text/plain'}, body });
   return resp.json();
 }
 
@@ -1500,5 +1460,22 @@ function deleteDraft(draftId) {
   showToast('Draft deleted.','success');
 }
 </script>
+<!-- ── CONFIRM POST MODAL ── -->
+<div class="modal-bg" id="confirm-modal" onclick="if(event.target===this)closeConfirmModal()">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-hdr">
+      <span class="modal-title">📋 Confirm Post</span>
+      <button class="modal-close" onclick="closeConfirmModal()">×</button>
+    </div>
+    <div class="modal-body" id="confirm-body" style="padding:20px 24px"></div>
+    <div class="modal-footer" style="gap:8px">
+      <button class="mbtn mbtn-ghost" onclick="closeConfirmModal()">✕ Cancel</button>
+      <button class="mbtn mbtn-draft" onclick="saveDraftFromConfirm()">💾 Save Draft</button>
+      <button class="mbtn mbtn-edit" onclick="closeConfirmModal()">✏️ Keep Editing</button>
+      <button class="mbtn mbtn-post" id="confirm-post-btn" onclick="executePost()">✅ Post</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
