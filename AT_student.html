@@ -93,17 +93,20 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
 .empty-state { text-align:center; color:var(--muted); padding:48px 20px; font-size:1em; }
 
 /* ── CARD GRID ── */
-.card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:14px; padding:16px; }
+.card-grid { columns:3; column-gap:14px; padding:16px; }
 
 .acard {
   background:var(--surface2); border:2px solid var(--border); border-radius:10px;
-  padding:15px 16px; transition:box-shadow .2s,border-color .2s,background .2s;
+  padding:0; transition:box-shadow .2s,border-color .2s,background .2s;
+  overflow:hidden; display:inline-block; width:100%; margin-bottom:14px;
+  break-inside:avoid;
 }
+.acard-content { padding:14px 16px 15px; }
 .acard:hover { box-shadow:0 4px 18px rgba(0,0,0,.12); }
 .acard.done { opacity:.5; }
 .acard.done .acard-name { text-decoration:line-through; color:var(--muted); }
 
-/* Urgency: subtle background tint only — border stays as block color */
+/* Urgency: subtle background tint only */
 .acard.overdue   { background:#fef2f2; }
 .acard.due-today { background:#fff7ed; }
 .acard.due-tmrw  { background:#fefce8; }
@@ -113,11 +116,36 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
 [data-theme="dark"] .acard.due-tmrw  { background:#2a2400; }
 [data-theme="dark"] .acard.due-week  { background:#101e35; }
 
-.acard-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:9px; }
+/* ── MODAL (for code modal) ── */
+.modal-hdr{padding:18px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:none;border:none;font-size:1.4em;cursor:pointer;color:var(--muted);line-height:1}
+.modal-close:hover{color:var(--text)}
+.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.mbtn{padding:9px 18px;border-radius:8px;font-size:.9em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;border:none;transition:all .2s}
+.mbtn-primary{background:var(--accent);color:#fff}.mbtn-primary:hover{background:var(--accent-d)}
+.mbtn-cancel{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}.mbtn-cancel:hover{background:var(--border);color:var(--text)}
+
+/* ── CALENDAR WEEK VIEW ── */
+.cal-week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px}
+.cal-week-col{border:1.5px solid var(--border);border-radius:8px;overflow:hidden}
+.cal-week-col.today{border-color:var(--accent)}
+.cal-week-hdr{padding:8px 6px;text-align:center;font-weight:800;font-size:.82em;background:var(--surface2);border-bottom:1px solid var(--border)}
+.cal-week-col.today .cal-week-hdr{background:var(--accent);color:#fff}
+.cal-week-body{padding:6px;min-height:100px;display:flex;flex-direction:column;gap:4px}
+.cal-week-event{border-radius:5px;padding:4px 7px;font-size:.75em;font-weight:700;color:#fff;line-height:1.3;cursor:default}
+.cal-week-empty{color:var(--muted);font-size:.78em;text-align:center;padding:8px 4px}
+.cal-view-toggle{display:flex;gap:6px}
+.cal-view-btn{padding:6px 14px;border:1.5px solid var(--border);border-radius:20px;background:var(--surface);color:var(--muted);font-size:.85em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;transition:all .2s}
+.cal-view-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+.acard-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px; }
 .acard-name { font-weight:800; font-size:1.15em; line-height:1.35; flex:1; color:var(--text); }
 .done-check { width:20px; height:20px; cursor:pointer; accent-color:var(--success); flex-shrink:0; margin-top:2px; }
 
-.acard-class { display:inline-block; border-radius:6px; padding:5px 12px; font-size:.86em; font-weight:800; margin-bottom:9px; }
+/* Full-width class banner at top of card */
+.acard-banner { display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:8px 16px; font-size:.88em; font-weight:800; margin:-0px -0px 12px -0px;
+  border-radius:8px 8px 0 0; letter-spacing:.2px; }
 
 .acard-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
 .tag { border-radius:20px; padding:5px 12px; font-size:.86em; font-weight:700; white-space:nowrap; }
@@ -277,57 +305,67 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
 
 /* ── RESPONSIVE ── */
 @media(max-width:880px) {
-  .card-grid { grid-template-columns:1fr; }
+  .card-grid { columns:2; }
   .controls { flex-direction:column; align-items:stretch; }
   .search-wrap { max-width:100%; }
 }
 @media(max-width:540px) {
+  .card-grid { columns:1; }
   .topbar { padding:0 12px; gap:7px; }
-  .topbar-btn span { display:none; }
   .page { padding:14px 12px; }
 }
 
-/* ── ADMIN BUTTON ── */
-.admin-btn { background:rgba(255,255,255,.05); border:none; color:rgba(255,255,255,.3); border-radius:6px; width:30px; height:30px; cursor:pointer; font-size:.95em; display:flex; align-items:center; justify-content:center; transition:all .3s; }
-.admin-btn:hover { background:rgba(255,255,255,.15); color:rgba(255,255,255,.8); }
+/* ── TOOLS DROPDOWN (topbar) ── */
+.tools-dd { position:relative; }
+.tools-dd-menu { position:absolute; top:calc(100% + 8px); right:0; left:auto; background:var(--surface); border:1.5px solid var(--border); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.15); z-index:500; min-width:200px; overflow:hidden; display:none; }
+.tools-dd.open .tools-dd-menu { display:block; }
+.tools-dd-item { display:flex; align-items:center; gap:10px; width:100%; padding:11px 16px; text-align:left; background:none; border:none; cursor:pointer; font-family:'Nunito',sans-serif; font-size:.95em; font-weight:700; color:var(--text); transition:background .15s; }
+.tools-dd-item:hover { background:var(--accent-light); color:var(--accent); }
+.tools-dd-sep { height:1px; background:var(--border); margin:4px 0; }
 
-/* ── ADMIN MODAL ── */
-.admin-box { width:660px; }
-.admin-pw-screen { text-align:center; padding:32px 24px 24px; }
-.admin-pw-screen h3 { font-family:'Outfit',sans-serif; font-size:1.2em; font-weight:800; margin-bottom:6px; }
-.admin-pw-screen p { color:var(--muted); font-size:.9em; margin-bottom:20px; }
-.admin-pw-input { width:100%; padding:11px 14px; border:2px solid var(--border); border-radius:8px; font-size:1em; font-family:'Nunito',sans-serif; outline:none; transition:border-color .2s; margin-bottom:10px; color:var(--text); background:var(--surface); }
-.admin-pw-input:focus { border-color:var(--accent); }
-.admin-pw-err { color:var(--danger); font-size:.85em; margin-bottom:10px; display:none; }
+/* ── FILTER PANEL ── */
+.filters-panel { min-width:320px; padding:4px 0; }
+.fp-section { padding:10px 14px; border-bottom:1px solid var(--border); }
+.fp-section:last-child { border-bottom:none; }
+.fp-label { font-size:.72em; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:8px; }
+.fp-pills { display:flex; gap:5px; flex-wrap:wrap; }
+.fp-pill { padding:5px 12px; border:1.5px solid var(--border); border-radius:20px; background:var(--surface); color:var(--muted); font-size:.84em; font-weight:700; font-family:'Nunito',sans-serif; cursor:pointer; transition:all .2s; white-space:nowrap; }
+.fp-pill:hover { border-color:var(--accent-mid); color:var(--accent); }
+.fp-pill.active { background:var(--accent); color:#fff; border-color:var(--accent); }
 
-.admin-section-title { font-size:.8em; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
-.admin-section { margin-bottom:22px; }
+/* ── EXPAND TOGGLE in controls ── */
+.expand-toggle { padding:8px 14px; border:1.5px solid var(--border); background:var(--surface); border-radius:20px; cursor:pointer; font-size:.93em; font-weight:700; color:var(--muted); font-family:'Nunito',sans-serif; transition:all .2s; white-space:nowrap; }
+.expand-toggle:hover { border-color:var(--accent-mid); color:var(--accent); }
+.expand-toggle.all-expanded { background:var(--accent-light); color:var(--accent); border-color:var(--accent-mid); }
 
-.url-row { display:flex; align-items:center; gap:10px; margin-bottom:9px; }
-.url-class-label { font-weight:700; font-size:.9em; min-width:150px; display:flex; align-items:center; gap:7px; flex-shrink:0; }
-.url-class-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-.url-input { flex:1; padding:8px 12px; border:1.5px solid var(--border); border-radius:7px; font-size:.88em; font-family:'Nunito',sans-serif; color:var(--text); background:var(--surface); outline:none; transition:border-color .2s; }
-.url-input:focus { border-color:var(--accent); }
-.url-input.has-url { border-color:#22c55e; background:var(--surface); }
-.url-status { font-size:.78em; font-weight:700; white-space:nowrap; }
-.url-status.ok  { color:#22c55e; }
-.url-status.empty { color:var(--muted); }
+/* ── CLASS VIEW ── */
+.class-view { display:flex; flex-direction:column; gap:16px; padding:16px; }
+.cv-group { border:1.5px solid var(--border); border-radius:10px; overflow:hidden; box-shadow:var(--shadow); }
+.cv-header { padding:11px 16px; font-weight:800; font-size:.9em; letter-spacing:.2px; }
+.cv-rows { background:var(--surface); }
+.cv-row-wrap { border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; }
+.cv-row-wrap:last-child { border-bottom:none; }
+.cv-row-wrap:hover { background:var(--surface2); }
+.cv-row-wrap.cv-done .cv-name { text-decoration:line-through; color:var(--muted); opacity:.6; }
+.cv-row { display:grid; grid-template-columns:22px 1fr auto auto 16px; gap:10px; align-items:center; padding:11px 16px; }
+.cv-name { font-weight:700; font-size:.95em; color:var(--text); }
+.cv-meta { font-size:.82em; color:var(--muted); white-space:nowrap; text-align:right; }
+.cv-expand-chev { font-size:.65em; color:var(--muted); transition:transform .22s; }
+.cv-row-wrap.cv-expanded .cv-expand-chev { transform:rotate(180deg); }
+.cv-detail { display:none; flex-direction:column; gap:6px; padding:10px 16px 12px 48px; border-top:1px dashed var(--border); background:var(--surface2); }
+.cv-row-wrap.cv-expanded .cv-detail { display:flex; }
+.cv-due { font-size:.82em; color:var(--muted); white-space:nowrap; text-align:right; }
+.cv-empty { color:var(--muted); font-size:.9em; padding:12px 16px; font-style:italic; }
 
-.period-row-admin { display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
-.quarter-date-row { display:flex; align-items:center; gap:8px; margin-bottom:9px; flex-wrap:wrap; }
-.quarter-date-label { font-weight:700; font-size:.9em; min-width:88px; flex-shrink:0; }
-.period-row-label { font-weight:700; font-size:.88em; min-width:150px; flex-shrink:0; }
-.period-toggles-admin { display:flex; gap:5px; }
-.ptoggle { width:32px; height:32px; border:1.5px solid var(--border); border-radius:6px; background:var(--surface2); color:var(--muted); font-weight:800; font-size:.82em; cursor:pointer; transition:all .2s; font-family:'Outfit',sans-serif; }
-.ptoggle:hover { border-color:var(--muted); }
-.ptoggle.on[data-p="A"] { background:#ef4444; border-color:#ef4444; color:#fff; }
-.ptoggle.on[data-p="B"] { background:#f97316; border-color:#f97316; color:#fff; }
-.ptoggle.on[data-p="C"] { background:#eab308; border-color:#eab308; color:#1e293b; }
-.ptoggle.on[data-p="D"] { background:#22c55e; border-color:#22c55e; color:#fff; }
-.ptoggle.on[data-p="E"] { background:#3b82f6; border-color:#3b82f6; color:#fff; }
-.ptoggle.on[data-p="F"] { background:#8b5cf6; border-color:#8b5cf6; color:#fff; }
-.ptoggle.on[data-p="G"] { background:#ec4899; border-color:#ec4899; color:#fff; }
-.admin-note { font-size:.82em; color:var(--muted); margin-top:4px; line-height:1.5; }
+/* ── VIEW TOGGLE GROUP ── */
+.view-toggle-group { display:flex; border:1.5px solid var(--accent-mid); border-radius:20px; overflow:hidden; flex-shrink:0; }
+.view-toggle-opt { padding:8px 14px; border:none; background:var(--surface); color:var(--muted); font-size:.88em; font-weight:700; font-family:'Nunito',sans-serif; cursor:pointer; transition:all .2s; white-space:nowrap; }
+.view-toggle-opt.active { background:var(--accent); color:#fff; }
+.view-toggle-opt:not(.active):hover { background:var(--accent-light); color:var(--accent); }
+
+/* ── SPINNER ── */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:38px;height:38px;border:3.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
 </style>
 </head>
 <body>
@@ -337,12 +375,18 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
 <header class="topbar">
   <div class="brand"><span>8th Grade Assignment Tracker</span> 📝</div>
   <div class="topbar-spacer"></div>
-  <button class="topbar-btn accent" onclick="openSchedule()">👤 <span>My Schedule</span></button>
-  <button class="topbar-btn" id="cal-btn" onclick="openCalendar()" style="display:none">📅 <span>Calendar</span></button>
-  <button class="topbar-btn" onclick="buildAndPrint()" id="print-btn" style="display:none">🖨️ <span>Print</span></button>
-  <button class="topbar-btn" id="expand-btn" onclick="toggleExpandAll()" style="display:none">⊞ <span>Expand All</span></button>
-  <button class="topbar-btn" id="dm-btn" onclick="toggleDark()">🌙 <span>Dark</span></button>
-  <button class="admin-btn" onclick="openAdmin()" title="Admin Settings">⚙️</button>
+  <div class="tools-dd" id="tools-dd">
+    <button class="topbar-btn" onclick="toggleToolsMenu(event)">⚙️ <span>Tools</span> <span style="font-size:.7em">▾</span></button>
+    <div class="tools-dd-menu">
+      <button class="tools-dd-item" onclick="openSchedule();closeToolsMenu()">👤 My Schedule</button>
+      <button class="tools-dd-item" onclick="openScheduleCode();closeToolsMenu()">🔑 Save / Load Code</button>
+      <div class="tools-dd-sep"></div>
+      <button class="tools-dd-item" id="cal-item" onclick="openCalendar();closeToolsMenu()" style="display:none">📅 Calendar</button>
+      <button class="tools-dd-item" id="print-item" onclick="buildAndPrint();closeToolsMenu()" style="display:none">🖨️ Print</button>
+      <div class="tools-dd-sep" id="cal-sep" style="display:none"></div>
+      <button class="tools-dd-item" id="dm-item" onclick="toggleDark();updateDarkLabel()">🌙 <span id="dm-label">Dark Mode</span></button>
+    </div>
+  </div>
 </header>
 
 <!-- ── PAGE ── -->
@@ -357,39 +401,11 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
       <span class="search-icon">🔍</span>
       <input type="text" class="search-input" id="search-input" placeholder="Search assignments…" oninput="applyAndRender()">
     </div>
-    <!-- Date view dropdown -->
-    <div class="filter-dd" id="date-dd">
-      <button class="filter-dd-btn" id="date-dd-btn" onclick="toggleDd('date-dd', event)">
-        📋 <span id="date-dd-label">All Assignments</span> <span class="dd-caret">▾</span>
-      </button>
-      <div class="filter-dd-menu" id="date-dd-menu">
-        <button class="filter-dd-item selected" onclick="setDateView('all','All Assignments')">All Assignments</button>
-        <button class="filter-dd-item" onclick="setDateView('active','Upcoming')">Upcoming</button>
-        <button class="filter-dd-item" onclick="setDateView('week','This Week')">This Week</button>
-        <button class="filter-dd-item" onclick="setDateView('past','Overdue')">Overdue</button>
-      </div>
-    </div>
-    <!-- Quarter dropdown -->
-    <div class="filter-dd" id="q-dd">
-      <button class="filter-dd-btn" id="q-dd-btn" onclick="toggleDd('q-dd', event)">
-        📅 <span id="q-dd-label">All Quarters</span> <span class="dd-caret">▾</span>
-      </button>
-      <div class="filter-dd-menu" id="q-dd-menu">
-        <button class="filter-dd-item selected" onclick="setQuarter('all','All Quarters')">All Quarters</button>
-        <button class="filter-dd-item" onclick="setQuarter('Quarter 1','Q1')">Quarter 1</button>
-        <button class="filter-dd-item" onclick="setQuarter('Quarter 2','Q2')">Quarter 2</button>
-        <button class="filter-dd-item" onclick="setQuarter('Quarter 3','Q3')">Quarter 3</button>
-        <button class="filter-dd-item" onclick="setQuarter('Quarter 4','Q4')">Quarter 4</button>
-      </div>
-    </div>
-    <!-- Class dropdown -->
-    <div class="filter-dd" id="cls-dd">
-      <button class="filter-dd-btn" id="cls-dd-btn" onclick="toggleDd('cls-dd', event)">
-        🏫 <span id="cls-dd-label">All Classes</span> <span class="dd-caret">▾</span>
-      </button>
-      <div class="filter-dd-menu" id="cls-dd-menu">
-        <!-- populated dynamically after data loads -->
-      </div>
+    <button class="expand-toggle" id="expand-btn" onclick="toggleExpandAll()">⊞ Expand All</button>
+    <!-- View toggle: Class View / Grid View -->
+    <div class="view-toggle-group" id="view-toggle-group" style="display:none">
+      <button class="view-toggle-opt active" id="cv-btn" onclick="setViewMode('class')">🏫 Class View</button>
+      <button class="view-toggle-opt" id="grid-btn" onclick="setViewMode('cards')">⊞ Grid View</button>
     </div>
     <!-- Sort dropdown -->
     <div class="filter-dd" id="sort-dd">
@@ -403,16 +419,74 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
         <button class="filter-dd-item" onclick="setSortMode('custom')">✋ Custom Order</button>
       </div>
     </div>
-    <!-- Engagement dropdown -->
-    <div class="filter-dd" id="eng-dd">
-      <button class="filter-dd-btn" id="eng-dd-btn" onclick="toggleDd('eng-dd', event)">
-        ✅ <span id="eng-dd-label">All</span> <span class="dd-caret">▾</span>
+    <!-- Unified Filters dropdown -->
+    <div class="filter-dd" id="filters-dd">
+      <button class="filter-dd-btn" id="filters-dd-btn" onclick="toggleDd('filters-dd', event)">
+        🔽 <span id="filters-dd-label">Filters</span> <span class="dd-caret">▾</span>
       </button>
-      <div class="filter-dd-menu">
-        <button class="filter-dd-item selected" onclick="setEngFilter('all','All')">All Assignments</button>
-        <button class="filter-dd-item" onclick="setEngFilter('Required','Required')">Required Only</button>
-        <button class="filter-dd-item" onclick="setEngFilter('Optional','Optional')">Optional Only</button>
-        <button class="filter-dd-item" onclick="setEngFilter('Extra Credit','Extra Credit')">Extra Credit Only</button>
+      <div class="filter-dd-menu filters-panel">
+        <div class="fp-section">
+          <div class="fp-label">View</div>
+          <div class="fp-pills">
+            <button class="fp-pill active" data-filter="date" data-value="all" onclick="setDateView('all')">All</button>
+            <button class="fp-pill" data-filter="date" data-value="active" onclick="setDateView('active')">Upcoming</button>
+            <button class="fp-pill" data-filter="date" data-value="week" onclick="setDateView('week')">This Week</button>
+            <button class="fp-pill" data-filter="date" data-value="past" onclick="setDateView('past')">Overdue</button>
+          </div>
+        </div>
+        <div class="fp-section">
+          <div class="fp-label">Quarter</div>
+          <div class="fp-pills">
+            <button class="fp-pill active" data-filter="quarter" data-value="all" onclick="setQuarter('all')">All</button>
+            <button class="fp-pill" data-filter="quarter" data-value="Quarter 1" onclick="setQuarter('Quarter 1')">Q1</button>
+            <button class="fp-pill" data-filter="quarter" data-value="Quarter 2" onclick="setQuarter('Quarter 2')">Q2</button>
+            <button class="fp-pill" data-filter="quarter" data-value="Quarter 3" onclick="setQuarter('Quarter 3')">Q3</button>
+            <button class="fp-pill" data-filter="quarter" data-value="Quarter 4" onclick="setQuarter('Quarter 4')">Q4</button>
+          </div>
+        </div>
+        <div class="fp-section">
+          <div class="fp-label">Class</div>
+          <div class="fp-pills" id="cls-dd-menu"></div>
+        </div>
+        <div class="fp-section">
+          <div class="fp-label">Type</div>
+          <div class="fp-pills">
+            <button class="fp-pill active" data-filter="eng" data-value="all" onclick="setEngFilter('all')">All</button>
+            <button class="fp-pill" data-filter="eng" data-value="Required" onclick="setEngFilter('Required')">Required</button>
+            <button class="fp-pill" data-filter="eng" data-value="Optional" onclick="setEngFilter('Optional')">Optional</button>
+            <button class="fp-pill" data-filter="eng" data-value="Extra Credit" onclick="setEngFilter('Extra Credit')">Extra Credit</button>
+          </div>
+        </div>
+        <div class="fp-section">
+          <div class="fp-label">Status</div>
+          <div class="fp-pills">
+            <button class="fp-pill active" data-filter="status" data-value="all" onclick="setStatusFilter('all')">All</button>
+            <button class="fp-pill" data-filter="status" data-value="outstanding" onclick="setStatusFilter('outstanding')">Outstanding</button>
+            <button class="fp-pill" data-filter="status" data-value="done" onclick="setStatusFilter('done')">Completed</button>
+          </div>
+        </div>
+        <div class="fp-section">
+          <div class="fp-label">Assignment Type</div>
+          <div class="fp-pills">
+            <button class="fp-pill active" data-filter="atype" data-value="all" onclick="setAtypeFilter('all')">All</button>
+            <button class="fp-pill" data-filter="atype" data-value="Homework" onclick="setAtypeFilter('Homework')">Homework</button>
+            <button class="fp-pill" data-filter="atype" data-value="Quiz / Test" onclick="setAtypeFilter('Quiz / Test')">Quiz / Test</button>
+            <button class="fp-pill" data-filter="atype" data-value="Project" onclick="setAtypeFilter('Project')">Project</button>
+            <button class="fp-pill" data-filter="atype" data-value="Classwork" onclick="setAtypeFilter('Classwork')">Classwork</button>
+            <button class="fp-pill" data-filter="atype" data-value="Lab" onclick="setAtypeFilter('Lab')">Lab</button>
+            <button class="fp-pill" data-filter="atype" data-value="Extra Credit" onclick="setAtypeFilter('Extra Credit')">Extra Credit</button>
+          </div>
+        </div>
+        <div class="fp-section">
+          <div class="fp-label">Where to Submit</div>
+          <div class="fp-pills">
+            <button class="fp-pill active" data-filter="submit" data-value="all" onclick="setSubmitFilter('all')">All</button>
+            <button class="fp-pill" data-filter="submit" data-value="Google Classroom" onclick="setSubmitFilter('Google Classroom')">Google Classroom</button>
+            <button class="fp-pill" data-filter="submit" data-value="Keep in Binder" onclick="setSubmitFilter('Keep in Binder')">Keep in Binder</button>
+            <button class="fp-pill" data-filter="submit" data-value="Paper - turn in bin" onclick="setSubmitFilter('Paper - turn in bin')">Paper - turn in bin</button>
+            <button class="fp-pill" data-filter="submit" data-value="No submission needed" onclick="setSubmitFilter('No submission needed')">No submission needed</button>
+          </div>
+        </div>
       </div>
     </div>
     <button class="clear-btn" id="clear-btn" onclick="clearFilters()" style="display:none">Clear ✕</button>
@@ -428,6 +502,40 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
   </div>
 
   <div id="print-container"></div>
+</div>
+
+<!-- ── SCHEDULE CODE MODAL ── -->
+<div class="modal-bg" id="code-modal">
+  <div class="modal-box" style="max-width:460px">
+    <div class="modal-hdr">
+      <span class="modal-title">🔑 Schedule Code</span>
+      <button class="modal-close" onclick="closeScheduleCode()">×</button>
+    </div>
+    <div class="modal-body" style="padding:20px 24px">
+      <p style="font-size:.9em;color:var(--muted);margin-bottom:16px;line-height:1.6">
+        Copy this code and save it somewhere safe (Google Drive, Notes, email to yourself).
+        On any device, paste it here to instantly restore your class schedule.
+      </p>
+      <div style="margin-bottom:16px">
+        <label style="font-size:.8em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px">Your Schedule Code</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="code-display" readonly style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:monospace;font-size:.85em;background:var(--surface2);color:var(--text);outline:none">
+          <button class="mbtn mbtn-primary" onclick="copyScheduleCode()" style="flex-shrink:0">📋 Copy</button>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:16px">
+        <label style="font-size:.8em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px">Load from Code</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="code-input" placeholder="Paste your code here…" style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:monospace;font-size:.85em;background:var(--surface);color:var(--text);outline:none">
+          <button class="mbtn mbtn-primary" onclick="loadScheduleCode()" style="flex-shrink:0">✅ Load</button>
+        </div>
+        <p id="code-err" style="color:#ef4444;font-size:.82em;margin-top:6px;display:none">Invalid code. Please check and try again.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="mbtn mbtn-cancel" onclick="closeScheduleCode()">Close</button>
+    </div>
+  </div>
 </div>
 
 <!-- ── SCHEDULE MODAL ── -->
@@ -459,18 +567,6 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
   </div>
 </div>
 
-<!-- ── ADMIN MODAL ── -->
-<div class="modal-bg" id="admin-modal">
-  <div class="modal-box admin-box">
-    <div class="modal-hdr">
-      <span class="modal-title">⚙️ Admin Settings</span>
-      <button class="modal-close" onclick="closeAdmin()">×</button>
-    </div>
-    <div id="admin-content">
-      <!-- password screen or settings panel injected here -->
-    </div>
-  </div>
-</div>
 
 <!-- ── PRINT MODAL ── -->
 <div class="modal-bg" id="print-modal">
@@ -492,211 +588,36 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
 // ══════════════════════════════════════════
 //  ⚙️ DEFAULTS — overridden by Admin Settings (stored in localStorage)
 // ══════════════════════════════════════════
-const ADMIN_KEY = '8thTracker_AdminSettings';
-const ADMIN_PASS = '8thgrade2627';
 const CLASSES = ['Science 8','Math 8','Algebra I','Honors Algebra I','Spanish II','Civics','English 8'];
 
 // Runtime config — populated from localStorage by loadAdminSettings()
-let SHEET_URLS = {
-    'Science 8': '', 'Math 8': '', 'Algebra I': '',
-    'Honors Algebra I': '', 'Spanish II': '', 'Civics': '', 'English 8': ''
-};
-let CLASS_PERIODS = {
-    'Science 8': ['A','B','C','D','E','F','G'],
-    'Math 8': ['A','B','C','D','E','F','G'],
-    'Algebra I': ['A','B','C','D','E','F','G'],
-    'Honors Algebra I': ['A','B','C','D','E','F','G'],
-    'Spanish II': ['A','B','C','D','E','F','G'],
-    'Civics': ['A','B','C','D','E','F','G'],
-    'English 8': ['A','B','C','D','E','F','G']
-};
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbxYp4OaoIi2sbjl8ckqg2onmBOr_iJ9nhFGIlC59eeEeKiF3WJGX-q5CgzVVo5XjM3T/exec';
+const CONFIG_PASS='8thgrade2627';
+let SHEET_URLS={};
+let CLASS_PERIODS={};
 
-function loadAdminSettings() {
+
+async function loadConfigFromSheet() {
     try {
-        const saved = JSON.parse(localStorage.getItem(ADMIN_KEY) || '{}');
-        if (saved.sheetUrls)    Object.assign(SHEET_URLS, saved.sheetUrls);
-        if (saved.classPeriods) Object.assign(CLASS_PERIODS, saved.classPeriods);
-        if (saved.quarterDates) quarterDates = saved.quarterDates;
-    } catch {}
-}
-function saveAdminToStorage(urls, periods, qDates) {
-    localStorage.setItem(ADMIN_KEY, JSON.stringify({ sheetUrls: urls, classPeriods: periods, quarterDates: qDates }));
-}
-
-// ── ADMIN MODAL ──
-let adminAuthed = false;
-
-function openAdmin() {
-    adminAuthed = false;
-    document.getElementById('admin-modal').classList.add('open');
-    // Hide the standard header during auth — renderAdminAuth provides its own
-    document.querySelector('#admin-modal .modal-hdr').style.display = 'none';
-    renderAdminAuth();
-}
-function closeAdmin() {
-    document.getElementById('admin-modal').classList.remove('open');
-    document.querySelector('#admin-modal .modal-hdr').style.display = '';
-    const box = document.querySelector('#admin-modal .modal-box');
-    if (box) { box.style.background=''; box.style.boxShadow=''; box.style.overflow=''; box.style.maxHeight=''; }
-    adminAuthed = false;
+        const resp = await fetch(SCRIPT_URL,{
+            method:'POST', headers:{'Content-Type':'text/plain'},
+            body:JSON.stringify({password:CONFIG_PASS, action:'loadConfig'})
+        });
+        const result = await resp.json();
+        if (result.success && result.config) {
+            const courses = result.config.courses || [];
+            SHEET_URLS={}; CLASS_PERIODS={};
+            courses.forEach(course => {
+                if(course.name){
+                    SHEET_URLS[course.name]    = course.csvUrl  || '';
+                    CLASS_PERIODS[course.name] = course.periods || [];
+                }
+            });
+            if(result.config.quarterDates) quarterDates=result.config.quarterDates;
+        }
+    } catch(err){ console.warn('Config load failed:',err.message); }
 }
 
-function renderAdminAuth() {
-    document.getElementById('admin-content').innerHTML = `
-        <div style="background:linear-gradient(135deg,#1e1b4b 0%,#0f172a 60%,#1e293b 100%);padding:48px 30px 36px;border-radius:14px">
-            <div style="background:var(--surface);border-radius:14px;padding:38px 34px;max-width:340px;margin:0 auto;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5)">
-                <div style="font-size:2.6em;margin-bottom:12px">📋</div>
-                <div style="font-family:'Outfit',sans-serif;font-size:1.5em;font-weight:800;margin-bottom:5px;color:var(--text)">Admin Settings</div>
-                <div style="color:var(--muted);font-size:.9em;margin-bottom:24px;line-height:1.5">Enter the password to configure class sheet URLs and period settings.</div>
-                <input type="password" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:8px;font-size:1em;font-family:'Nunito',sans-serif;outline:none;margin-bottom:10px;color:var(--text);background:var(--surface);transition:border-color .2s"
-                    id="admin-pw" placeholder="Enter password…"
-                    onkeydown="if(event.key==='Enter')checkAdminPass()"
-                    onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
-                <div style="color:#ef4444;font-size:.85em;margin-bottom:10px;display:none" id="admin-pw-err">Incorrect password. Please try again.</div>
-                <button style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:1em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;transition:background .2s;margin-bottom:10px"
-                    onmouseover="this.style.background='var(--accent-d)'" onmouseout="this.style.background='var(--accent)'"
-                    onclick="checkAdminPass()">Unlock →</button>
-                <button style="width:100%;padding:8px;background:none;color:var(--muted);border:none;font-size:.9em;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;transition:color .2s"
-                    onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'"
-                    onclick="closeAdmin()">Cancel</button>
-            </div>
-        </div>`;
-    setTimeout(() => document.getElementById('admin-pw')?.focus(), 50);
-}
-
-function checkAdminPass() {
-    const val = document.getElementById('admin-pw')?.value || '';
-    if (val === ADMIN_PASS) {
-        adminAuthed = true;
-        // Restore normal modal-box styling for the settings panel
-        const box = document.querySelector('#admin-modal .modal-box');
-        if (box) { box.style.background = 'var(--surface)'; box.style.boxShadow = '0 24px 60px rgba(0,0,0,.3)'; box.style.overflow = 'hidden'; box.style.maxHeight = '90vh'; }
-        document.querySelector('#admin-modal .modal-hdr').style.display = '';
-        renderAdminPanel();
-    } else {
-        document.getElementById('admin-pw-err').style.display = 'block';
-        document.getElementById('admin-pw').value = '';
-        document.getElementById('admin-pw').focus();
-    }
-}
-
-function renderAdminPanel() {
-    // Use index-based IDs to avoid btoa encoding issues with special characters
-    const urlRows = CLASSES.map((cls, idx) => {
-        const url = SHEET_URLS[cls] || '';
-        const hasUrl = url && url.length > 10;
-        return `<div class="url-row">
-            <div class="url-class-label">
-                <div class="url-class-dot" style="background:${CLASS_COLORS[cls]||'#64748b'}"></div>
-                ${cls}
-            </div>
-            <input type="url" class="url-input ${hasUrl?'has-url':''}" id="aurl-${idx}"
-                value="${hasUrl ? url : ''}"
-                placeholder="Paste published CSV URL…"
-                oninput="this.classList.toggle('has-url', this.value.length > 10);
-                         this.nextElementSibling.textContent=this.value.length>10?'✓ Set':'Not set';
-                         this.nextElementSibling.className='url-status '+(this.value.length>10?'ok':'empty')">
-            <span class="url-status ${hasUrl?'ok':'empty'}">${hasUrl ? '✓ Set' : 'Not set'}</span>
-        </div>`;
-    }).join('');
-
-    const periodRows = CLASSES.map((cls, idx) => {
-        const configured = CLASS_PERIODS[cls] || [];
-        // Use a global toggle function referenced by index to avoid closure issues
-        const toggles = ALL_PERIODS.map(p =>
-            `<button class="ptoggle ${configured.includes(p)?'on':''}" data-p="${p}"
-                onclick="adminTogglePeriod(this)">${p}</button>`
-        ).join('');
-        return `<div class="period-row-admin">
-            <div class="period-row-label" style="border-left:3px solid ${CLASS_COLORS[cls]||'#ccc'};padding-left:8px">${cls}</div>
-            <div class="period-toggles-admin" id="apt-${idx}">${toggles}</div>
-        </div>`;
-    }).join('');
-
-    const QUARTERS = ['Quarter 1','Quarter 2','Quarter 3','Quarter 4'];
-    const quarterDateRows = QUARTERS.map((q, idx) => {
-        const range = quarterDates[q] || {};
-        return `<div class="quarter-date-row">
-            <div class="quarter-date-label">${q}</div>
-            <input type="date" class="url-input" id="qstart-${idx}" value="${range.start||''}" style="flex:1;min-width:130px" placeholder="Start date">
-            <span style="color:var(--muted);font-weight:700;font-size:.9em;flex-shrink:0">→</span>
-            <input type="date" class="url-input" id="qend-${idx}" value="${range.end||''}" style="flex:1;min-width:130px" placeholder="End date">
-        </div>`;
-    }).join('');
-
-    document.getElementById('admin-content').innerHTML = `
-        <div class="modal-body" style="max-height:65vh;overflow-y:auto">
-            <div class="admin-section">
-                <div class="admin-section-title">📋 Google Sheet CSV URLs</div>
-                <p class="admin-note" style="margin-bottom:12px">
-                    In your Google Sheet go to <strong>File → Share → Publish to web</strong>,
-                    select each class tab, choose <strong>CSV</strong>, and paste the URL here.
-                </p>
-                ${urlRows}
-            </div>
-            <div class="admin-section">
-                <div class="admin-section-title">🗓️ Quarter Date Ranges</div>
-                <p class="admin-note" style="margin-bottom:12px">
-                    Set the start and end date for each quarter. The tracker will automatically filter
-                    to the current quarter when students open it.
-                </p>
-                ${quarterDateRows}
-            </div>
-            <div class="admin-section">
-                <div class="admin-section-title">📅 Periods Each Class Meets In</div>
-                <p class="admin-note" style="margin-bottom:12px">
-                    Click each period to toggle it on/off. Should match your teacher tool Settings.
-                </p>
-                ${periodRows}
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="mbtn mbtn-cancel" onclick="closeAdmin()">Cancel</button>
-            <button class="mbtn mbtn-primary" onclick="saveAdminSettings()">💾 Save & Reload</button>
-        </div>`;
-}
-
-// Global toggle so inline onclick works reliably in injected HTML
-function adminTogglePeriod(btn) { btn.classList.toggle('on'); }
-
-async function saveAdminSettings() {
-    const newUrls = {};
-    CLASSES.forEach((cls, idx) => {
-        const el = document.getElementById('aurl-' + idx);
-        newUrls[cls] = el ? el.value.trim() : '';
-    });
-
-    const newPeriods = {};
-    CLASSES.forEach((cls, idx) => {
-        const container = document.getElementById('apt-' + idx);
-        newPeriods[cls] = container
-            ? [...container.querySelectorAll('.ptoggle.on')].map(b => b.dataset.p)
-            : [];
-    });
-
-    // Collect quarter date ranges
-    const QUARTER_NAMES = ['Quarter 1','Quarter 2','Quarter 3','Quarter 4'];
-    const newQDates = {};
-    QUARTER_NAMES.forEach((q, idx) => {
-        const start = document.getElementById('qstart-' + idx)?.value || '';
-        const end   = document.getElementById('qend-'   + idx)?.value || '';
-        if (start || end) newQDates[q] = { start, end };
-    });
-    quarterDates = newQDates;
-
-    // Persist and apply
-    saveAdminToStorage(newUrls, newPeriods, newQDates);
-    Object.assign(SHEET_URLS, newUrls);
-    Object.assign(CLASS_PERIODS, newPeriods);
-
-    closeAdmin();
-    showToast('Settings saved! Reloading data…');
-
-    // Re-render schedule modal in case periods changed, then reload data
-    if (Object.keys(userSchedule).length > 0) {
-        await loadData();
-    }
-}
 
 function showToast(msg, dur = 3000) {
     let t = document.getElementById('_toast');
@@ -747,13 +668,18 @@ let dateView     = 'all';
 let quarterView  = 'all';
 let classFilter  = 'all';
 let engFilter    = 'all';
+let statusFilter = 'all';   // 'all' | 'outstanding' | 'done'
+let atypeFilter  = 'all';   // assignment type filter
+let submitFilter = 'all';   // where to submit filter
+let viewMode     = 'class'; // 'cards' | 'class' — class view is the default
 let sortMode     = 'due-asc';
 let customOrder  = [];
 let dragSrcId    = null;
 let doneList     = [];
 let expandedCards = new Set();
+let cvExpandedCards = new Set(); // separate expansion state for class view
 let quarterDates  = {};   // { 'Quarter 1': {start:'YYYY-MM-DD', end:'YYYY-MM-DD'}, ... }
-let calMonth, calYear, calSelected = null;
+let calMonth, calYear, calSelected=null, calView='month'; // calView: 'month'|'week'
 
 // ── DARK MODE ──
 (function(){ const t=localStorage.getItem(THEME_KEY)||'light'; document.documentElement.setAttribute('data-theme',t); if(t==='dark')document.getElementById('dm-btn').innerHTML='☀️ <span>Light</span>'; })();
@@ -803,14 +729,17 @@ function fmtDate(s){
 
 // ── INIT ──
 window.addEventListener('load', async ()=>{
-    loadAdminSettings();
-    doneList    = JSON.parse(localStorage.getItem(DONE_KEY)||'[]');
-    customOrder = JSON.parse(localStorage.getItem(CUSTOM_ORDER_KEY)||'[]');
-    expandedCards = new Set(JSON.parse(localStorage.getItem(EXPAND_KEY)||'[]'));
-    const saved = localStorage.getItem(SCHED_KEY);
-    if(saved){ userSchedule=JSON.parse(saved); }
+    doneList=JSON.parse(localStorage.getItem(DONE_KEY)||'[]');
+    customOrder=JSON.parse(localStorage.getItem(CUSTOM_ORDER_KEY)||'[]');
+    expandedCards=new Set(JSON.parse(localStorage.getItem(EXPAND_KEY)||'[]'));
+    document.getElementById('tracker-surface').innerHTML='<div style="text-align:center;padding:70px 20px">'+'<div class="spinner"></div>'+'<p style="color:var(--muted);margin-top:4px">Loading configuration...</p></div>';
+    await loadConfigFromSheet();
+    const saved=localStorage.getItem(SCHED_KEY);
+    if(saved){userSchedule=JSON.parse(saved);}
     if(Object.keys(userSchedule).length>0){
         await loadData();
+    } else {
+        document.getElementById('tracker-surface').innerHTML='<div class="welcome-screen"><p style="font-size:2em;margin-bottom:12px">🎓</p>'+'<h2>Welcome to your Assignment Tracker</h2>'+'<p>Tap <strong>My Schedule</strong> above to choose your classes and get started.</p></div>';
     }
 });
 
@@ -835,9 +764,13 @@ async function loadData(){
 
     document.getElementById('controls').style.display='flex';
     document.getElementById('stats-bar').style.display='flex';
-    document.getElementById('cal-btn').style.display='';
-    document.getElementById('print-btn').style.display='';
     document.getElementById('expand-btn').style.display='';
+    document.getElementById('view-toggle-group').style.display='';
+    // Show Calendar and Print in tools menu
+    const calItem=document.getElementById('cal-item');
+    const printItem=document.getElementById('print-item');
+    const calSep=document.getElementById('cal-sep');
+    if(calItem){calItem.style.display='';} if(printItem){printItem.style.display='';} if(calSep){calSep.style.display='';}
     buildClassDropdown();
     autoSetQuarter();
     applyAndRender();
@@ -848,41 +781,52 @@ function renderEmpty(msg){
 }
 
 // ── FILTERS / SORT ──
-function setDateView(v, label){
-    dateView=v;
-    const lbl=document.getElementById('date-dd-label');
-    if(lbl) lbl.textContent=label||v;
-    const btn=document.getElementById('date-dd-btn');
-    if(btn) btn.classList.toggle('active-filter', v!=='all');
-    document.querySelectorAll('#date-dd .filter-dd-item').forEach(it=>it.classList.remove('selected'));
-    document.querySelectorAll('#date-dd .filter-dd-item').forEach(it=>{
-        if(it.textContent.trim()===(label||v)) it.classList.add('selected');
+// ── TOOLS MENU ──
+function toggleToolsMenu(evt){ evt.stopPropagation(); document.getElementById('tools-dd').classList.toggle('open'); }
+function closeToolsMenu(){ document.getElementById('tools-dd').classList.remove('open'); }
+document.addEventListener('click', e=>{ if(!e.target.closest('#tools-dd')&&!e.target.closest('.filter-dd')) { closeToolsMenu(); document.querySelectorAll('.filter-dd').forEach(d=>d.classList.remove('open')); } });
+function updateDarkLabel(){
+    const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+    const lbl=document.getElementById('dm-label');
+    if(lbl) lbl.textContent=isDark?'Light Mode':'Dark Mode';
+}
+
+// ── UNIFIED FILTER PANEL ──
+function updateFilterPanel(){
+    document.querySelectorAll('.fp-pill[data-filter]').forEach(btn=>{
+        const f=btn.dataset.filter, v=btn.dataset.value;
+        let active=false;
+        if(f==='date')    active=dateView===v;
+        if(f==='quarter') active=quarterView===v;
+        if(f==='class')   active=classFilter===v;
+        if(f==='eng')     active=engFilter===v;
+        if(f==='status')  active=statusFilter===v;
+        if(f==='atype')   active=atypeFilter===v;
+        if(f==='submit')  active=submitFilter===v;
+        btn.classList.toggle('active', active);
     });
-    closeDd('date-dd');
-    applyAndRender();
+    const count=[dateView!=='all',quarterView!=='all',classFilter!=='all',engFilter!=='all',statusFilter!=='all',atypeFilter!=='all',submitFilter!=='all'].filter(Boolean).length;
+    const lbl=document.getElementById('filters-dd-label');
+    if(lbl) lbl.textContent=count>0?`Filters (${count})`:'Filters';
+    const btn=document.getElementById('filters-dd-btn');
+    if(btn) btn.classList.toggle('active-filter',count>0);
+    const q=document.getElementById('search-input')?.value||'';
+    document.getElementById('clear-btn').style.display=(count>0||q)?'inline-block':'none';
 }
-function setQuarter(q, label){
-    quarterView=q;
-    const btn=document.getElementById('q-dd-btn');
-    const lbl=document.getElementById('q-dd-label');
-    if(lbl)lbl.textContent=label||q;
-    if(btn)btn.classList.toggle('active-filter', q!=='all');
-    document.querySelectorAll('#q-dd-menu .filter-dd-item').forEach(it=>it.classList.remove('selected'));
-    document.querySelector(`#q-dd-menu .filter-dd-item[onclick*="${q}"]`)?.classList.add('selected');
-    closeDd('q-dd');
-    applyAndRender();
+
+function setDateView(v){ dateView=v; updateFilterPanel(); applyAndRender(); }
+function setQuarter(q){ quarterView=q; updateFilterPanel(); applyAndRender(); }
+function setClassFilter(cls){ classFilter=cls; updateFilterPanel(); applyAndRender(); }
+function setEngFilter(eng){ engFilter=eng; updateFilterPanel(); applyAndRender(); }
+function setStatusFilter(s){ statusFilter=s; updateFilterPanel(); applyAndRender(); }
+function setAtypeFilter(v){ atypeFilter=v; updateFilterPanel(); applyAndRender(); }
+function setSubmitFilter(v){ submitFilter=v; updateFilterPanel(); applyAndRender(); }
+function clearFilters(){
+    document.getElementById('search-input').value='';
+    dateView='all'; quarterView='all'; classFilter='all'; engFilter='all'; statusFilter='all'; atypeFilter='all'; submitFilter='all';
+    updateFilterPanel(); applyAndRender();
 }
-function setClassFilter(cls, label){
-    classFilter=cls;
-    const btn=document.getElementById('cls-dd-btn');
-    const lbl=document.getElementById('cls-dd-label');
-    if(lbl)lbl.textContent=label||cls;
-    if(btn)btn.classList.toggle('active-filter', cls!=='all');
-    document.querySelectorAll('#cls-dd-menu .filter-dd-item').forEach(it=>it.classList.remove('selected'));
-    document.querySelector(`#cls-dd-menu .filter-dd-item[data-cls="${cls}"]`)?.classList.add('selected');
-    closeDd('cls-dd');
-    applyAndRender();
-}
+
 function toggleDd(id, evt){
     if(evt) evt.stopPropagation();
     const dd=document.getElementById(id);
@@ -891,26 +835,21 @@ function toggleDd(id, evt){
     if(!isOpen)dd.classList.add('open');
 }
 function closeDd(id){ document.getElementById(id)?.classList.remove('open'); }
-// Close dropdowns when clicking outside
-document.addEventListener('click', e=>{
-    if(!e.target.closest('.filter-dd'))
-        document.querySelectorAll('.filter-dd').forEach(d=>d.classList.remove('open'));
-});
+
 function buildClassDropdown(){
     const menu=document.getElementById('cls-dd-menu');
     if(!menu)return;
     const classes=[...new Set(allData.map(r=>r._class))].filter(Boolean).sort();
-    let html=`<button class="filter-dd-item${classFilter==='all'?' selected':''}" data-cls="all" onclick="setClassFilter('all','All Classes')">All Classes</button>`;
+    let html=`<button class="fp-pill active" data-filter="class" data-value="all" onclick="setClassFilter('all')">All</button>`;
     classes.forEach(cls=>{
-        // Use the student's actual block color for this class
         const blk=userSchedule[cls];
         const col=blk&&PERIOD_COLORS[blk]?PERIOD_COLORS[blk].bg:'#64748b';
-        html+=`<button class="filter-dd-item${classFilter===cls?' selected':''}" data-cls="${cls}" onclick="setClassFilter('${cls.replace(/'/g,"\\'")}','${cls.replace(/'/g,"\\'")}')">
-            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:7px;vertical-align:middle"></span>${cls}
-        </button>`;
+        const safe=cls.replace(/'/g,"\'");
+        html+=`<button class="fp-pill${classFilter===cls?' active':''}" data-filter="class" data-value="${cls}" onclick="setClassFilter('${safe}')" style="border-left:3px solid ${col}">${cls}</button>`;
     });
     menu.innerHTML=html;
 }
+
 function setSortMode(mode){
     sortMode=mode;
     const labels={'due-asc':'Due Date ↑','due-desc':'Due Date ↓','class':'By Class','custom':'Custom ✋'};
@@ -922,32 +861,12 @@ function setSortMode(mode){
     document.querySelector(`#sort-dd .filter-dd-item[onclick*="${mode}"]`)?.classList.add('selected');
     closeDd('sort-dd');
     if(mode==='custom'&&customOrder.length===0){
-        // Seed customOrder with current visible order
         const cards=[...document.querySelectorAll('.acard[data-id]')];
         if(cards.length) customOrder=cards.map(c=>c.dataset.id);
     }
     applyAndRender();
 }
-function setEngFilter(eng, label){
-    engFilter=eng;
-    const lbl=document.getElementById('eng-dd-label');
-    if(lbl) lbl.textContent=label||eng;
-    const btn=document.getElementById('eng-dd-btn');
-    if(btn) btn.classList.toggle('active-filter', eng!=='all');
-    document.querySelectorAll('#eng-dd .filter-dd-item').forEach(it=>it.classList.remove('selected'));
-    document.querySelectorAll('#eng-dd .filter-dd-item').forEach(it=>{
-        if(it.textContent.trim().startsWith(label||(eng==='all'?'All':eng))) it.classList.add('selected');
-    });
-    closeDd('eng-dd');
-    applyAndRender();
-}
-function clearFilters(){
-    document.getElementById('search-input').value='';
-    setDateView('all','All Assignments');
-    setQuarter('all','All Quarters');
-    setClassFilter('all','All Classes');
-    setEngFilter('all','All');
-}
+
 
 function applyAndRender(){
     const today=new Date();today.setHours(0,0,0,0);
@@ -974,6 +893,16 @@ function applyAndRender(){
 
     // Class filter
     if(classFilter!=='all') data=data.filter(r=>r._class===classFilter);
+
+    // Status filter (done / outstanding)
+    if(statusFilter==='outstanding') data=data.filter(r=>!doneList.includes(safeId(r)));
+    if(statusFilter==='done')        data=data.filter(r=>doneList.includes(safeId(r)));
+
+    // Assignment type filter
+    if(atypeFilter!=='all') data=data.filter(r=>(r['Assignment Type']||'')=== atypeFilter);
+
+    // Where to submit filter
+    if(submitFilter!=='all') data=data.filter(r=>(r['Where to Submit']||'')=== submitFilter);
 
     // Engagement filter
     if(engFilter!=='all') data=data.filter(r=>{
@@ -1012,12 +941,98 @@ function applyAndRender(){
         });
     }
 
-    // Clear button
-    document.getElementById('clear-btn').style.display=(dateView!=='all'||quarterView!=='all'||classFilter!=='all'||engFilter!=='all'||q)?'inline-block':'none';
+    // Clear button (handled by updateFilterPanel)
+    updateFilterPanel();
 
     updateStats();
-    renderCards(data);
+    if(viewMode==='class') renderClassView(data);
+    else renderCards(data);
     updateExpandBtn();
+}
+
+// ── CLASS VIEW ──
+function setViewMode(mode){
+    viewMode=mode;
+    document.getElementById('cv-btn')?.classList.toggle('active', mode==='class');
+    document.getElementById('grid-btn')?.classList.toggle('active', mode==='cards');
+    applyAndRender();
+}
+
+function renderClassView(data){
+    if(data.length===0){
+        document.getElementById('tracker-surface').innerHTML='<div class="empty-state">No assignments match your current filters.</div>';
+        return;
+    }
+    const order=[], groups={};
+    data.forEach(item=>{
+        const cls=item._class||'Unknown';
+        if(!groups[cls]){groups[cls]=[];order.push(cls);}
+        groups[cls].push(item);
+    });
+    // Sort classes by student's block period (A→B→C→D→E→F→G)
+    order.sort((a,b)=>{
+        const pa=ALL_PERIODS.indexOf(userSchedule[a]||'');
+        const pb=ALL_PERIODS.indexOf(userSchedule[b]||'');
+        return (pa===-1?99:pa)-(pb===-1?99:pb);
+    });
+
+    const html=order.map(cls=>{
+        const items=groups[cls];
+        const blk=userSchedule[cls]||'';
+        const blkColor=PERIOD_COLORS[blk]||{bg:'#64748b',text:'#fff'};
+
+        const rows=items.map(item=>{
+            const id=safeId(item);
+            const done=doneList.includes(id);
+            const isExpanded=cvExpandedCards.has(id);
+            const dueDate=parseDate(item['Date Due']);
+            const days=dueDate?daysBetween(dueDate):null;
+            const df=formatDays(days);
+            const name=item['Assignment Name']||'Untitled';
+            const atype=item['Assignment Type']||'';
+            const eng=item['Engagement']||'';
+            const submit=item['Where to Submit']||'';
+            const quarter=item['Quarter']||'';
+            const notes=item['Notes']&&item['Notes']!=='-'?item['Notes']:'';
+            const resources=renderResources(item['Resources']);
+            // Always render both badge elements so in-place toggle works on check/uncheck
+            const hasBadge = df.cls && df.cls!=='future' && df.text && df.text!=='—';
+            const badgeHtml = `
+                <span class="cv-done-chk" style="${done?'':'display:none'};color:var(--success);font-weight:700;font-size:.82em">✓ Done</span>
+                ${hasBadge?`<span class="due-badge ${df.cls}" style="font-size:.82em;${done?'display:none':''}">${df.text}</span>`:''}
+            `;
+            const engTag=eng.toLowerCase().includes('opt')?`<span class="tag tag-opt">${eng}</span>`:(eng.toLowerCase().includes('extra')?`<span class="tag tag-ec">${eng}</span>`:`<span class="tag tag-req">${eng}</span>`);
+            const detailHtml=`<div class="cv-detail">
+                <div style="display:flex;gap:5px;flex-wrap:wrap">
+                  ${quarter?`<span class="tag tag-q">${quarter}</span>`:''}
+                  ${atype?`<span class="tag tag-type">${atype}</span>`:''}
+                  ${engTag}
+                  ${submit?`<span class="tag tag-sub">📥 ${submit}</span>`:''}
+                </div>
+                ${notes?`<div class="acard-notes">${esc(notes)}</div>`:''}
+                ${resources?`<div class="acard-resources">${resources}</div>`:''}
+            </div>`;
+            return `<div class="cv-row-wrap ${done?'cv-done':''} ${isExpanded?'cv-expanded':''}" data-id="${id}" onclick="toggleCvExpand('${id}')">
+                <div class="cv-row">
+                    <input type="checkbox" class="done-check" ${done?'checked':''} onclick="event.stopPropagation();toggleDone('${id}')">
+                    <div class="cv-name">${esc(name)}</div>
+                    <div class="cv-meta">${dueDate?`Due <strong>${fmtDate(item['Date Due'])}</strong>`:''}</div>
+                    <div style="display:flex;align-items:center;gap:4px">${badgeHtml}</div>
+                    <span class="cv-expand-chev">▾</span>
+                </div>
+                ${detailHtml}
+            </div>`;
+        }).join('');
+
+        return `<div class="cv-group">
+            <div class="cv-header" style="background:${blkColor.bg};color:${blkColor.text}">
+                ${cls} &nbsp;·&nbsp; ${blk} Block &nbsp;·&nbsp; ${items.length} assignment${items.length!==1?'s':''}
+            </div>
+            <div class="cv-rows">${rows}</div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('tracker-surface').innerHTML=`<div class="class-view">${html}</div>`;
 }
 
 // ── SAFE ID ──
@@ -1102,21 +1117,23 @@ function renderCards(data){
         const isExpanded=expandedCards.has(id);
 
         return `<div class="acard ${isCustom?'drag-card':''} ${urg} ${done?'done':''} ${isExpanded?'expanded':''}" data-id="${id}" style="border-color:${done?'var(--border)':blkColor.bg}" onclick="toggleExpand('${id}',event)">
+            <div class="acard-banner" data-blk="${blkColor.bg}" style="background:${done?'#94a3b8':blkColor.bg};color:${blkColor.text}">
+                ${cls} · ${blk} Block
+            </div>
+            <div class="acard-content">
             <div class="acard-top">
-                ${dragHandle}<div class="acard-name" style="font-size:1.18em">${esc(name)}</div>
+                ${dragHandle}<div class="acard-name">${esc(name)}</div>
                 <div class="card-top-right">
                     <input type="checkbox" class="done-check" ${done?'checked':''} onchange="toggleDone('${id}')">
                     <span class="expand-chev">▾</span>
                 </div>
             </div>
-            <div style="margin-bottom:7px">
-                <span class="acard-class" style="background:${blkColor.bg};color:${blkColor.text}">${cls} · ${blk}</span>
-            </div>
-            <div class="acard-dates" style="font-size:.95em">${assignedStr}${dueStr}<span class="due-badge ${df.cls}">${df.text}</span></div>
+            <div class="acard-dates" style="font-size:.95em">${assignedStr}${dueStr}${!done&&df.text&&df.cls!=='future'||(!done&&df.cls==='future'&&df.text!=='—')?`<span class="due-badge ${df.cls}">${df.text}</span>`:''}</div>
             <div class="acard-secondary">
                 <div class="acard-tags">${qTag}${typeTag}${engTag}${subTag}</div>
                 ${notes?`<div class="acard-notes">${esc(notes)}</div>`:''}
                 ${resources?`<div class="acard-resources">${resources}</div>`:''}
+            </div>
             </div>
         </div>`;
     }).join('');
@@ -1138,15 +1155,7 @@ function autoSetQuarter() {
         const start = new Date(range.start + 'T00:00:00');
         const end   = new Date(range.end   + 'T23:59:59');
         if (today >= start && today <= end) {
-            // Silently pre-set the quarter filter without calling applyAndRender yet
-            quarterView = q;
-            const lbl = document.getElementById('q-dd-label');
-            if (lbl) lbl.textContent = q;
-            const btn = document.getElementById('q-dd-btn');
-            if (btn) btn.classList.add('active-filter');
-            document.querySelectorAll('#q-dd-menu .filter-dd-item').forEach(it => {
-                it.classList.toggle('selected', it.textContent.trim() === q);
-            });
+            setQuarter(q);
             return;
         }
     }
@@ -1164,23 +1173,49 @@ function toggleExpand(id, e){
 function saveExpanded(){
     localStorage.setItem(EXPAND_KEY, JSON.stringify([...expandedCards]));
 }
+function toggleCvExpand(id){
+    if(cvExpandedCards.has(id)) cvExpandedCards.delete(id);
+    else cvExpandedCards.add(id);
+    const row=document.querySelector(`.cv-row-wrap[data-id="${id}"]`);
+    if(row) row.classList.toggle('cv-expanded', cvExpandedCards.has(id));
+    updateExpandBtn();
+}
+
 function toggleExpandAll(){
-    const allCards=[...document.querySelectorAll('.acard[data-id]')];
-    const allExp=allCards.length>0&&allCards.every(c=>c.classList.contains('expanded'));
-    if(allExp){
-        allCards.forEach(c=>{ expandedCards.delete(c.dataset.id); c.classList.remove('expanded'); });
+    if(viewMode==='class'){
+        const allRows=[...document.querySelectorAll('.cv-row-wrap[data-id]')];
+        const allExp=allRows.length>0&&allRows.every(r=>r.classList.contains('cv-expanded'));
+        if(allExp){
+            allRows.forEach(r=>{ cvExpandedCards.delete(r.dataset.id); r.classList.remove('cv-expanded'); });
+        } else {
+            allRows.forEach(r=>{ cvExpandedCards.add(r.dataset.id); r.classList.add('cv-expanded'); });
+        }
     } else {
-        allCards.forEach(c=>{ expandedCards.add(c.dataset.id); c.classList.add('expanded'); });
+        const allCards=[...document.querySelectorAll('.acard[data-id]')];
+        const allExp=allCards.length>0&&allCards.every(c=>c.classList.contains('expanded'));
+        if(allExp){
+            allCards.forEach(c=>{ expandedCards.delete(c.dataset.id); c.classList.remove('expanded'); });
+        } else {
+            allCards.forEach(c=>{ expandedCards.add(c.dataset.id); c.classList.add('expanded'); });
+        }
     }
     saveExpanded();
     updateExpandBtn();
 }
+
 function updateExpandBtn(){
     const btn=document.getElementById('expand-btn');
     if(!btn) return;
-    const allCards=[...document.querySelectorAll('.acard[data-id]')];
-    const allExp=allCards.length>0&&allCards.every(c=>c.classList.contains('expanded'));
-    btn.innerHTML=allExp?'⊟ <span>Collapse All</span>':'⊞ <span>Expand All</span>';
+    let allExp=false;
+    if(viewMode==='class'){
+        const all=[...document.querySelectorAll('.cv-row-wrap[data-id]')];
+        allExp=all.length>0&&all.every(r=>r.classList.contains('cv-expanded'));
+    } else {
+        const all=[...document.querySelectorAll('.acard[data-id]')];
+        allExp=all.length>0&&all.every(c=>c.classList.contains('expanded'));
+    }
+    btn.textContent=allExp?'⊟ Collapse All':'⊞ Expand All';
+    btn.classList.toggle('all-expanded',allExp);
 }
 
 // ── DRAG AND DROP ──
@@ -1308,16 +1343,81 @@ function toggleDone(id){
     else doneList=doneList.filter(x=>x!==id);
     localStorage.setItem(DONE_KEY,JSON.stringify(doneList));
 
-    // Update card in-place
+    // Update card view in-place
     const card=document.querySelector(`.acard[data-id="${id}"]`);
     if(card){
         card.classList.toggle('done',adding);
-        if(adding){card.style.borderColor='var(--border)';card.classList.remove('overdue','due-today','due-tmrw','due-week');} else {const blkBadge=card.querySelector('.acard-class');if(blkBadge)card.style.borderColor=blkBadge.style.background;}
+        // Immediately hide/show the urgency due-badge
+        const dueBadge=card.querySelector('.due-badge');
+        if(dueBadge) dueBadge.style.display=adding?'none':'';
+        if(adding){
+            card.style.borderColor='var(--border)';
+            const banner=card.querySelector('.acard-banner');
+            if(banner) banner.style.background='#94a3b8';
+            card.classList.remove('overdue','due-today','due-tmrw','due-week');
+        } else {
+            const banner=card.querySelector('.acard-banner');
+            const origColor=banner?.dataset.blk;
+            if(origColor){ card.style.borderColor=origColor; banner.style.background=origColor; }
+        }
     }
+
+    // Update class view row in-place
+    const cvRow=document.querySelector(`.cv-row-wrap[data-id="${id}"]`);
+    if(cvRow){
+        cvRow.classList.toggle('cv-done',adding);
+        const cb=cvRow.querySelector('.done-check');
+        if(cb) cb.checked=adding;
+        // Toggle the urgency badge and done checkmark immediately
+        const cvBadge=cvRow.querySelector('.due-badge');
+        const cvDoneChk=cvRow.querySelector('.cv-done-chk');
+        if(adding){
+            if(cvBadge)   cvBadge.style.display='none';
+            if(cvDoneChk) cvDoneChk.style.display='';
+        } else {
+            if(cvBadge)   cvBadge.style.display='';
+            if(cvDoneChk) cvDoneChk.style.display='none';
+        }
+    }
+
     updateStats();
 }
 
-// ── SCHEDULE MODAL ──
+// ── SCHEDULE CODE (save/load across devices) ──
+function openScheduleCode(){
+    const code = Object.keys(userSchedule).length > 0
+        ? btoa(unescape(encodeURIComponent(JSON.stringify(userSchedule))))
+        : '';
+    const el = document.getElementById('code-display');
+    if(el) el.value = code || '(No schedule saved yet — set up My Schedule first)';
+    document.getElementById('code-input').value = '';
+    document.getElementById('code-err').style.display='none';
+    document.getElementById('code-modal').classList.add('open');
+}
+function closeScheduleCode(){ document.getElementById('code-modal').classList.remove('open'); }
+function copyScheduleCode(){
+    const el=document.getElementById('code-display');
+    if(!el||!el.value||el.value.startsWith('('))return;
+    navigator.clipboard.writeText(el.value).then(()=>showToast('Code copied to clipboard!',2500));
+}
+async function loadScheduleCode(){
+    const code=document.getElementById('code-input').value.trim();
+    const errEl=document.getElementById('code-err');
+    errEl.style.display='none';
+    if(!code){errEl.style.display='block';errEl.textContent='Please paste a code first.';return;}
+    try {
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(code))));
+        if(typeof decoded!=='object'||Array.isArray(decoded)) throw new Error('invalid');
+        userSchedule=decoded;
+        localStorage.setItem(SCHED_KEY,JSON.stringify(userSchedule));
+        closeScheduleCode();
+        showToast('Schedule loaded! Fetching assignments…',2500);
+        await loadData();
+    } catch(e){
+        errEl.style.display='block';
+        errEl.textContent='Invalid code. Please check and try again.';
+    }
+}
 function openSchedule(){
     tempSchedule={...userSchedule};
     renderSchedGrid();
@@ -1355,23 +1455,16 @@ async function saveSchedule(){
 // ── CALENDAR ──
 function openCalendar(){
     const now=new Date();
-    calMonth=now.getMonth();calYear=now.getFullYear();calSelected=null;
+    calMonth=now.getMonth();calYear=now.getFullYear();calSelected=null;calView='month';
     document.getElementById('cal-modal').classList.add('open');
     renderCalendar();
 }
 function closeCalendar(){ document.getElementById('cal-modal').classList.remove('open'); }
+function setCalView(v){ calView=v; renderCalendar(); }
 
 function renderCalendar(){
     const body=document.getElementById('cal-body');
-    const monthName=new Date(calYear,calMonth).toLocaleDateString('en-US',{month:'long',year:'numeric'});
     const today=new Date();today.setHours(0,0,0,0);
-
-    // Build day cells
-    const firstDay=new Date(calYear,calMonth,1).getDay();
-    const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
-    const daysInPrev=new Date(calYear,calMonth,0).getDate();
-
-    // Map due dates → items
     const duemap={};
     allData.forEach(item=>{
         const d=parseDate(item['Date Due']);
@@ -1380,54 +1473,106 @@ function renderCalendar(){
         if(!duemap[key])duemap[key]=[];
         duemap[key].push(item);
     });
+    const viewToggle=`<div class="cal-view-toggle">
+        <button class="cal-view-btn ${calView==='month'?'active':''}" onclick="setCalView('month')">📅 Month</button>
+        <button class="cal-view-btn ${calView==='week'?'active':''}" onclick="setCalView('week')">📆 Week</button>
+    </div>`;
+    if(calView==='week') renderWeekView(body,today,duemap,viewToggle);
+    else renderMonthView(body,today,duemap,viewToggle);
+}
 
-    // Dow headers
+function renderMonthView(body,today,duemap,viewToggle){
+    const monthName=new Date(calYear,calMonth).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    const firstDay=new Date(calYear,calMonth,1).getDay();
+    const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+    const daysInPrev=new Date(calYear,calMonth,0).getDate();
     const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     let html=`<div class="cal-nav">
         <button class="cal-nav-btn" onclick="shiftMonth(-1)">← Prev</button>
-        <span class="cal-month-title">${monthName}</span>
-        <button class="cal-nav-btn" onclick="goToday()">Today</button>
-        <button class="cal-nav-btn" onclick="shiftMonth(1)">Next →</button>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span class="cal-month-title">${monthName}</span>${viewToggle}
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="cal-nav-btn" onclick="goToday()">Today</button>
+          <button class="cal-nav-btn" onclick="shiftMonth(1)">Next →</button>
+        </div>
     </div>
-    <div class="cal-grid">
-        ${dows.map(d=>`<div class="cal-dow">${d}</div>`).join('')}`;
-
+    <div class="cal-grid">${dows.map(d=>`<div class="cal-dow">${d}</div>`).join('')}`;
     const totalCells=Math.ceil((firstDay+daysInMonth)/7)*7;
     for(let i=0;i<totalCells;i++){
         let day,month,year,isOther=false;
         if(i<firstDay){day=daysInPrev-firstDay+i+1;month=calMonth-1;year=calYear;isOther=true;}
         else if(i>=firstDay+daysInMonth){day=i-firstDay-daysInMonth+1;month=calMonth+1;year=calYear;isOther=true;}
         else{day=i-firstDay+1;month=calMonth;year=calYear;}
-
         const thisDate=new Date(year,month,day);thisDate.setHours(0,0,0,0);
         const key=`${year}-${month}-${day}`;
         const items=duemap[key]||[];
         const isTod=thisDate.getTime()===today.getTime();
-        const isSel=calSelected&&calSelected.getTime()===thisDate.getTime();
-
-        const dots=items.slice(0,4).map(it=>{
-            const id=safeId(it);
-            const done=doneList.includes(id);
+        const events=items.slice(0,4).map(it=>{
+            const done=doneList.includes(safeId(it));
             const blkC=(PERIOD_COLORS[it._block]||{bg:'#7c3aed'}).bg;
-            const shortName=(it['Assignment Name']||'Untitled').slice(0,22);
-            const cls=it._class||'';
-            return `<div class="cal-event${done?' done-event':''}" style="background:${blkC}" title="${it['Assignment Name']||''} · ${cls}">${shortName}</div>`;
+            return `<div class="cal-event${done?' done-event':''}" style="background:${blkC}">${(it['Assignment Name']||'').slice(0,22)}</div>`;
         }).join('');
-
-        const moreCount = items.length - 4;
-        const moreHtml = moreCount > 0 ? `<div class="cal-more">+${moreCount} more</div>` : '';
-        const cls2=`cal-day${isOther?' other-month':''}${isTod?' today':''}`;
-        html+=`<div class="${cls2}" ${!isOther?`onclick="selectCalDay(${year},${month},${day})"`:''}>
+        const moreHtml=items.length>4?`<div class="cal-more">+${items.length-4} more</div>`:'';
+        html+=`<div class="cal-day${isOther?' other-month':''}${isTod?' today':''}" ${!isOther?`onclick="selectCalDay(${year},${month},${day})"`:''}>
             <div class="cal-day-num">${day}</div>
-            <div class="cal-events">${dots}${moreHtml}</div>
+            <div class="cal-events">${events}${moreHtml}</div>
         </div>`;
     }
-
     html+='</div><div class="cal-detail" id="cal-detail">';
     if(calSelected) html+=renderCalDetail(calSelected);
     else html+='<div style="color:var(--muted);font-size:.9em;text-align:center;padding:8px 0">Click a day to see assignments due.</div>';
     html+='</div>';
     body.innerHTML=html;
+}
+
+function renderWeekView(body,today,duemap,viewToggle){
+    const ref=calSelected||today;
+    const startOfWeek=new Date(ref);
+    startOfWeek.setDate(ref.getDate()-ref.getDay());
+    startOfWeek.setHours(0,0,0,0);
+    const weekDates=Array.from({length:7},(_,i)=>{const d=new Date(startOfWeek);d.setDate(startOfWeek.getDate()+i);return d;});
+    const weekLabel=`${weekDates[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${weekDates[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+    const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    let html=`<div class="cal-nav">
+        <button class="cal-nav-btn" onclick="shiftWeek(-1)">← Prev</button>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span class="cal-month-title" style="font-size:1em">${weekLabel}</span>${viewToggle}
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="cal-nav-btn" onclick="goToday()">Today</button>
+          <button class="cal-nav-btn" onclick="shiftWeek(1)">Next →</button>
+        </div>
+    </div>
+    <div class="cal-week-grid">`;
+    weekDates.forEach(d=>{
+        const isTod=d.getTime()===today.getTime();
+        const key=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        const items=duemap[key]||[];
+        const events=items.map(it=>{
+            const done=doneList.includes(safeId(it));
+            const blkC=(PERIOD_COLORS[it._block]||{bg:'#7c3aed'}).bg;
+            return `<div class="cal-week-event" style="background:${blkC};${done?'opacity:.4;text-decoration:line-through':''}">
+                <div style="font-weight:800;font-size:.92em">${esc(it['Assignment Name']||'')}</div>
+                <div style="font-size:.8em;opacity:.88">${it._class||''}</div>
+            </div>`;
+        }).join('');
+        html+=`<div class="cal-week-col${isTod?' today':''}">
+            <div class="cal-week-hdr">${dows[d.getDay()]}<br><span style="font-size:1.1em">${d.getDate()}</span></div>
+            <div class="cal-week-body">${events||'<div class="cal-week-empty">—</div>'}</div>
+        </div>`;
+    });
+    html+=`</div>`;
+    body.innerHTML=html;
+}
+
+function shiftWeek(dir){
+    const ref=calSelected||new Date();
+    const s=new Date(ref);
+    s.setDate(ref.getDate()-ref.getDay()+(dir*7));
+    s.setHours(0,0,0,0);
+    calSelected=s;
+    renderCalendar();
 }
 
 function selectCalDay(y,m,d){
