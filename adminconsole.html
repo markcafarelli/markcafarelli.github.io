@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Config — Assignment Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f1f5f9;--surface:#fff;--surface2:#f8fafc;--border:#e2e8f0;
+  --text:#1e293b;--muted:#64748b;
+  --accent:#7c3aed;--accent-d:#6d28d9;--accent-light:#ede9fe;--accent-mid:#c4b5fd;
+  --nav:#0f172a;--success:#22c55e;--danger:#ef4444;--warn:#f59e0b;
+  --shadow:0 2px 8px rgba(0,0,0,.07);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Nunito",sans-serif;background:var(--bg);color:var(--text);font-size:16px;min-height:100vh}
+
+/* AUTH */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:linear-gradient(135deg,#1e1b4b 0%,#0f172a 60%,#1e293b 100%)}
+.auth-card{background:var(--surface);border-radius:18px;padding:48px 44px;width:380px;
+  text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.4)}
+.auth-logo{font-size:2.8em;margin-bottom:14px}
+.auth-title{font-family:"Outfit",sans-serif;font-size:1.6em;font-weight:800;margin-bottom:4px}
+.auth-sub{font-size:.9em;color:var(--muted);margin-bottom:28px}
+.auth-input{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:8px;
+  font-size:1em;font-family:"Nunito",sans-serif;outline:none;transition:border-color .2s;
+  margin-bottom:10px;color:var(--text)}
+.auth-input:focus{border-color:var(--accent)}
+.auth-btn{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;
+  border-radius:8px;font-size:1em;font-weight:700;font-family:"Nunito",sans-serif;
+  cursor:pointer;transition:background .2s;margin-top:10px}
+.auth-btn:hover{background:var(--accent-d)}
+.auth-err{color:var(--danger);font-size:.85em;margin-top:8px;display:none}
+
+/* TOPBAR */
+.topbar{background:var(--nav);color:#f8fafc;display:flex;align-items:center;gap:10px;
+  padding:0 24px;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.topbar-brand{font-family:"Outfit",sans-serif;font-weight:800;font-size:1.15em;flex:1}
+.topbar-saved{font-size:.78em;color:rgba(255,255,255,.4);white-space:nowrap}
+.tbtn{background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.85);border-radius:7px;
+  padding:8px 15px;cursor:pointer;font-size:.88em;font-weight:700;font-family:"Nunito",sans-serif;
+  display:flex;align-items:center;gap:6px;transition:all .2s;white-space:nowrap}
+.tbtn:hover{background:rgba(255,255,255,.2);color:#fff}
+.tbtn.save-btn{background:var(--accent)}
+.tbtn.save-btn:hover{background:var(--accent-d)}
+@keyframes savePulse{
+  0%{box-shadow:0 0 0 0 rgba(124,58,237,.8);}
+  70%{box-shadow:0 0 0 12px rgba(124,58,237,0);}
+  100%{box-shadow:0 0 0 0 rgba(124,58,237,0);}
+}
+.tbtn.save-btn.dirty{animation:savePulse 1.4s infinite;background:#5b21b6;color:#fff}
+
+/* PAGE */
+.page{max-width:940px;margin:0 auto;padding:24px 20px}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:24px;margin-bottom:20px;box-shadow:var(--shadow)}
+.card-title{font-family:"Outfit",sans-serif;font-size:.85em;font-weight:700;
+  text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:14px;
+  display:flex;align-items:center;justify-content:space-between}
+.card-title-left{display:flex;align-items:center;gap:7px}
+.card-note{font-size:.88em;color:var(--muted);margin-bottom:18px;line-height:1.6}
+
+/* INPUTS */
+.field-label{display:block;font-size:.8em;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.field-row{display:flex;align-items:center;gap:10px}
+input[type=text],input[type=url],input[type=date]{
+  padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;
+  font-size:.95em;font-family:"Nunito",sans-serif;color:var(--text);
+  background:var(--surface);outline:none;transition:border-color .2s;width:100%}
+input:focus{border-color:var(--accent)}
+input.has-val{border-color:var(--success)}
+input:disabled,input[readonly]{background:var(--surface2);color:var(--text);
+  border-color:var(--border);cursor:default}
+.url-status{font-size:.78em;font-weight:700;white-space:nowrap;flex-shrink:0}
+.url-status.ok{color:var(--success)}
+.url-status.empty{color:var(--muted)}
+.field-hint{font-size:.8em;color:var(--muted);margin-top:5px;line-height:1.55}
+
+/* COURSE CARDS */
+.course-list{display:flex;flex-direction:column;gap:14px}
+.course-card{border:2px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .2s}
+.course-card.is-created{border-color:#bbf7d0}
+.course-card.is-editing{border-color:var(--warn)}
+.course-card.is-locked{border-color:var(--border)}
+.course-card-header{display:flex;align-items:center;gap:10px;padding:13px 16px;
+  background:var(--surface2);border-bottom:1px solid var(--border)}
+.course-badge{width:28px;height:28px;border-radius:50%;background:var(--border);
+  color:var(--muted);font-size:.82em;font-weight:800;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;font-family:"Outfit",sans-serif;transition:all .2s}
+.course-card.is-created .course-badge{background:var(--success);color:#fff}
+.course-card.is-editing .course-badge{background:var(--warn);color:#fff}
+.course-name-input{flex:1;font-size:1em;font-weight:700;border:1.5px solid transparent;
+  background:transparent;padding:6px 8px;border-radius:6px;font-family:"Nunito",sans-serif;
+  color:var(--text);outline:none;transition:border-color .2s}
+.course-name-input:focus{border-color:var(--accent);background:var(--surface)}
+.course-name-input:disabled{color:var(--text);background:transparent;border-color:transparent;cursor:default}
+.header-badges{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.pill{border-radius:99px;padding:3px 10px;font-size:.75em;font-weight:700;white-space:nowrap}
+.pill-green{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.pill-amber{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+.icon-btn{background:none;border:1.5px solid var(--border);border-radius:7px;padding:5px 12px;
+  cursor:pointer;font-size:.82em;font-weight:700;font-family:"Nunito",sans-serif;
+  color:var(--muted);transition:all .2s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.icon-btn.danger:hover{border-color:var(--danger);color:var(--danger);background:#fef2f2}
+.remove-btn{background:none;border:none;color:var(--danger);cursor:pointer;font-size:1.25em;
+  line-height:1;padding:4px;border-radius:4px;flex-shrink:0}
+.remove-btn:hover{background:#fef2f2}
+.course-card-body{padding:16px}
+.periods-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.periods-label{font-size:.8em;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.4px;white-space:nowrap}
+.period-toggles{display:flex;gap:5px;flex-wrap:wrap}
+.ptoggle{width:34px;height:34px;border:1.5px solid var(--border);border-radius:7px;
+  background:var(--surface);color:var(--muted);font-weight:800;font-size:.85em;
+  cursor:pointer;transition:all .2s;font-family:"Outfit",sans-serif}
+.ptoggle:hover{border-color:var(--muted)}
+.ptoggle:disabled{cursor:default;opacity:.7}
+.ptoggle.on[data-p="A"]{background:#ef4444;border-color:#ef4444;color:#fff}
+.ptoggle.on[data-p="B"]{background:#f97316;border-color:#f97316;color:#fff}
+.ptoggle.on[data-p="C"]{background:#eab308;border-color:#eab308;color:#1e293b}
+.ptoggle.on[data-p="D"]{background:#22c55e;border-color:#22c55e;color:#fff}
+.ptoggle.on[data-p="E"]{background:#3b82f6;border-color:#3b82f6;color:#fff}
+.ptoggle.on[data-p="F"]{background:#8b5cf6;border-color:#8b5cf6;color:#fff}
+.ptoggle.on[data-p="G"]{background:#ec4899;border-color:#ec4899;color:#fff}
+.create-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);
+  color:#fff;border:none;border-radius:7px;font-size:.88em;font-weight:700;
+  font-family:"Nunito",sans-serif;cursor:pointer;white-space:nowrap;transition:background .2s;flex-shrink:0}
+.create-btn:hover{background:var(--accent-d)}
+.create-btn:disabled{background:var(--muted);cursor:not-allowed}
+.csv-locked{display:flex;align-items:center;gap:8px;padding:10px 13px;
+  border:1.5px dashed var(--border);border-radius:8px;color:var(--muted);
+  font-size:.9em;background:var(--surface2)}
+.csv-url-row{margin-top:2px}
+.add-course-btn{display:flex;align-items:center;gap:8px;padding:12px 18px;
+  border:2px dashed var(--border);border-radius:10px;background:none;color:var(--muted);
+  cursor:pointer;font-size:.95em;font-weight:700;font-family:"Nunito",sans-serif;
+  width:100%;justify-content:center;transition:all .2s;margin-top:4px}
+.add-course-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+
+/* QUARTERS */
+.quarter-section{position:relative}
+.quarter-grid{display:flex;flex-direction:column;gap:12px}
+.quarter-row{display:grid;grid-template-columns:110px 1fr 24px 1fr;gap:10px;align-items:center}
+.quarter-label{font-weight:700;font-size:.92em}
+.quarter-arrow{text-align:center;color:var(--muted);font-weight:700}
+
+/* CONFIRM MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);
+  z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal-box{background:var(--surface);border-radius:14px;width:580px;max-width:100%;
+  max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3);
+  animation:mpop .2s ease}
+@keyframes mpop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-hdr{padding:20px 24px 14px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:"Outfit",sans-serif;font-size:1.15em;font-weight:800}
+.modal-close{background:none;border:none;font-size:1.4em;cursor:pointer;color:var(--muted)}
+.modal-body{padding:20px 24px}
+.change-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;
+  border-radius:8px;margin-bottom:8px;font-size:.92em;line-height:1.4}
+.change-item.added{background:#f0fdf4;border:1px solid #bbf7d0}
+.change-item.removed{background:#fef2f2;border:1px solid #fca5a5}
+.change-item.modified{background:#fffbeb;border:1px solid #fde68a}
+.change-item.quarter{background:#eff6ff;border:1px solid #bfdbfe}
+.change-icon{flex-shrink:0;font-size:1em}
+.no-changes{text-align:center;color:var(--muted);padding:20px;font-size:.95em}
+.modal-footer{padding:14px 24px;border-top:1px solid var(--border);
+  display:flex;justify-content:flex-end;gap:10px}
+.mbtn{padding:10px 20px;border-radius:8px;font-size:.95em;font-weight:700;
+  font-family:"Nunito",sans-serif;cursor:pointer;border:none;transition:all .2s}
+.mbtn-cancel{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.mbtn-cancel:hover{background:var(--border);color:var(--text)}
+.mbtn-confirm{background:var(--success);color:#fff}
+.mbtn-confirm:hover{background:#16a34a}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:12px 20px;
+  border-radius:10px;font-weight:700;font-size:.92em;z-index:9999;
+  transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;max-width:340px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{background:#166534;border-left:4px solid #22c55e}
+.toast.err{background:#7f1d1d;border-left:4px solid #ef4444}
+
+@media(max-width:640px){
+  .quarter-row{grid-template-columns:80px 1fr 16px 1fr;gap:6px}
+  .tbtn span{display:none}
+  .page{padding:14px 12px}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">⚙️</div>
+    <div class="auth-title">Admin Config</div>
+    <div class="auth-sub">Assignment Tracker &nbsp;·&nbsp; Administrator</div>
+    <input type="password" class="auth-input" id="pw-input" placeholder="Enter password…"
+      onkeydown="if(event.key==='Enter')checkAuth()">
+    <div class="auth-err" id="auth-err">Incorrect password. Please try again.</div>
+    <button class="auth-btn" onclick="checkAuth()">Sign In →</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <header class="topbar">
+    <div class="topbar-brand">⚙️ Admin Config Tool</div>
+    <span class="topbar-saved" id="saved-label"></span>
+    <button class="tbtn" onclick="loadFromSheet()">📥 <span>Load from Sheet</span></button>
+    <button class="tbtn save-btn" id="save-btn" onclick="initiateSave()">💾 <span>Save to Sheet</span></button>
+  </header>
+
+  <div class="page">
+
+    <!-- CONNECTION -->
+    <div class="card">
+      <div class="card-title"><div class="card-title-left">🔗 Apps Script Connection</div></div>
+      <label class="field-label">Web App URL <span style="color:var(--danger)">*</span></label>
+      <div class="field-row">
+        <input type="url" id="script-url" placeholder="https://script.google.com/macros/s/…/exec"
+          oninput="onUrlInput(this);markDirty()">
+        <span class="url-status empty" id="url-status">Not set</span>
+      </div>
+      <div class="field-hint">Paste your deployed Apps Script URL. Required before saving or loading.</div>
+    </div>
+
+    <!-- COURSES -->
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-left">🏫 Courses</div>
+      </div>
+      <p class="card-note">
+        <strong>Step 1</strong> — Enter a name, select periods, click <strong>Create in Sheet</strong>.<br>
+        <strong>Step 2</strong> — Publish that tab in Google Sheets as CSV, paste the URL here.<br>
+        Once a course has a CSV URL and is saved, it locks. Click <strong>✏️ Edit</strong> to make changes.
+      </p>
+      <div class="course-list" id="course-list"></div>
+      <button class="add-course-btn" onclick="addCourse()">＋ Add Course</button>
+    </div>
+
+    <!-- QUARTERS -->
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-left">🗓️ Quarter Date Ranges</div>
+        <div id="quarter-edit-controls"></div>
+      </div>
+      <p class="card-note" id="quarter-note">
+        Set start and end dates for each quarter. The student tool auto-filters to the current quarter.
+        Once saved, click <strong>✏️ Edit</strong> to make changes.
+      </p>
+      <div class="quarter-grid" id="quarter-grid">
+        <div class="quarter-row"><div class="quarter-label">Quarter 1</div>
+          <input type="date" id="q1-start" oninput="markDirty()">
+          <div class="quarter-arrow">→</div>
+          <input type="date" id="q1-end" oninput="markDirty()"></div>
+        <div class="quarter-row"><div class="quarter-label">Quarter 2</div>
+          <input type="date" id="q2-start" oninput="markDirty()">
+          <div class="quarter-arrow">→</div>
+          <input type="date" id="q2-end" oninput="markDirty()"></div>
+        <div class="quarter-row"><div class="quarter-label">Quarter 3</div>
+          <input type="date" id="q3-start" oninput="markDirty()">
+          <div class="quarter-arrow">→</div>
+          <input type="date" id="q3-end" oninput="markDirty()"></div>
+        <div class="quarter-row"><div class="quarter-label">Quarter 4</div>
+          <input type="date" id="q4-start" oninput="markDirty()">
+          <div class="quarter-arrow">→</div>
+          <input type="date" id="q4-end" oninput="markDirty()"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-bg" id="confirm-modal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <span class="modal-title">📋 Confirm Changes</span>
+      <button class="modal-close" onclick="closeConfirm()">×</button>
+    </div>
+    <div class="modal-body" id="changes-list"></div>
+    <div class="modal-footer">
+      <button class="mbtn mbtn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="mbtn mbtn-confirm" onclick="confirmedSave()">✅ Confirm & Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PASSWORD    = '8thgrade2627';
+const ALL_PERIODS = ['A','B','C','D','E','F','G'];
+let courseCount   = 0;
+let isDirty       = false;
+let lastSavedConfig = null;
+let quarterLocked = false;
+
+// ── AUTH ──
+function checkAuth() {
+  if (document.getElementById('pw-input').value === PASSWORD) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } else {
+    document.getElementById('auth-err').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+// ── DIRTY STATE ──
+function markDirty() {
+  isDirty = true;
+  document.getElementById('save-btn').classList.add('dirty');
+}
+function clearDirty() {
+  isDirty = false;
+  document.getElementById('save-btn').classList.remove('dirty');
+}
+
+// ── URL ──
+function onUrlInput(el) {
+  const ok = el.value.length > 20;
+  el.classList.toggle('has-val', ok);
+  const st = document.getElementById('url-status');
+  st.textContent = ok ? '✓ Set' : 'Not set';
+  st.className = 'url-status ' + (ok ? 'ok' : 'empty');
+}
+function getScriptUrl() { return document.getElementById('script-url').value.trim(); }
+
+// ── COURSE CARDS ──
+function addCourse(data = {}) {
+  courseCount++;
+  const id        = 'course-' + courseCount;
+  const isCreated = data.created  || false;
+  const isLocked  = data.locked   || false;
+  const periods   = data.periods  || [];
+  const csvUrl    = data.csvUrl   || '';
+  const hasUrl    = csvUrl.length > 10;
+  const name      = data.name     || '';
+  const isEditing = !isLocked && isCreated;
+
+  const el = document.createElement('div');
+  el.id = id;
+  el.dataset.created      = isCreated ? 'true' : 'false';
+  el.dataset.locked       = isLocked  ? 'true' : 'false';
+  el.dataset.originalName = data.originalName || name;
+  el.className = 'course-card' +
+    (isCreated ? ' is-created' : '') +
+    (isEditing && !isLocked ? ' is-editing' : '') ;
+
+  el.innerHTML = buildCourseCardHTML(id, name, periods, csvUrl, isCreated, isLocked, isEditing, hasUrl, courseCount);
+  document.getElementById('course-list').appendChild(el);
+  renumberCourses();
+}
+
+function buildCourseCardHTML(id, name, periods, csvUrl, isCreated, isLocked, isEditing, hasUrl, num) {
+  const periodBtns = ALL_PERIODS.map(p => {
+    const on = periods.includes(p);
+    const dis = isLocked ? 'disabled' : '';
+    const click = isLocked ? '' : `onclick="this.classList.toggle('on');markDirty()"`;
+    return `<button class="ptoggle ${on?'on':''}" data-p="${p}" ${dis} ${click}>${p}</button>`;
+  }).join('');
+
+  const badgeContent  = isCreated ? '✓' : num;
+  const badgeTitle    = isCreated ? (isLocked ? '🔒 Locked' : '✏️ Editing') : num;
+  const createdPill   = isCreated ? `<span class="pill ${isLocked?'pill-green':'pill-amber'}">${isLocked?'🔒 Locked':'✏️ Editing'}</span>` : '';
+  const nameDisabled  = isLocked ? 'disabled' : '';
+  const nameInput     = `<input type="text" class="course-name-input" value="${name}" ${nameDisabled}
+    placeholder="Enter course name…" oninput="markDirty();updateNameHint(this,'${id}')">`;
+
+  // Action buttons in header
+  let headerActions = '';
+  if (!isCreated) {
+    headerActions = `<button class="remove-btn" onclick="removeCourse('${id}')" title="Remove">×</button>`;
+  } else if (isLocked) {
+    headerActions = `<button class="icon-btn" onclick="unlockCourse('${id}')">✏️ Edit</button>
+      <button class="remove-btn" onclick="removeCourse('${id}')" title="Remove">×</button>`;
+  } else {
+    headerActions = `<button class="remove-btn" onclick="removeCourse('${id}')" title="Remove">×</button>`;
+  }
+
+  // Period row - include Create button if not yet created
+  const createBtn = !isCreated
+    ? `<button class="create-btn" onclick="createCourseInSheet('${id}')">Create in Sheet →</button>`
+    : '';
+
+  // CSV section
+  let csvSection = '';
+  if (!isCreated) {
+    csvSection = `<div class="csv-locked">🔒 Create the course in the Sheet first to unlock the CSV URL field.</div>`;
+  } else if (isLocked) {
+    csvSection = `<div>
+      <label class="field-label">Published CSV URL</label>
+      <div class="field-row">
+        <input type="url" class="csv-url ${hasUrl?'has-val':''}" value="${csvUrl}" disabled>
+        <span class="url-status ${hasUrl?'ok':'empty'}">${hasUrl?'✓ Set':'Not set'}</span>
+      </div>
+    </div>`;
+  } else {
+    csvSection = `<div class="csv-url-row">
+      <label class="field-label">Published CSV URL</label>
+      <div class="field-row">
+        <input type="url" class="csv-url ${hasUrl?'has-val':''}" value="${csvUrl}"
+          placeholder="Paste published CSV URL…"
+          oninput="this.classList.toggle('has-val',this.value.length>10);
+                   this.nextElementSibling.textContent=this.value.length>10?'✓ Set':'Not set';
+                   this.nextElementSibling.className='url-status '+(this.value.length>10?'ok':'empty');
+                   markDirty()">
+        <span class="url-status ${hasUrl?'ok':'empty'}">${hasUrl?'✓ Set':'Not set'}</span>
+      </div>
+      <div class="field-hint" id="${id}-hint">
+        In Google Sheets → <strong>File → Share → Publish to web</strong> → select
+        "<strong class="name-hint">${name}</strong>" tab → CSV → Copy &amp; paste URL above.
+      </div>
+    </div>`;
+  }
+
+  return `
+    <div class="course-card-header">
+      <div class="course-badge">${badgeContent}</div>
+      ${nameInput}
+      <div class="header-badges">${createdPill}</div>
+      ${headerActions}
+    </div>
+    <div class="course-card-body">
+      <div class="periods-row">
+        <span class="periods-label">Periods</span>
+        <div class="period-toggles">${periodBtns}</div>
+        ${createBtn}
+      </div>
+      ${csvSection}
+    </div>`;
+}
+
+function updateNameHint(input, id) {
+  const hint = document.querySelector('#' + id + '-hint .name-hint');
+  if (hint) hint.textContent = input.value || 'this course';
+}
+
+function unlockCourse(id) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  card.dataset.locked = 'false';
+  card.classList.add('is-editing');
+
+  const name    = card.querySelector('.course-name-input')?.value || '';
+  const periods = [...card.querySelectorAll('.ptoggle.on')].map(b => b.dataset.p);
+  const csvUrl  = card.querySelector('.csv-url')?.value || '';
+  const hasUrl  = csvUrl.length > 10;
+
+  card.innerHTML = buildCourseCardHTML(id, name, periods, csvUrl, true, false, true, hasUrl, '✓');
+  markDirty();
+}
+
+function removeCourse(id) {
+  document.getElementById(id)?.remove();
+  renumberCourses();
+  markDirty();
+}
+
+function renumberCourses() {
+  document.querySelectorAll('.course-card').forEach((card, i) => {
+    const badge = card.querySelector('.course-badge');
+    if (badge && card.dataset.created !== 'true') badge.textContent = i + 1;
+  });
+}
+
+// ── CREATE COURSE IN SHEET ──
+async function createCourseInSheet(cardId) {
+  const card = document.getElementById(cardId);
+  const name = card.querySelector('.course-name-input')?.value.trim();
+  if (!name) { showToast('Enter a course name first.', 'err'); return; }
+  if (!getScriptUrl()) { showToast('Enter the Apps Script URL first.', 'err'); return; }
+
+  const btn = card.querySelector('.create-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
+
+  try {
+    const result = await apiFetch('createCourse', { className: name });
+    if (result.success) {
+      const periods = [...card.querySelectorAll('.ptoggle.on')].map(b => b.dataset.p);
+      card.dataset.created = 'true';
+      card.dataset.locked  = 'false';
+      card.dataset.originalName = name;
+      card.classList.add('is-created', 'is-editing');
+      card.innerHTML = buildCourseCardHTML(cardId, name, periods, '', true, false, true, false, '✓');
+      markDirty();
+      showToast('Tab "' + name + '" created in Google Sheets! Now paste the CSV URL.', 'ok');
+    } else {
+      if (btn) { btn.disabled = false; btn.textContent = 'Create in Sheet →'; }
+      showToast('Error: ' + (result.error || 'Unknown'), 'err');
+    }
+  } catch(err) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Create in Sheet →'; }
+    showToast('Network error: ' + err.message, 'err');
+  }
+}
+
+// ── QUARTERS LOCK / UNLOCK ──
+function setQuarterLocked(locked) {
+  quarterLocked = locked;
+  ['q1','q2','q3','q4'].forEach(q => {
+    const s = document.getElementById(q + '-start');
+    const e = document.getElementById(q + '-end');
+    if (s) s.disabled = locked;
+    if (e) e.disabled = locked;
+  });
+  const ctrl = document.getElementById('quarter-edit-controls');
+  if (ctrl) {
+    ctrl.innerHTML = locked
+      ? `<button class="icon-btn" onclick="setQuarterLocked(false);markDirty()">✏️ Edit Quarters</button>`
+      : '';
+  }
+}
+
+// ── COLLECT FORM DATA ──
+function getFormData() {
+  const scriptUrl = getScriptUrl();
+  const courses = [...document.querySelectorAll('.course-card')].map(card => ({
+    name:         card.querySelector('.course-name-input')?.value.trim() || '',
+    originalName: card.dataset.originalName || '',
+    periods:      [...card.querySelectorAll('.ptoggle.on')].map(b => b.dataset.p),
+    csvUrl:       card.querySelector('.csv-url')?.value.trim() || '',
+    created:      card.dataset.created === 'true',
+    locked:       card.querySelector('.csv-url')?.value.trim().length > 10
+  })).filter(c => c.name);
+
+  const quarterDates = {
+    'Quarter 1': { start: document.getElementById('q1-start').value, end: document.getElementById('q1-end').value },
+    'Quarter 2': { start: document.getElementById('q2-start').value, end: document.getElementById('q2-end').value },
+    'Quarter 3': { start: document.getElementById('q3-start').value, end: document.getElementById('q3-end').value },
+    'Quarter 4': { start: document.getElementById('q4-start').value, end: document.getElementById('q4-end').value }
+  };
+  return { scriptUrl, courses, quarterDates };
+}
+
+// ── POPULATE FORM ──
+function populateForm(config) {
+  if (!config) return;
+  if (config.scriptUrl) { const el=document.getElementById('script-url'); el.value=config.scriptUrl; onUrlInput(el); }
+
+  document.getElementById('course-list').innerHTML = '';
+  courseCount = 0;
+  (config.courses || []).forEach(c => addCourse({ ...c, locked: c.locked !== false }));
+
+  const qd = config.quarterDates || {};
+  const hasAnyDates = Object.values(qd).some(q => q.start || q.end);
+  ['Quarter 1','Quarter 2','Quarter 3','Quarter 4'].forEach((q, i) => {
+    const n = i + 1;
+    document.getElementById('q'+n+'-start').value = (qd[q]&&qd[q].start)||'';
+    document.getElementById('q'+n+'-end').value   = (qd[q]&&qd[q].end)  ||'';
+  });
+  setQuarterLocked(hasAnyDates);
+}
+
+// ── DETECT CHANGES ──
+function detectChanges(oldCfg, newCfg) {
+  const changes = [];
+  const old = oldCfg || { courses:[], quarterDates:{} };
+
+  // Added courses
+  (newCfg.courses||[]).forEach(nc => {
+    if (!old.courses.find(c => c.name===nc.name || c.originalName===nc.name))
+      changes.push({ type:'added', icon:'✅', text:`Added course: <strong>${nc.name}</strong>` });
+  });
+
+  // Removed courses
+  (old.courses||[]).forEach(oc => {
+    if (!newCfg.courses.find(nc => nc.name===oc.name || nc.originalName===oc.name))
+      changes.push({ type:'removed', icon:'🗑️', text:`Removed course: <strong>${oc.name}</strong>` });
+  });
+
+  // Modified courses
+  (newCfg.courses||[]).forEach(nc => {
+    const oc = (old.courses||[]).find(c => c.name===nc.originalName||c.name===nc.name);
+    if (!oc) return;
+    if (oc.name !== nc.name)
+      changes.push({ type:'modified', icon:'✏️', text:`Renamed <strong>${oc.name}</strong> → <strong>${nc.name}</strong>` });
+    const op = (oc.periods||[]).slice().sort().join(',');
+    const np = (nc.periods||[]).slice().sort().join(',');
+    if (op !== np)
+      changes.push({ type:'modified', icon:'📅', text:`<strong>${nc.name}</strong> periods: [${op||'none'}] → [${np||'none'}]` });
+    if ((oc.csvUrl||'') !== (nc.csvUrl||'')) {
+      const label = !oc.csvUrl ? 'CSV URL set' : 'CSV URL updated';
+      changes.push({ type:'modified', icon:'🔗', text:`<strong>${nc.name}</strong>: ${label}` });
+    }
+  });
+
+  // Quarter dates
+  const quarters = ['Quarter 1','Quarter 2','Quarter 3','Quarter 4'];
+  quarters.forEach(q => {
+    const oq = (old.quarterDates||{})[q]||{};
+    const nq = (newCfg.quarterDates||{})[q]||{};
+    if (oq.start!==nq.start||oq.end!==nq.end) {
+      if (nq.start||nq.end)
+        changes.push({ type:'quarter', icon:'🗓️', text:`${q}: <strong>${nq.start||'?'}</strong> → <strong>${nq.end||'?'}</strong>` });
+    }
+  });
+
+  return changes;
+}
+
+// ── SAVE FLOW ──
+async function initiateSave() {
+  if (!getScriptUrl()) { showToast('Enter the Apps Script URL first.', 'err'); return; }
+  const config  = getFormData();
+  if (!config.courses.length) { showToast('Add at least one course first.', 'err'); return; }
+  const changes = detectChanges(lastSavedConfig, config);
+
+  const list = document.getElementById('changes-list');
+  if (!changes.length) {
+    list.innerHTML = '<div class="no-changes">No changes detected from the last saved config.</div>';
+  } else {
+    list.innerHTML = changes.map(c =>
+      `<div class="change-item ${c.type}"><span class="change-icon">${c.icon}</span><span>${c.text}</span></div>`
+    ).join('');
+  }
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+
+async function confirmedSave() {
+  closeConfirm();
+  const config = getFormData();
+
+  // Handle renames
+  for (const course of config.courses) {
+    if (course.created && course.originalName && course.originalName !== course.name) {
+      try { await apiFetch('renameClass', { oldName: course.originalName, newName: course.name }); } catch(e) {}
+    }
+  }
+
+  showToast('Saving to Google Sheet…');
+  try {
+    const result = await apiFetch('saveConfig', { config });
+    if (result.success) {
+      lastSavedConfig = JSON.parse(JSON.stringify(config));
+      clearDirty();
+
+      // Step 1 — Update ALL originalNames from current input values BEFORE any rebuild
+      document.querySelectorAll('.course-card').forEach(card => {
+        const currentName = card.querySelector('.course-name-input')?.value.trim() || '';
+        if (currentName) card.dataset.originalName = currentName;
+      });
+
+      // Step 2 — Lock courses that have a CSV URL
+      document.querySelectorAll('.course-card').forEach(card => {
+        const csvUrl = card.querySelector('.csv-url')?.value.trim() || '';
+        if (card.dataset.created === 'true' && csvUrl.length > 10) {
+          const name    = card.dataset.originalName; // already updated above
+          const periods = [...card.querySelectorAll('.ptoggle.on')].map(b => b.dataset.p);
+          card.dataset.locked = 'true';
+          card.classList.remove('is-editing');
+          card.innerHTML = buildCourseCardHTML(card.id, name, periods, csvUrl, true, true, false, true, '✓');
+        }
+      });
+
+      // Step 3 — Lock quarters if any dates exist
+      const qd = config.quarterDates;
+      if (Object.values(qd).some(q => q.start||q.end)) setQuarterLocked(true);
+
+      const now = new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+      document.getElementById('saved-label').textContent = 'Saved ' + now;
+      showToast('Config saved to Google Sheet!', 'ok');
+    } else {
+      showToast('Save failed: ' + (result.error || 'Unknown'), 'err');
+    }
+  } catch(err) {
+    showToast('Network error: ' + err.message, 'err');
+  }
+}
+
+// ── LOAD ──
+async function loadFromSheet() {
+  if (!getScriptUrl()) { showToast('Enter the Apps Script URL first.', 'err'); return; }
+  showToast('Loading from Google Sheet…');
+  try {
+    const result = await apiFetch('loadConfig');
+    if (result.success && result.config) {
+      lastSavedConfig = JSON.parse(JSON.stringify(result.config));
+      populateForm(result.config);
+      clearDirty();
+      const now = new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+      document.getElementById('saved-label').textContent = 'Loaded ' + now;
+      showToast('Config loaded!', 'ok');
+    } else if (result.success) {
+      showToast('No saved config yet. Fill in the form and save.', 'ok');
+    } else {
+      showToast('Load failed: ' + (result.error||'Unknown'), 'err');
+    }
+  } catch(err) { showToast('Network error: ' + err.message, 'err'); }
+}
+
+// ── API ──
+async function apiFetch(action, payload = {}) {
+  const url = getScriptUrl();
+  if (!url) throw new Error('Apps Script URL not set.');
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ password: PASSWORD, action, ...payload })
+  });
+  return resp.json();
+}
+
+// ── TOAST ──
+let _tt;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type?' '+type:'');
+  clearTimeout(_tt);
+  _tt = setTimeout(()=>t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
