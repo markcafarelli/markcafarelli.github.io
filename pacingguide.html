@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026-2027 Science Pacing Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-deep:#0f1729;
+    --navy-panel:#1a2340;
+    --navy-panel-2:#212c52;
+    --navy-line:#2e3a63;
+    --ink:#e8eaf6;
+    --ink-dim:#9aa4c7;
+    --ink-faint:#5c6690;
+    --accent:#4a5fd9;
+
+    --snow:#5aa9c9;
+    --absent:#e0a23b;
+    --noschool:#71397a;
+    --fieldtrip:#3fae6a;
+    --mcas:#c2415a;
+    --halfday:#c9a227;
+    --buffer:#f4c542;
+    --today-ring:#f4c542;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    background:radial-gradient(1200px 800px at 10% -10%, #16204a 0%, var(--navy-deep) 55%);
+    color:var(--ink);
+    font-family:'Roboto', sans-serif;
+    display:flex; flex-direction:column;
+  }
+  h1,h2,h3,.display{ font-family:'Boogaloo', cursive; letter-spacing:.5px; font-weight:400;}
+
+  /* ---------- Header ---------- */
+  header{
+    position:sticky; top:0; z-index:30;
+    background:linear-gradient(180deg,#141c3a 0%, #101833 100%);
+    border-bottom:1px solid var(--navy-line);
+    padding:14px 20px 12px;
+    flex-shrink:0;
+  }
+  .header-title{
+    flex:1 1 auto; text-align:center; font-size:26px; margin:0; color:#fff;
+    white-space:nowrap; order:0;
+  }
+  @media (max-width: 900px){
+    .header-title{ order:-1; flex-basis:100%; white-space:normal; margin-bottom:10px; font-size:28px;}
+  }
+
+  .toolbar-row{ display:flex; align-items:center; justify-content:space-between; gap:14px 26px; flex-wrap:wrap;}
+  .nav-cluster{ display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+
+  .icon-btn{
+    background:var(--navy-panel-2); border:1px solid var(--navy-line); color:var(--ink);
+    width:38px; height:38px; border-radius:9px; cursor:pointer; font-size:19px; line-height:1;
+    flex-shrink:0; display:inline-flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:hover{ background:var(--accent); border-color:var(--accent);}
+
+  .period-label{
+    font-family:'Boogaloo',cursive; font-size:23px; min-width:200px; text-align:center; color:#fff;
+    white-space:nowrap;
+  }
+
+  .pill-btn{
+    background:var(--navy-panel-2); border:1px solid var(--navy-line); color:var(--ink);
+    padding:9px 16px; border-radius:9px; cursor:pointer; font-size:14px;
+    white-space:nowrap; flex-shrink:0;
+  }
+  .pill-btn:hover{ border-color:var(--accent); color:#fff;}
+
+  .right-cluster{ display:flex; flex-direction:column; align-items:flex-end; gap:9px;}
+  .right-cluster-top{ display:flex; gap:9px; flex-wrap:wrap; justify-content:flex-end;}
+
+  .view-toggle{ display:flex; border:1px solid var(--navy-line); border-radius:9px; overflow:hidden; flex-shrink:0;}
+  .vt-btn{
+    background:var(--navy-panel); border:none; color:var(--ink-dim); padding:9px 20px; cursor:pointer;
+    font-size:13.5px; white-space:nowrap;
+  }
+  .vt-btn.active{ background:var(--accent); color:#fff;}
+
+  .legend{display:flex; gap:10px; flex-wrap:wrap; margin-top:13px; font-size:12px; color:var(--ink-dim); align-items:center;}
+  .legend .chip{display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:12px; color:#fff; font-weight:500;}
+  .legend .key{display:inline-flex; align-items:center; gap:4px;}
+  .legend .key i{width:9px; height:9px; border-radius:50%; display:inline-block;}
+
+  /* ---------- Calendar ---------- */
+  .cal-wrap{ padding:18px 20px 40px; max-width:1300px; margin:0 auto; width:100%;}
+  .dow-header{ text-align:center; font-size:11px; letter-spacing:.5px; color:var(--ink-faint); text-transform:uppercase; padding-bottom:6px;}
+  .grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px;}
+  .grid.cols-5{ grid-template-columns:repeat(5,1fr); }
+  .grid.cols-5 .cell:not(.cell-week){ min-height:175px; }
+
+  .cell{
+    background:var(--navy-panel); border:1px solid var(--navy-line); border-radius:10px;
+    min-height:140px; padding:8px; position:relative; cursor:pointer;
+    display:flex; flex-direction:column; gap:5px;
+    transition:border-color .12s, transform .12s;
+  }
+  .cell.cell-week{ min-height:0; height:100%; padding:18px; gap:16px; }
+  .cell.cell-week .datenum{ font-size:18px; }
+  .cell.cell-week .rot-badge{ width:40px; height:40px; font-size:20px; }
+  .cell.cell-week .status-icon{ width:30px; height:30px; font-size:16px; }
+  .cell.cell-week .period-chips{ gap:8px; }
+  .cell.cell-week .period-chip{ font-size:17px; padding:12px 16px; border-radius:8px;}
+  .cell.cell-week .section-pacing{ gap:10px; }
+  .cell.cell-week .section-row{ font-size:18px; padding:0 16px; border-radius:8px;}
+  .cell.cell-week .unit-band{ font-size:30px; padding:14px; gap:6px;}
+  .cell.cell-week .status-tag{ font-size:15px; padding:6px 14px;}
+  .cell.cell-week .no-unit-band{ font-size:16px;}
+  .cell.cell-week .buffer-tag{ font-size:16px; padding:10px 14px;}
+  .cell:hover{border-color:var(--accent); transform:translateY(-1px);}
+  .cell.outside{opacity:.22; pointer-events:none;}
+  .cell.noschool{background:repeating-linear-gradient(135deg, var(--navy-panel) 0 10px, #241a30 10px 20px);}
+  .cell.today{box-shadow:0 0 0 2px var(--today-ring) inset;}
+  .cell.weekend{background:#151d38;}
+
+  .cell-top{display:flex; justify-content:space-between; align-items:flex-start;}
+  .datenum{font-size:13px; color:var(--ink-dim); font-family:'Roboto Mono',monospace;}
+  .badge-cluster{ display:flex; gap:4px; align-items:center;}
+  .rot-badge{
+    width:24px; height:24px; border-radius:50%; border:2px solid var(--ink-faint);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Boogaloo',cursive; font-size:14px; color:var(--ink);
+    background:var(--navy-deep); flex-shrink:0;
+  }
+  .rot-badge.noschool-badge{ border-color:var(--noschool); color:var(--noschool); font-size:11px;}
+  .status-icon{
+    width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:11px; flex-shrink:0;
+  }
+  .status-icon.snow{ background:var(--snow); }
+  .status-icon.absent{ background:var(--absent); }
+  .status-icon.fieldtrip{ background:var(--fieldtrip); }
+  .status-icon.mcas{ background:var(--mcas); }
+  .status-icon.halfday{ background:var(--halfday); }
+
+  .period-chips{ display:flex; flex-direction:column; gap:2px;}
+  .period-chip{
+    font-size:10px; border-radius:4px; padding:2px 6px; display:flex; justify-content:space-between; gap:4px;
+    background:rgba(255,255,255,.05); color:var(--ink-dim);
+  }
+  .period-chip b{ color:var(--ink); font-family:'Roboto Mono',monospace;}
+
+  .unit-band{
+    flex:1; border-radius:8px; padding:8px; font-size:16px; font-weight:700;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:3px;
+  }
+  .unit-band .ub-day{ font-size:.78em; font-weight:500; opacity:.85;}
+  .no-unit-band{ flex:1; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:var(--ink-faint); font-style:italic;}
+  .buffer-tag{
+    flex:1; font-size:13px; color:var(--buffer); border:1px solid var(--buffer);
+    border-radius:10px; padding:6px; display:flex; align-items:center; justify-content:center; text-align:center; gap:4px; font-weight:600;
+  }
+
+  .section-pacing{ display:flex; flex-direction:column; gap:4px; flex:1;}
+  .section-row{
+    display:flex; justify-content:space-between; align-items:center; gap:5px; flex:1;
+    border-radius:5px; padding:2px 6px; font-size:10px; font-weight:600;
+  }
+  .section-row .sec-letter{ font-family:'Roboto Mono',monospace; opacity:.85; flex-shrink:0;}
+  .section-row .sec-info{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; text-align:right;}
+  .section-row.dropped{ background:rgba(255,255,255,.03); color:var(--ink-faint); font-weight:400; font-style:italic;}
+  .section-row.no-unit{ background:rgba(255,255,255,.03); color:var(--ink-faint); font-weight:400;}
+
+  .teaching-periods-row{ display:flex; gap:10px; flex-wrap:wrap;}
+  .teaching-periods-row label{ display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--ink-dim);}
+  .teaching-periods-row input{ transform:scale(1.05);}
+
+  .toggle-row{ display:flex; align-items:center; gap:9px; font-size:13px; color:var(--ink-dim); cursor:pointer;}
+  .toggle-row input{ transform:scale(1.1);}
+
+  .status-tag{
+    align-self:flex-start; font-size:10px; padding:1px 7px; border-radius:10px; margin-top:2px;
+    display:flex; align-items:center; gap:4px;
+  }
+  .status-tag.snow{ color:var(--snow); border:1px solid var(--snow);}
+  .status-tag.absent{ color:var(--absent); border:1px solid var(--absent);}
+  .status-tag.fieldtrip{ color:var(--fieldtrip); border:1px solid var(--fieldtrip);}
+  .status-tag.mcas{ color:var(--mcas); border:1px solid var(--mcas);}
+  .status-tag.halfday{ color:var(--halfday); border:1px solid var(--halfday);}
+  .status-tag.noschool{
+    color:var(--noschool); border:1px solid var(--noschool); align-self:stretch;
+    flex:1; justify-content:center; text-align:center; font-size:13px;
+  }
+
+  /* ---------- Week view ---------- */
+  .week-wrap{
+    padding:18px 20px 20px; max-width:1600px; margin:0 auto; width:100%;
+    flex:1; display:flex; flex-direction:column; min-height:0;
+  }
+  .week-wrap .grid{ flex:1; grid-template-rows:1fr; align-items:stretch; min-height:0;}
+
+  /* ---------- Day panel overlay ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(6,9,20,.6); backdrop-filter:blur(2px);
+    display:none; align-items:center; justify-content:center; z-index:100; padding:20px;
+  }
+  .overlay.open{display:flex;}
+  .day-panel{
+    background:var(--navy-panel); width:min(380px,100%); border-radius:14px;
+    border:1px solid var(--navy-line); padding:20px;
+  }
+  .day-panel h2{ margin:0 0 4px; font-size:22px; color:#fff;}
+  .day-panel .sub{ font-size:12px; color:var(--ink-dim); margin-bottom:16px; font-family:'Roboto Mono',monospace;}
+  .status-options{ display:flex; flex-direction:column; gap:8px; margin-bottom:16px;}
+  .status-options label{
+    display:flex; align-items:center; gap:9px; background:var(--navy-panel-2); border:1px solid var(--navy-line);
+    border-radius:8px; padding:9px 11px; cursor:pointer; font-size:13px;
+  }
+  .status-options label:hover{ border-color:var(--accent); }
+  .status-options input{ transform:scale(1.1); }
+  .day-panel-actions{ display:flex; gap:8px;}
+  .day-panel-actions button{
+    flex:1; background:var(--navy-panel-2); border:1px solid var(--navy-line); color:var(--ink);
+    padding:9px 10px; border-radius:8px; cursor:pointer; font-size:12.5px; width:auto; height:auto;
+  }
+  .day-panel-actions button.primary{ background:var(--accent); border-color:var(--accent); color:#fff;}
+  .close-x{ float:right; background:none; border:none; color:var(--ink-dim); font-size:20px; cursor:pointer; width:auto; height:auto;}
+  .close-x:hover{ color:#fff; }
+
+  /* ---------- Settings modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(6,9,20,.65); display:none;
+    align-items:center; justify-content:center; z-index:200; padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--navy-panel); border:1px solid var(--navy-line); border-radius:14px;
+    max-width:520px; width:100%; padding:22px; max-height:85vh; overflow-y:auto;
+  }
+  .modal h2{margin:0 0 14px; font-size:22px; color:#fff;}
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:11px; color:var(--ink-dim); margin-bottom:5px; text-transform:uppercase; letter-spacing:.5px;}
+  .field input[type=date]{
+    width:100%; background:var(--navy-panel-2); border:1px solid var(--navy-line); color:var(--ink);
+    padding:8px 10px; border-radius:7px; font-size:13px;
+  }
+  .marked-list{max-height:130px; overflow-y:auto; font-size:12px; margin-bottom:6px;}
+  .marked-list .md{display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid var(--navy-line); color:var(--ink-dim);}
+  .marked-list .md .tag{font-size:10px; padding:1px 7px; border-radius:8px; margin-right:6px;}
+  .marked-list .md button{background:none; border:none; color:#e8281e; cursor:pointer; font-size:11.5px; width:auto; height:auto;}
+
+  .unit-row{
+    display:flex; align-items:center; gap:6px; margin-bottom:8px; background:var(--navy-panel-2);
+    border:1px solid var(--navy-line); border-radius:8px; padding:8px;
+  }
+  .unit-row .drag-controls{ display:flex; flex-direction:column; gap:1px;}
+  .unit-row .drag-controls button{
+    background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:10px; width:16px; height:14px; padding:0; line-height:1;
+  }
+  .unit-row .drag-controls button:hover{ color:#fff; }
+  .unit-row .swatch-btn{
+    width:24px; height:24px; border-radius:6px; border:2px solid #0003; cursor:pointer; flex-shrink:0;
+  }
+  .unit-row input[type=text]{
+    flex:1; background:rgba(0,0,0,.2); border:1px solid var(--navy-line); color:var(--ink);
+    padding:6px 9px; border-radius:6px; font-size:12.5px;
+  }
+  .unit-row input[type=number]{
+    width:56px; background:rgba(0,0,0,.2); border:1px solid var(--navy-line); color:var(--ink);
+    padding:6px 6px; border-radius:6px; font-size:12.5px; text-align:center;
+  }
+  .unit-row .days-label{ font-size:10px; color:var(--ink-faint);}
+  .unit-row .del-btn{ background:none; border:none; color:#e8281e; cursor:pointer; font-size:14px; width:auto; height:auto;}
+  .add-unit-btn{
+    width:100%; background:var(--accent); border:none; color:#fff; padding:9px; border-radius:7px;
+    cursor:pointer; font-size:12.5px; margin-top:4px;
+  }
+  .unit-color-popover{
+    position:absolute; z-index:210; background:var(--navy-panel-2); border:1px solid var(--navy-line);
+    border-radius:8px; padding:8px; display:none; grid-template-columns:repeat(6,20px); gap:6px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);
+  }
+  .unit-color-popover.show{ display:grid; }
+  .unit-color-popover .sw{ width:20px; height:20px; border-radius:5px; cursor:pointer; border:1px solid #0004;}
+  .unit-color-popover .sw:hover{ outline:2px solid #fff; }
+  .unit-color-popover .custom-color-row{
+    grid-column:1/-1; display:flex; align-items:center; gap:7px; margin-top:4px; padding-top:6px;
+    border-top:1px dashed var(--navy-line);
+  }
+  .unit-color-popover .custom-color-row input[type=color]{
+    width:28px; height:24px; padding:0; border:1px solid var(--navy-line); border-radius:5px; cursor:pointer; background:none;
+  }
+  .unit-color-popover .custom-color-row span{ font-size:11px; color:var(--ink-dim); }
+
+  .modal-close-btn{
+    width:100%; background:var(--accent); border:none; color:#fff; padding:10px; border-radius:8px;
+    cursor:pointer; font-size:13px; margin-top:8px;
+  }
+
+  .tiny-modal{ max-width:340px; text-align:center;}
+  .tiny-modal p{ font-size:13px; line-height:1.5; color:var(--ink); margin:0 0 16px;}
+  .tiny-modal-actions{ display:flex; gap:8px;}
+  .tiny-modal-actions button{
+    flex:1; padding:8px 9px; border-radius:7px; cursor:pointer; font-size:12.5px; border:1px solid var(--navy-line); width:auto; height:auto;
+  }
+  .tm-cancel{ background:var(--navy-panel-2); color:var(--ink);}
+  .tm-ok{ background:var(--accent); color:#fff; border-color:var(--accent);}
+
+  #saveIndicator{
+    position:fixed; bottom:16px; right:20px; font-size:11px; color:var(--ink-faint);
+    font-family:'Roboto Mono',monospace; opacity:0; transition:opacity .3s; z-index:50;
+    background:var(--navy-panel); padding:5px 10px; border-radius:6px; border:1px solid var(--navy-line);
+  }
+  #saveIndicator.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="toolbar-row">
+    <div class="nav-cluster">
+      <button class="icon-btn" id="prevBtn" title="Previous">‹</button>
+      <div class="period-label" id="periodLabel">—</div>
+      <button class="icon-btn" id="nextBtn" title="Next">›</button>
+      <button class="pill-btn" id="todayBtn">Today</button>
+    </div>
+    <h1 class="header-title">2026-2027 Science Pacing Guide</h1>
+    <div class="right-cluster">
+      <div class="right-cluster-top">
+        <button class="pill-btn" id="saveBtn">💾 Save</button>
+        <button class="pill-btn" id="exportBtn">⬇ Export</button>
+        <button class="pill-btn" id="importBtn">⬆ Import</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none;">
+        <button class="pill-btn" id="settingsBtn">⚙ Settings</button>
+      </div>
+      <div class="view-toggle">
+        <button class="vt-btn active" id="viewMonthBtn">Month</button>
+        <button class="vt-btn" id="viewWeekBtn">Week</button>
+      </div>
+    </div>
+  </div>
+  <div class="legend" id="unitLegend"></div>
+  <div class="legend">
+    <span class="key"><i style="background:var(--snow)"></i>Snow day</span>
+    <span class="key"><i style="background:var(--absent)"></i>Absent / sub plans</span>
+    <span class="key"><i style="background:var(--fieldtrip)"></i>Field trip</span>
+    <span class="key"><i style="background:var(--mcas)"></i>MCAS testing</span>
+    <span class="key"><i style="background:var(--halfday)"></i>Half day</span>
+    <span class="key"><i style="background:var(--noschool)"></i>No school</span>
+  </div>
+</header>
+
+<div class="cal-wrap" id="calWrap">
+  <div class="grid" id="calGrid"></div>
+</div>
+
+<div class="week-wrap" id="weekWrap">
+  <div class="grid" id="weekGrid"></div>
+</div>
+
+<div class="overlay" id="dayOverlay">
+  <div class="day-panel" id="dayPanel"></div>
+</div>
+
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal">
+    <h2>Settings</h2>
+    <div class="field">
+      <label>Day A start date</label>
+      <input type="date" id="startDateInput">
+    </div>
+    <div class="field">
+      <label>Teaching sections (which periods hold a class)</label>
+      <div class="teaching-periods-row" id="teachingPeriodsRow"></div>
+      <div style="font-size:11px;color:var(--ink-faint);margin-top:5px;">Only used when Class View is on.</div>
+    </div>
+    <div class="field">
+      <label>Class view</label>
+      <label class="toggle-row" for="classViewToggle">
+        <input type="checkbox" id="classViewToggle">
+        <span>Show each section's individual pacing on the calendar</span>
+      </label>
+      <div style="font-size:11px;color:var(--ink-faint);margin-top:5px;">When off, the calendar shows one shared pace for the whole class, and automatically inserts a buffer day every 7 school days to account for the drop rotation (a 14-day unit spans 16 calendar school days).</div>
+    </div>
+    <div class="field">
+      <label>Display options</label>
+      <label class="toggle-row" for="periodChipsToggle" style="margin-bottom:8px;">
+        <input type="checkbox" id="periodChipsToggle">
+        <span>Show Blue Raider Block / Lunch highlights</span>
+      </label>
+      <label class="toggle-row" for="weekendsToggle">
+        <input type="checkbox" id="weekendsToggle">
+        <span>Show weekends</span>
+      </label>
+      <div style="font-size:11px;color:var(--ink-faint);margin-top:5px;">Hiding weekends widens the remaining days to use the extra space.</div>
+    </div>
+    <div class="field">
+      <label>Marked days (no school / snow / absent)</label>
+      <div class="marked-list" id="markedList"></div>
+      <div style="font-size:11px;color:var(--ink-faint);">Click a date on the calendar to mark it.</div>
+    </div>
+    <div class="field">
+      <label>Units / Pacing Guide (in teaching order)</label>
+      <div id="unitList"></div>
+      <button class="add-unit-btn" id="addUnitBtn">+ Add unit</button>
+    </div>
+    <button class="modal-close-btn" id="closeSettings">Done</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="modal tiny-modal">
+    <p id="confirmMessage"></p>
+    <div class="tiny-modal-actions">
+      <button class="tm-cancel" id="confirmCancel">Cancel</button>
+      <button class="tm-ok" id="confirmOk">OK</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="alertOverlay">
+  <div class="modal tiny-modal">
+    <p id="alertMessage"></p>
+    <div class="tiny-modal-actions">
+      <button class="tm-ok" id="alertOk" style="flex:1;">OK</button>
+    </div>
+  </div>
+</div>
+
+<div id="saveIndicator">Saved</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const LETTERS = ['A','B','C','D','E','F','G'];
+  const STORE_KEY = 'mrcaf_pacing_v4';
+  const ROTATION_SEQUENCE = ['A','G','F','E','D','C','B']; // Day-to-day snake order
+
+  const UNIT_PALETTE = ['#4a5fd9','#c0152f','#0891b2','#ca8a04','#7c3aed','#059669','#db2777','#ea580c','#0d9488','#a21caf','#2563eb','#65a30d'];
+
+  // Day-status types: 'noschool' is special-cased (skips the rotation entirely, handled separately).
+  // Everything below applies to days where the rotation letter IS assigned.
+  const STATUS_META = {
+    snow:      { icon:'❄', iconClass:'snow', label:'Snow day', tagText:'❄ Snow day — pacing paused', instructional:false },
+    absent:    { icon:'✎', iconClass:'absent', label:'Absent / sub plans', tagText:'✎ Sub plans needed', instructional:true },
+    fieldtrip: { icon:'🚌', iconClass:'fieldtrip', label:'Field trip', tagText:'🚌 Field trip — pacing paused', instructional:false },
+    mcas:      { icon:'📝', iconClass:'mcas', label:'MCAS testing', tagText:'📝 MCAS testing — pacing paused', instructional:false },
+    halfday:   { icon:'◐', iconClass:'halfday', label:'Half day', tagText:'◐ Half day', instructional:true }
+  };
+
+  function defaultState(){
+    return {
+      settings:{ startDate: '2026-09-01' }, // Day A
+      teachingPeriods:['A','B','C','E','G'], // which of A-G actually hold a class
+      classView: true,
+      showPeriodChips: true,
+      showWeekends: true,
+      dayStatus:{},  // iso -> 'noschool' | 'snow' | 'absent'
+      units:[]       // [{id, name, days, color}] in teaching order
+    };
+  }
+
+  let state = loadState();
+  let currentView = 'month'; // 'month' | 'week'
+  let viewYear, viewMonth;
+  let weekAnchorDate;
+  let dayMeta = {}; // iso -> { letter, status, instructional, sections:{...}, globalUnit:{...}|'buffer'|'nounit'|null }
+  let saveTimer = null;
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(!raw) return defaultState();
+      const parsed = JSON.parse(raw);
+      return mergeState(parsed);
+    }catch(e){ return defaultState(); }
+  }
+  function mergeState(parsed){
+    const d = defaultState();
+    return {
+      settings: Object.assign(d.settings, parsed.settings||{}),
+      teachingPeriods: parsed.teachingPeriods || d.teachingPeriods,
+      classView: parsed.classView !== undefined ? parsed.classView : d.classView,
+      showPeriodChips: parsed.showPeriodChips !== undefined ? parsed.showPeriodChips : d.showPeriodChips,
+      showWeekends: parsed.showWeekends !== undefined ? parsed.showWeekends : d.showWeekends,
+      dayStatus: parsed.dayStatus || {},
+      units: parsed.units || []
+    };
+  }
+  function saveState(){
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    const ind = document.getElementById('saveIndicator');
+    ind.textContent = 'Saved ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    ind.classList.add('show');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>ind.classList.remove('show'), 1500);
+  }
+
+  function isoDate(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+  function parseISO(iso){ const [y,m,d] = iso.split('-').map(Number); return new Date(y, m-1, d); }
+  function isWeekend(d){ const dow = d.getDay(); return dow===0 || dow===6; }
+  function uid(){ return 'u' + Math.random().toString(36).slice(2,10); }
+  function contrastText(hex){
+    if(!hex) return '#fff';
+    const h = hex.replace('#','');
+    const full = h.length===3 ? h.split('').map(c=>c+c).join('') : h;
+    const r=parseInt(full.substr(0,2),16), g=parseInt(full.substr(2,2),16), b=parseInt(full.substr(4,2),16);
+    const lum = (0.299*r+0.587*g+0.114*b)/255;
+    return lum > 0.6 ? '#111' : '#fff';
+  }
+  function lightenHex(hex, amount){
+    const h = hex.replace('#','');
+    const full = h.length===3 ? h.split('').map(c=>c+c).join('') : h;
+    let r=parseInt(full.substr(0,2),16), g=parseInt(full.substr(2,2),16), b=parseInt(full.substr(4,2),16);
+    r = Math.round(r + (255-r)*amount);
+    g = Math.round(g + (255-g)*amount);
+    b = Math.round(b + (255-b)*amount);
+    return '#' + [r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+  }
+  const SHADE_STEPS = [0, 0.16, 0.32, 0.48]; // 4-step lightening cycle within a unit
+  function shadeForDay(baseHex, dayIndex){
+    const position = (dayIndex - 1) % 4;
+    return lightenHex(baseHex, SHADE_STEPS[position]);
+  }
+  function refreshCurrentView(){ if(currentView==='week') renderWeekView(); else renderCalendar(); }
+
+  // ---------- Confirm / alert ----------
+  function showConfirm(message){
+    return new Promise(resolve=>{
+      const overlay = document.getElementById('confirmOverlay');
+      document.getElementById('confirmMessage').textContent = message;
+      overlay.classList.add('open');
+      const okBtn = document.getElementById('confirmOk');
+      const cancelBtn = document.getElementById('confirmCancel');
+      function cleanup(result){
+        overlay.classList.remove('open');
+        okBtn.removeEventListener('click', onOk);
+        cancelBtn.removeEventListener('click', onCancel);
+        resolve(result);
+      }
+      function onOk(){ cleanup(true); }
+      function onCancel(){ cleanup(false); }
+      okBtn.addEventListener('click', onOk);
+      cancelBtn.addEventListener('click', onCancel);
+    });
+  }
+  function showAlert(message){
+    return new Promise(resolve=>{
+      const overlay = document.getElementById('alertOverlay');
+      document.getElementById('alertMessage').textContent = message;
+      overlay.classList.add('open');
+      const okBtn = document.getElementById('alertOk');
+      function onOk(){ overlay.classList.remove('open'); okBtn.removeEventListener('click', onOk); resolve(); }
+      okBtn.addEventListener('click', onOk);
+    });
+  }
+
+  // ---------- Core engine ----------
+  function periodsForDayLetter(letter){
+    const idx = LETTERS.indexOf(letter);
+    const out = [];
+    for(let i=0;i<6;i++) out.push(LETTERS[(idx+i)%7]);
+    return out;
+  }
+
+  function buildMaps(){
+    dayMeta = {};
+    const start = parseISO(state.settings.startDate);
+    let cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    let dayIdx = 0; // rotation pointer
+    const validUnits = state.units.filter(u => u.days && u.days > 0);
+    const teachingPeriods = state.teachingPeriods.length ? state.teachingPeriods : ['A','B','C','E','G'];
+
+    // Per-section pacing (used when Class View is on)
+    const secPointer = {}; const secDayCount = {};
+    teachingPeriods.forEach(p=>{ secPointer[p]=0; secDayCount[p]=0; });
+
+    // Global shared pacing with periodic buffer days (used when Class View is off)
+    let sinceBuffer = 0, gUnitPointer = 0, gUnitDayCount = 0;
+
+    const endCap = new Date(start.getFullYear()+2, start.getMonth(), start.getDate());
+
+    while(cursor <= endCap){
+      const iso = isoDate(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
+      const status = state.dayStatus[iso] || null;
+      let letter = null;
+      let instructional = false;
+      let meetingToday = [];
+
+      if(!isWeekend(cursor)){
+        if(status === 'noschool'){
+          letter = null; // fully skipped — rotation does not consume this day
+        } else {
+          letter = ROTATION_SEQUENCE[dayIdx % 7];
+          dayIdx++;
+          instructional = STATUS_META[status] ? STATUS_META[status].instructional : true; // absent/halfday count, snow/fieldtrip/mcas don't, normal counts
+          meetingToday = periodsForDayLetter(letter);
+        }
+      }
+
+      // Per-section pacing
+      const sections = {};
+      teachingPeriods.forEach(p=>{
+        const meets = meetingToday.includes(p);
+        if(!instructional || !meets){ sections[p] = null; return; }
+        if(secPointer[p] < validUnits.length){
+          secDayCount[p]++;
+          const u = validUnits[secPointer[p]];
+          sections[p] = { name:u.name, color:shadeForDay(u.color, secDayCount[p]), dayIndex:secDayCount[p], totalDays:u.days };
+          if(secDayCount[p] >= u.days){ secPointer[p]++; secDayCount[p] = 0; }
+        } else { sections[p] = 'nounit'; }
+      });
+
+      // Global pacing with drop buffer
+      let globalUnit = null;
+      if(instructional){
+        if(sinceBuffer === 7){
+          globalUnit = 'buffer';
+          sinceBuffer = 0;
+        } else {
+          sinceBuffer++;
+          if(gUnitPointer < validUnits.length){
+            gUnitDayCount++;
+            const gu = validUnits[gUnitPointer];
+            globalUnit = { name:gu.name, color:shadeForDay(gu.color, gUnitDayCount), dayIndex:gUnitDayCount, totalDays:gu.days };
+            if(gUnitDayCount >= gu.days){ gUnitPointer++; gUnitDayCount = 0; }
+          } else { globalUnit = 'nounit'; }
+        }
+      }
+
+      dayMeta[iso] = { letter, status, instructional, meetingToday, sections, globalUnit };
+      cursor.setDate(cursor.getDate()+1);
+    }
+  }
+
+  // ---------- Legend ----------
+  function renderUnitLegend(){
+    const el = document.getElementById('unitLegend');
+    const validUnits = state.units.filter(u => u.days && u.days > 0);
+    if(validUnits.length===0){
+      el.innerHTML = '<span style="color:var(--ink-faint)">No units set up yet — add your pacing plan in Settings.</span>';
+      return;
+    }
+    el.innerHTML = '';
+    validUnits.forEach(u=>{
+      const span = document.createElement('span');
+      span.className = 'chip';
+      span.style.background = u.color;
+      span.style.color = contrastText(u.color);
+      span.textContent = `${u.name} (${u.days}d)`;
+      el.appendChild(span);
+    });
+  }
+
+  // ---------- Shared day cell builder (used by month + week views) ----------
+  function buildDayCell(iso, dObj, opts){
+    opts = opts || {};
+    const todayIso = isoDate(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+    const meta = dayMeta[iso] || {letter:null, status:null, instructional:false, sections:{}, globalUnit:null};
+    const weekend = isWeekend(dObj);
+
+    const cell = document.createElement('div');
+    cell.className = 'cell' + (opts.week ? ' cell-week' : '');
+    if(opts.outside) cell.classList.add('outside');
+    if(iso === todayIso) cell.classList.add('today');
+    if(weekend) cell.classList.add('weekend');
+    if(meta.status === 'noschool') cell.classList.add('noschool');
+
+    const top = document.createElement('div'); top.className='cell-top';
+    const dn = document.createElement('div'); dn.className='datenum';
+    dn.textContent = opts.week ? dObj.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}) : dObj.getDate();
+    top.appendChild(dn);
+
+    const cluster = document.createElement('div'); cluster.className='badge-cluster';
+    if(meta.letter){
+      const badge = document.createElement('div'); badge.className='rot-badge'; badge.textContent=meta.letter;
+      cluster.appendChild(badge);
+    } else if(meta.status === 'noschool'){
+      const badge = document.createElement('div'); badge.className='rot-badge noschool-badge'; badge.textContent='×';
+      cluster.appendChild(badge);
+    }
+    const statusMeta = STATUS_META[meta.status];
+    if(statusMeta){
+      const s = document.createElement('div'); s.className='status-icon '+statusMeta.iconClass;
+      s.textContent = statusMeta.icon; s.title = statusMeta.label;
+      cluster.appendChild(s);
+    }
+    top.appendChild(cluster);
+    cell.appendChild(top);
+
+    if(meta.letter && state.showPeriodChips){
+      const meeting = periodsForDayLetter(meta.letter);
+      const fourth = meeting[3], fifth = meeting[4];
+      const chips = document.createElement('div'); chips.className='period-chips';
+      chips.innerHTML = `
+        <div class="period-chip"><span>4th · Blue Raider Block</span><b>${fourth}</b></div>
+        <div class="period-chip"><span>5th · Lunch</span><b>${fifth}</b></div>
+      `;
+      cell.appendChild(chips);
+    }
+
+    if(statusMeta){
+      const tag = document.createElement('div'); tag.className='status-tag '+statusMeta.iconClass;
+      tag.textContent = statusMeta.tagText;
+      cell.appendChild(tag);
+    }
+
+    if(meta.status === 'noschool'){
+      const tag = document.createElement('div'); tag.className='status-tag noschool'; tag.textContent='No school';
+      cell.appendChild(tag);
+    } else if(meta.letter && !meta.instructional){
+      // School met, but pacing didn't move today (snow / field trip / MCAS) — the status tag above already explains why.
+      const nb = document.createElement('div'); nb.className='no-unit-band'; nb.textContent='Pacing paused today';
+      cell.appendChild(nb);
+    } else if(meta.letter){
+      if(state.classView){
+        const teachingPeriods = state.teachingPeriods.length ? state.teachingPeriods : ['A','B','C','E','G'];
+        const wrap = document.createElement('div'); wrap.className='section-pacing';
+        teachingPeriods.forEach(p=>{
+          const info = meta.sections ? meta.sections[p] : null;
+          const row = document.createElement('div'); row.className='section-row';
+          if(info && info !== 'nounit'){
+            row.style.background = info.color;
+            row.style.color = contrastText(info.color);
+            row.innerHTML = `<span class="sec-letter">${p}</span><span class="sec-info">${info.name} ${info.dayIndex}/${info.totalDays}</span>`;
+          } else if(info === 'nounit'){
+            row.classList.add('no-unit');
+            row.innerHTML = `<span class="sec-letter">${p}</span><span class="sec-info">no unit scheduled</span>`;
+          } else {
+            row.classList.add('dropped');
+            row.innerHTML = `<span class="sec-letter">${p}</span><span class="sec-info">dropped today</span>`;
+          }
+          wrap.appendChild(row);
+        });
+        cell.appendChild(wrap);
+      } else {
+        if(meta.globalUnit === 'buffer'){
+          const tag = document.createElement('div'); tag.className='buffer-tag';
+          tag.textContent = '↻ Pacing buffer (drop rotation)';
+          cell.appendChild(tag);
+        } else if(meta.globalUnit && meta.globalUnit !== 'nounit'){
+          const band = document.createElement('div'); band.className='unit-band';
+          band.style.background = meta.globalUnit.color;
+          band.style.color = contrastText(meta.globalUnit.color);
+          band.innerHTML = `<span>${meta.globalUnit.name}</span><span class="ub-day">Day ${meta.globalUnit.dayIndex}/${meta.globalUnit.totalDays}</span>`;
+          cell.appendChild(band);
+        } else {
+          const nb = document.createElement('div'); nb.className='no-unit-band'; nb.textContent='No unit scheduled';
+          cell.appendChild(nb);
+        }
+      }
+    }
+
+    cell.addEventListener('click', ()=> openDayPanel(iso));
+    return cell;
+  }
+
+  // ---------- Month view ----------
+  function renderCalendar(){
+    document.getElementById('periodLabel').textContent =
+      new Date(viewYear, viewMonth, 1).toLocaleDateString(undefined,{month:'long', year:'numeric'});
+
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+    grid.classList.toggle('cols-5', !state.showWeekends);
+
+    const DOW_LABELS = state.showWeekends
+      ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+      : ['Mon','Tue','Wed','Thu','Fri'];
+    DOW_LABELS.forEach(lbl=>{
+      const h = document.createElement('div'); h.className='dow-header'; h.textContent = lbl;
+      grid.appendChild(h);
+    });
+
+    const firstOfMonth = new Date(viewYear, viewMonth, 1);
+    const startDow = firstOfMonth.getDay();
+    const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+    const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
+    const totalCells = Math.ceil((startDow + daysInMonth)/7)*7;
+
+    for(let i=0;i<totalCells;i++){
+      const dowIndex = i % 7; // 0=Sun...6=Sat position within a standard week row
+      if(!state.showWeekends && (dowIndex===0 || dowIndex===6)) continue;
+
+      const dayNum = i - startDow + 1;
+      let cellYear=viewYear, cellMonth=viewMonth, cellDate, outside=false;
+      if(dayNum < 1){
+        cellDate = daysInPrevMonth + dayNum;
+        cellMonth = viewMonth-1; if(cellMonth<0){cellMonth=11; cellYear--;}
+        outside = true;
+      } else if(dayNum > daysInMonth){
+        cellDate = dayNum - daysInMonth;
+        cellMonth = viewMonth+1; if(cellMonth>11){cellMonth=0; cellYear++;}
+        outside = true;
+      } else { cellDate = dayNum; }
+
+      const iso = isoDate(cellYear, cellMonth, cellDate);
+      const dObj = new Date(cellYear, cellMonth, cellDate);
+      grid.appendChild(buildDayCell(iso, dObj, {outside, week:false}));
+    }
+  }
+
+  // ---------- Week view ----------
+  function startOfWeek(d){
+    const nd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    nd.setDate(nd.getDate() - nd.getDay());
+    return nd;
+  }
+  function renderWeekView(){
+    const start = startOfWeek(weekAnchorDate);
+    let days = [];
+    for(let i=0;i<7;i++) days.push(new Date(start.getFullYear(), start.getMonth(), start.getDate()+i));
+    if(!state.showWeekends) days = days.filter(d=>!isWeekend(d));
+
+    document.getElementById('periodLabel').textContent =
+      `${days[0].toLocaleDateString(undefined,{month:'short',day:'numeric'})} – ${days[days.length-1].toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}`;
+
+    const grid = document.getElementById('weekGrid');
+    grid.innerHTML = '';
+    grid.classList.toggle('cols-5', !state.showWeekends);
+    days.forEach(d=>{
+      const iso = isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+      grid.appendChild(buildDayCell(iso, d, {outside:false, week:true}));
+    });
+  }
+
+  function setView(v){
+    currentView = v;
+    document.getElementById('viewMonthBtn').classList.toggle('active', v==='month');
+    document.getElementById('viewWeekBtn').classList.toggle('active', v==='week');
+    document.getElementById('calWrap').style.display = v==='month' ? 'block' : 'none';
+    document.getElementById('weekWrap').style.display = v==='week' ? 'flex' : 'none';
+    refreshCurrentView();
+  }
+
+  // ---------- Day panel ----------
+  function openDayPanel(iso){
+    const dObj = parseISO(iso);
+    const weekend = isWeekend(dObj);
+    const currentStatus = state.dayStatus[iso] || 'none';
+    const panel = document.getElementById('dayPanel');
+    panel.innerHTML = '';
+
+    const closeBtn = document.createElement('button'); closeBtn.className='close-x'; closeBtn.innerHTML='&times;';
+    closeBtn.addEventListener('click', ()=> document.getElementById('dayOverlay').classList.remove('open'));
+    panel.appendChild(closeBtn);
+
+    const h2 = document.createElement('h2');
+    h2.textContent = dObj.toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'});
+    panel.appendChild(h2);
+
+    const sub = document.createElement('div'); sub.className='sub';
+    const meta = dayMeta[iso];
+    sub.textContent = weekend ? 'Weekend' : (meta && meta.letter ? `Day ${meta.letter}` : 'No school');
+    panel.appendChild(sub);
+
+    if(weekend){
+      const msg = document.createElement('div');
+      msg.style.cssText = 'color:var(--ink-dim); font-size:13px;';
+      msg.textContent = 'Weekends are automatically excluded from the rotation.';
+      panel.appendChild(msg);
+      document.getElementById('dayOverlay').classList.add('open');
+      return;
+    }
+
+    const opts = document.createElement('div'); opts.className='status-options';
+    const options = [
+      {v:'none', label:'Normal school day'},
+      {v:'noschool', label:'No school (holiday / break) — rotation skips this day'},
+      {v:'snow', label:'Snow day — rotation keeps its place, pacing pauses'},
+      {v:'absent', label:'Absent / sub plans — rotation keeps its place, pacing continues'},
+      {v:'fieldtrip', label:'Field trip — rotation keeps its place, pacing pauses'},
+      {v:'mcas', label:'MCAS testing — rotation keeps its place, pacing pauses'},
+      {v:'halfday', label:'Half day — rotation and pacing continue as normal (note only)'}
+    ];
+    options.forEach(o=>{
+      const lbl = document.createElement('label');
+      const radio = document.createElement('input');
+      radio.type='radio'; radio.name='dayStatusRadio'; radio.value=o.v;
+      radio.checked = (currentStatus === o.v) || (currentStatus==='none' && o.v==='none');
+      lbl.appendChild(radio);
+      const span = document.createElement('span'); span.textContent = o.label;
+      lbl.appendChild(span);
+      opts.appendChild(lbl);
+    });
+    panel.appendChild(opts);
+
+    const actions = document.createElement('div'); actions.className='day-panel-actions';
+    const saveBtn = document.createElement('button'); saveBtn.className='primary'; saveBtn.textContent='Save';
+    saveBtn.addEventListener('click', ()=>{
+      const checked = opts.querySelector('input[name="dayStatusRadio"]:checked');
+      const val = checked ? checked.value : 'none';
+      if(val === 'none') delete state.dayStatus[iso];
+      else state.dayStatus[iso] = val;
+      buildMaps();
+      saveState();
+      refreshCurrentView();
+      document.getElementById('dayOverlay').classList.remove('open');
+    });
+    actions.appendChild(saveBtn);
+    const cancelBtn = document.createElement('button'); cancelBtn.textContent='Cancel';
+    cancelBtn.addEventListener('click', ()=> document.getElementById('dayOverlay').classList.remove('open'));
+    actions.appendChild(cancelBtn);
+    panel.appendChild(actions);
+
+    document.getElementById('dayOverlay').classList.add('open');
+  }
+  document.getElementById('dayOverlay').addEventListener('click', (e)=>{
+    if(e.target.id==='dayOverlay') document.getElementById('dayOverlay').classList.remove('open');
+  });
+
+  // ---------- Settings: marked days + units + teaching periods + class view ----------
+  function statusLabel(s){
+    if(s === 'noschool') return 'No school';
+    return STATUS_META[s] ? STATUS_META[s].label : '';
+  }
+  function statusColorVar(s){
+    if(s === 'noschool') return 'var(--noschool)';
+    return STATUS_META[s] ? `var(--${STATUS_META[s].iconClass})` : 'var(--ink-faint)';
+  }
+  function renderMarkedList(){
+    const list = document.getElementById('markedList');
+    list.innerHTML = '';
+    const entries = Object.entries(state.dayStatus).sort((a,b)=> a[0]<b[0] ? -1 : 1);
+    if(entries.length===0){
+      list.innerHTML = '<div style="color:var(--ink-faint)">No days marked yet.</div>';
+      return;
+    }
+    entries.forEach(([iso, status])=>{
+      const row = document.createElement('div'); row.className='md';
+      const dLabel = parseISO(iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+      row.innerHTML = `<span><span class="tag" style="background:${statusColorVar(status)};color:#fff;">${statusLabel(status)}</span>${dLabel}</span>`;
+      const rm = document.createElement('button'); rm.textContent='Remove';
+      rm.addEventListener('click', ()=>{
+        delete state.dayStatus[iso];
+        buildMaps(); saveState(); refreshCurrentView(); renderMarkedList();
+      });
+      row.appendChild(rm);
+      list.appendChild(row);
+    });
+  }
+
+  function renderUnitList(){
+    const list = document.getElementById('unitList');
+    list.innerHTML = '';
+    state.units.forEach((u, idx)=>{
+      const row = document.createElement('div'); row.className='unit-row';
+
+      const dragC = document.createElement('div'); dragC.className='drag-controls';
+      const upBtn = document.createElement('button'); upBtn.textContent='▲'; upBtn.title='Move up';
+      upBtn.disabled = idx===0;
+      upBtn.addEventListener('click', ()=>{
+        if(idx===0) return;
+        [state.units[idx-1], state.units[idx]] = [state.units[idx], state.units[idx-1]];
+        buildMaps(); saveState(); renderUnitList(); refreshCurrentView(); renderUnitLegend();
+      });
+      const downBtn = document.createElement('button'); downBtn.textContent='▼'; downBtn.title='Move down';
+      downBtn.disabled = idx===state.units.length-1;
+      downBtn.addEventListener('click', ()=>{
+        if(idx===state.units.length-1) return;
+        [state.units[idx+1], state.units[idx]] = [state.units[idx], state.units[idx+1]];
+        buildMaps(); saveState(); renderUnitList(); refreshCurrentView(); renderUnitLegend();
+      });
+      dragC.appendChild(upBtn); dragC.appendChild(downBtn);
+      row.appendChild(dragC);
+
+      const swBtn = document.createElement('button');
+      swBtn.className='swatch-btn'; swBtn.style.background = u.color;
+      swBtn.addEventListener('click', (e)=>{ e.stopPropagation(); openUnitColorPopover(swBtn, u); });
+      row.appendChild(swBtn);
+
+      const nameInput = document.createElement('input');
+      nameInput.type='text'; nameInput.value = u.name; nameInput.placeholder='Unit name…';
+      nameInput.addEventListener('input', ()=>{ u.name = nameInput.value; buildMaps(); debouncedSettingsSave(); });
+      row.appendChild(nameInput);
+
+      const daysInput = document.createElement('input');
+      daysInput.type='number'; daysInput.min='1'; daysInput.value = u.days;
+      daysInput.addEventListener('input', ()=>{
+        u.days = Math.max(1, parseInt(daysInput.value)||1);
+        buildMaps(); debouncedSettingsSave();
+      });
+      row.appendChild(daysInput);
+      const daysLbl = document.createElement('span'); daysLbl.className='days-label'; daysLbl.textContent='days';
+      row.appendChild(daysLbl);
+
+      const delBtn = document.createElement('button'); delBtn.className='del-btn'; delBtn.innerHTML='&times;';
+      delBtn.title = 'Delete unit';
+      delBtn.addEventListener('click', async ()=>{
+        const ok = await showConfirm(`Remove "${u.name}" from the pacing guide?`);
+        if(ok){
+          state.units = state.units.filter(x=>x.id!==u.id);
+          buildMaps(); saveState(); renderUnitList(); refreshCurrentView(); renderUnitLegend();
+        }
+      });
+      row.appendChild(delBtn);
+
+      list.appendChild(row);
+    });
+  }
+  let settingsSaveTimer = null;
+  function debouncedSettingsSave(){
+    clearTimeout(settingsSaveTimer);
+    settingsSaveTimer = setTimeout(()=>{ saveState(); refreshCurrentView(); renderUnitLegend(); }, 400);
+  }
+
+  let openUnitPopoverCloser = null;
+  function openUnitColorPopover(anchorBtn, unit){
+    if(openUnitPopoverCloser) openUnitPopoverCloser();
+    const pop = document.createElement('div');
+    pop.className = 'unit-color-popover show';
+    document.body.appendChild(pop);
+    const rect = anchorBtn.getBoundingClientRect();
+    pop.style.top = (window.scrollY + rect.bottom + 4) + 'px';
+    pop.style.left = (window.scrollX + rect.left) + 'px';
+
+    function applyColor(hex){
+      unit.color = hex; anchorBtn.style.background = hex;
+      buildMaps(); saveState(); refreshCurrentView(); renderUnitLegend();
+    }
+
+    UNIT_PALETTE.forEach(hex=>{
+      const sw = document.createElement('div'); sw.className='sw'; sw.style.background=hex;
+      sw.addEventListener('click', ()=>{ applyColor(hex); close(); });
+      pop.appendChild(sw);
+    });
+
+    const customRow = document.createElement('div');
+    customRow.className = 'custom-color-row';
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.value = unit.color || '#4a5fd9';
+    colorInput.title = 'Pick any color';
+    colorInput.addEventListener('input', ()=> applyColor(colorInput.value));
+    const colorLbl = document.createElement('span');
+    colorLbl.textContent = 'Custom…';
+    customRow.appendChild(colorInput);
+    customRow.appendChild(colorLbl);
+    pop.appendChild(customRow);
+
+    function close(){ pop.remove(); document.removeEventListener('click', onDocClick); }
+    function onDocClick(e){ if(!pop.contains(e.target) && e.target!==anchorBtn) close(); }
+    setTimeout(()=> document.addEventListener('click', onDocClick), 0);
+    openUnitPopoverCloser = close;
+  }
+
+  document.getElementById('addUnitBtn').addEventListener('click', ()=>{
+    const usedColors = state.units.length;
+    state.units.push({ id: uid(), name: `Unit ${state.units.length+1}`, days: 5, color: UNIT_PALETTE[usedColors % UNIT_PALETTE.length] });
+    buildMaps(); saveState(); renderUnitList(); refreshCurrentView(); renderUnitLegend();
+  });
+
+  function renderTeachingPeriodsRow(){
+    const row = document.getElementById('teachingPeriodsRow');
+    row.innerHTML = '';
+    LETTERS.forEach(p=>{
+      const lbl = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = state.teachingPeriods.includes(p);
+      cb.addEventListener('change', ()=>{
+        if(cb.checked){
+          if(!state.teachingPeriods.includes(p)) state.teachingPeriods.push(p);
+        } else {
+          state.teachingPeriods = state.teachingPeriods.filter(x=>x!==p);
+        }
+        state.teachingPeriods.sort();
+        buildMaps(); saveState(); refreshCurrentView();
+      });
+      lbl.appendChild(cb);
+      const span = document.createElement('span'); span.textContent = p;
+      lbl.appendChild(span);
+      row.appendChild(lbl);
+    });
+  }
+
+  function openSettings(){
+    document.getElementById('startDateInput').value = state.settings.startDate;
+    document.getElementById('classViewToggle').checked = state.classView;
+    document.getElementById('periodChipsToggle').checked = state.showPeriodChips;
+    document.getElementById('weekendsToggle').checked = state.showWeekends;
+    renderTeachingPeriodsRow();
+    renderMarkedList();
+    renderUnitList();
+    document.getElementById('settingsOverlay').classList.add('open');
+  }
+  document.getElementById('classViewToggle').addEventListener('change', (e)=>{
+    state.classView = e.target.checked;
+    buildMaps(); saveState(); refreshCurrentView();
+  });
+  document.getElementById('periodChipsToggle').addEventListener('change', (e)=>{
+    state.showPeriodChips = e.target.checked;
+    saveState(); refreshCurrentView();
+  });
+  document.getElementById('weekendsToggle').addEventListener('change', (e)=>{
+    state.showWeekends = e.target.checked;
+    saveState(); refreshCurrentView();
+  });
+
+  // ---------- Save / Export / Import ----------
+  document.getElementById('saveBtn').addEventListener('click', ()=>{ saveState(); });
+
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'pacing-guide-backup.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('importBtn').addEventListener('click', ()=>{
+    document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file){ return; }
+    const ok = await showConfirm('Importing will replace everything currently in this planner with the backup file. Continue?');
+    if(!ok){ e.target.value=''; return; }
+    try{
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      state = mergeState(parsed);
+      buildMaps(); saveState(); renderUnitLegend(); refreshCurrentView();
+      await showAlert('Backup imported successfully.');
+    }catch(err){
+      await showAlert('That file could not be read as a valid backup.');
+    }
+    e.target.value = '';
+  });
+
+  // ---------- Wiring ----------
+  document.getElementById('prevBtn').addEventListener('click', ()=>{
+    if(currentView==='week'){ weekAnchorDate.setDate(weekAnchorDate.getDate()-7); renderWeekView(); }
+    else { viewMonth--; if(viewMonth<0){viewMonth=11; viewYear--;} renderCalendar(); }
+  });
+  document.getElementById('nextBtn').addEventListener('click', ()=>{
+    if(currentView==='week'){ weekAnchorDate.setDate(weekAnchorDate.getDate()+7); renderWeekView(); }
+    else { viewMonth++; if(viewMonth>11){viewMonth=0; viewYear++;} renderCalendar(); }
+  });
+  document.getElementById('todayBtn').addEventListener('click', ()=>{
+    const t = new Date();
+    viewYear = t.getFullYear(); viewMonth = t.getMonth();
+    weekAnchorDate = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    refreshCurrentView();
+  });
+  document.getElementById('viewMonthBtn').addEventListener('click', ()=> setView('month'));
+  document.getElementById('viewWeekBtn').addEventListener('click', ()=> setView('week'));
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.getElementById('closeSettings').addEventListener('click', ()=> document.getElementById('settingsOverlay').classList.remove('open'));
+  document.getElementById('settingsOverlay').addEventListener('click', (e)=>{
+    if(e.target.id==='settingsOverlay') document.getElementById('settingsOverlay').classList.remove('open');
+  });
+  document.getElementById('startDateInput').addEventListener('change', (e)=>{
+    state.settings.startDate = e.target.value;
+    buildMaps(); saveState(); refreshCurrentView();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='Escape'){
+      document.getElementById('dayOverlay').classList.remove('open');
+      document.getElementById('settingsOverlay').classList.remove('open');
+      if(openUnitPopoverCloser){ openUnitPopoverCloser(); openUnitPopoverCloser=null; }
+    }
+  });
+
+  // ---------- Init ----------
+  const today = new Date();
+  viewYear = today.getFullYear(); viewMonth = today.getMonth();
+  weekAnchorDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const startD = parseISO(state.settings.startDate);
+  if(today < startD){
+    viewYear = startD.getFullYear(); viewMonth = startD.getMonth();
+    weekAnchorDate = new Date(startD.getFullYear(), startD.getMonth(), startD.getDate());
+  }
+
+  buildMaps();
+  renderUnitLegend();
+  setView('month');
+
+})();
+</script>
+</body>
+</html>
