@@ -328,10 +328,6 @@
     <div class="right-cluster">
       <div class="right-cluster-top">
         <span class="auth-status" id="authStatus">Loading…</span>
-        <button class="pill-btn" id="saveBtn">💾 Save</button>
-        <button class="pill-btn" id="exportBtn">⬇ Export</button>
-        <button class="pill-btn" id="importBtn">⬆ Import</button>
-        <input type="file" id="importFile" accept="application/json" style="display:none;">
         <button class="pill-btn" id="settingsBtn">⚙ Settings</button>
         <button class="pill-btn" id="authBtn">🔐 Sign In</button>
       </div>
@@ -612,8 +608,6 @@ const stateDocRef = doc(db, 'pacingGuide', 'shared');
       authBtn.textContent = '🔐 Sign In';
       document.getElementById('settingsOverlay').classList.remove('open');
     }
-    document.getElementById('saveBtn').disabled = !currentUser;
-    document.getElementById('importBtn').disabled = !currentUser;
   }
   document.getElementById('authBtn').addEventListener('click', ()=>{
     if(currentUser) signOut(auth);
@@ -1210,42 +1204,6 @@ const stateDocRef = doc(db, 'pacingGuide', 'shared');
     saveState(); refreshCurrentView();
   });
 
-  // ---------- Save / Export / Import ----------
-  document.getElementById('saveBtn').addEventListener('click', ()=>{
-    if(!currentUser){ openLogin(); return; }
-    saveState();
-  });
-
-  document.getElementById('exportBtn').addEventListener('click', ()=>{
-    const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'pacing-guide-backup.json';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  });
-
-  document.getElementById('importBtn').addEventListener('click', ()=>{
-    if(!currentUser){ openLogin(); return; }
-    document.getElementById('importFile').click();
-  });
-  document.getElementById('importFile').addEventListener('change', async (e)=>{
-    const file = e.target.files[0];
-    if(!file){ return; }
-    const ok = await showConfirm('Importing will replace everything currently in this planner with the backup file. Continue?');
-    if(!ok){ e.target.value=''; return; }
-    try{
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      state = mergeState(parsed);
-      buildMaps(); saveState(); renderUnitLegend(); refreshCurrentView();
-      await showAlert('Backup imported successfully.');
-    }catch(err){
-      await showAlert('That file could not be read as a valid backup.');
-    }
-    e.target.value = '';
-  });
-
   // ---------- Wiring ----------
   document.getElementById('prevBtn').addEventListener('click', ()=>{
     if(currentView==='week'){ weekAnchorDate.setDate(weekAnchorDate.getDate()-7); renderWeekView(); }
@@ -1267,9 +1225,15 @@ const stateDocRef = doc(db, 'pacingGuide', 'shared');
     if(!currentUser){ openLogin(); return; }
     openSettings();
   });
-  document.getElementById('closeSettings').addEventListener('click', ()=> document.getElementById('settingsOverlay').classList.remove('open'));
+  document.getElementById('closeSettings').addEventListener('click', ()=>{
+    document.getElementById('settingsOverlay').classList.remove('open');
+    applyPendingRemoteState();
+  });
   document.getElementById('settingsOverlay').addEventListener('click', (e)=>{
-    if(e.target.id==='settingsOverlay') document.getElementById('settingsOverlay').classList.remove('open');
+    if(e.target.id==='settingsOverlay'){
+      document.getElementById('settingsOverlay').classList.remove('open');
+      applyPendingRemoteState();
+    }
   });
   document.getElementById('startDateInput').addEventListener('change', (e)=>{
     state.settings.startDate = e.target.value;
@@ -1278,7 +1242,9 @@ const stateDocRef = doc(db, 'pacingGuide', 'shared');
   document.addEventListener('keydown', (e)=>{
     if(e.key==='Escape'){
       document.getElementById('dayOverlay').classList.remove('open');
+      const wasSettingsOpen = settingsModalOpen();
       document.getElementById('settingsOverlay').classList.remove('open');
+      if(wasSettingsOpen) applyPendingRemoteState();
       if(openUnitPopoverCloser){ openUnitPopoverCloser(); openUnitPopoverCloser=null; }
     }
   });
@@ -1296,10 +1262,30 @@ const stateDocRef = doc(db, 'pacingGuide', 'shared');
   }
 
   let firstLoad = true;
+  let pendingRemoteState = null;
   const settingsModalOpen = ()=> document.getElementById('settingsOverlay').classList.contains('open');
 
+  function applyPendingRemoteState(){
+    if(pendingRemoteState === null) return;
+    state = mergeState(pendingRemoteState);
+    pendingRemoteState = null;
+    buildMaps();
+    renderUnitLegend();
+    refreshCurrentView();
+  }
+
   onSnapshot(stateDocRef, (snap)=>{
-    state = mergeState(snap.exists() ? snap.data() : {});
+    const incoming = snap.exists() ? snap.data() : {};
+
+    if(settingsModalOpen()){
+      // Someone (realistically just you) is actively typing in Settings — applying a live update here
+      // would replace state.units etc. with fresh objects and silently detach the input fields
+      // from the data they're editing. Buffer it and apply once Settings closes instead.
+      pendingRemoteState = incoming;
+      return;
+    }
+
+    state = mergeState(incoming);
     buildMaps();
     renderUnitLegend();
 
@@ -1307,8 +1293,7 @@ const stateDocRef = doc(db, 'pacingGuide', 'shared');
       firstLoad = false;
       initViewWindow();
       setView('month'); // calls refreshCurrentView() once viewYear/viewMonth are set
-    } else if(!settingsModalOpen()){
-      // Avoid tearing down the Settings modal (with its live text inputs) out from under someone mid-edit.
+    } else {
       refreshCurrentView();
     }
   }, (err)=>{
