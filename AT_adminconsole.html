@@ -122,13 +122,21 @@ input:disabled,input[readonly]{background:var(--surface2);color:var(--text);
   cursor:pointer;transition:all .2s;font-family:"Outfit",sans-serif}
 .ptoggle:hover{border-color:var(--muted)}
 .ptoggle:disabled{cursor:default;opacity:.7}
-.ptoggle.on[data-p="A"]{background:#ef4444;border-color:#ef4444;color:#fff}
-.ptoggle.on[data-p="B"]{background:#f97316;border-color:#f97316;color:#fff}
-.ptoggle.on[data-p="C"]{background:#eab308;border-color:#eab308;color:#1e293b}
-.ptoggle.on[data-p="D"]{background:#22c55e;border-color:#22c55e;color:#fff}
-.ptoggle.on[data-p="E"]{background:#3b82f6;border-color:#3b82f6;color:#fff}
-.ptoggle.on[data-p="F"]{background:#8b5cf6;border-color:#8b5cf6;color:#fff}
-.ptoggle.on[data-p="G"]{background:#ec4899;border-color:#ec4899;color:#fff}
+/* ptoggle active colors applied via inline style by JS */
+/* COLOR SWATCHES */
+.color-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+.color-row:last-child{border-bottom:none}
+.color-row-label{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.9em;min-width:110px;flex-shrink:0}
+.color-preview{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85em;font-family:"Outfit",sans-serif;flex-shrink:0;transition:background .3s}
+.color-swatches{display:flex;gap:6px;flex-wrap:wrap}
+.color-swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;font-size:.7em;font-weight:900;flex-shrink:0}
+.color-swatch:hover{transform:scale(1.2)}
+.color-swatch.selected{border-color:#fff;box-shadow:0 0 0 2.5px var(--text)}
+.color-swatch.white-swatch{border-color:#d1d5db}
+/* Color wheel */
+.color-wheel-wrap{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;border:1.5px dashed var(--border);cursor:pointer;transition:all .2s;overflow:hidden;flex-shrink:0;position:relative;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)}
+.color-wheel-wrap:hover{transform:scale(1.2);border-color:var(--muted)}
+.color-wheel-input{position:absolute;inset:-4px;opacity:0;cursor:pointer;width:calc(100%+8px);height:calc(100%+8px)}
 .create-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;background:var(--accent);
   color:#fff;border:none;border-radius:7px;font-size:.88em;font-weight:700;
   font-family:"Nunito",sans-serif;cursor:pointer;white-space:nowrap;transition:background .2s;flex-shrink:0}
@@ -234,6 +242,16 @@ input:disabled,input[readonly]{background:var(--surface2);color:var(--text);
       <div class="field-hint">Paste your deployed Apps Script URL. Required before saving or loading.</div>
     </div>
 
+    <!-- PERIOD COLORS -->
+    <div class="card">
+      <div class="card-title"><div class="card-title-left">🎨 Period Block Colors</div></div>
+      <p class="card-note">
+        Choose a color for each period block. These appear on assignment cards, banners, calendar events,
+        and the student schedule in both tools. After saving, teachers and students just need to refresh their pages.
+      </p>
+      <div id="period-color-grid"></div>
+    </div>
+
     <!-- COURSES -->
     <div class="card">
       <div class="card-title">
@@ -280,8 +298,6 @@ input:disabled,input[readonly]{background:var(--surface2);color:var(--text);
 
   </div>
 </div>
-
-<!-- CONFIRM MODAL -->
 <div class="modal-bg" id="confirm-modal">
   <div class="modal-box">
     <div class="modal-hdr">
@@ -306,11 +322,43 @@ let isDirty       = false;
 let lastSavedConfig = null;
 let quarterLocked = false;
 
+// ── PERIOD COLORS ──
+const PALETTE = [
+    {bg:'#ef4444',text:'#fff',name:'Red'},
+    {bg:'#f97316',text:'#fff',name:'Orange'},
+    {bg:'#f59e0b',text:'#1e293b',name:'Amber'},
+    {bg:'#eab308',text:'#1e293b',name:'Yellow'},
+    {bg:'#84cc16',text:'#1e293b',name:'Lime'},
+    {bg:'#22c55e',text:'#fff',name:'Green'},
+    {bg:'#10b981',text:'#fff',name:'Emerald'},
+    {bg:'#06b6d4',text:'#fff',name:'Cyan'},
+    {bg:'#3b82f6',text:'#fff',name:'Blue'},
+    {bg:'#6366f1',text:'#fff',name:'Indigo'},
+    {bg:'#8b5cf6',text:'#fff',name:'Violet'},
+    {bg:'#a855f7',text:'#fff',name:'Purple'},
+    {bg:'#ec4899',text:'#fff',name:'Pink'},
+    {bg:'#f43f5e',text:'#fff',name:'Rose'},
+    {bg:'#64748b',text:'#fff',name:'Slate'},
+    {bg:'#0f172a',text:'#fff',name:'Navy'},
+    {bg:'#ffffff',text:'#1e293b',name:'White'},
+];
+const DEFAULT_PERIOD_COLORS = {
+    A:{bg:'#ef4444',text:'#fff'},
+    B:{bg:'#f97316',text:'#fff'},
+    C:{bg:'#eab308',text:'#1e293b'},
+    D:{bg:'#22c55e',text:'#fff'},
+    E:{bg:'#3b82f6',text:'#fff'},
+    F:{bg:'#8b5cf6',text:'#fff'},
+    G:{bg:'#ec4899',text:'#fff'},
+};
+let periodColors = {...DEFAULT_PERIOD_COLORS};
+
 // ── AUTH ──
 function checkAuth() {
   if (document.getElementById('pw-input').value === PASSWORD) {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
+    renderPeriodColors();
   } else {
     document.getElementById('auth-err').style.display = 'block';
     document.getElementById('pw-input').value = '';
@@ -368,8 +416,10 @@ function buildCourseCardHTML(id, name, periods, csvUrl, isCreated, isLocked, isE
   const periodBtns = ALL_PERIODS.map(p => {
     const on = periods.includes(p);
     const dis = isLocked ? 'disabled' : '';
-    const click = isLocked ? '' : `onclick="this.classList.toggle('on');markDirty()"`;
-    return `<button class="ptoggle ${on?'on':''}" data-p="${p}" ${dis} ${click}>${p}</button>`;
+    const col = periodColors[p] || DEFAULT_PERIOD_COLORS[p];
+    const activeStyle = on && !isLocked ? `background:${col.bg};border-color:${col.bg};color:${col.text}` : '';
+    const click = isLocked ? '' : `onclick="adminTogglePeriod(this)"`;
+    return `<button class="ptoggle ${on?'on':''}" data-p="${p}" ${dis} ${click} style="${activeStyle}">${p}</button>`;
   }).join('');
 
   const badgeContent  = isCreated ? '✓' : num;
@@ -542,7 +592,7 @@ function getFormData() {
     'Quarter 3': { start: document.getElementById('q3-start').value, end: document.getElementById('q3-end').value },
     'Quarter 4': { start: document.getElementById('q4-start').value, end: document.getElementById('q4-end').value }
   };
-  return { scriptUrl, courses, quarterDates };
+  return { scriptUrl, courses, quarterDates, periodColors: {...periodColors} };
 }
 
 // ── POPULATE FORM ──
@@ -550,6 +600,15 @@ function populateForm(config) {
   if (!config) return;
   if (config.scriptUrl) { const el=document.getElementById('script-url'); el.value=config.scriptUrl; onUrlInput(el); }
 
+  // Restore period colors FIRST so course card ptoggle buttons use the correct colors
+  if (config.periodColors) {
+    periodColors = { ...DEFAULT_PERIOD_COLORS, ...config.periodColors };
+  } else {
+    periodColors = { ...DEFAULT_PERIOD_COLORS };
+  }
+  renderPeriodColors();
+
+  // NOW build courses (buildCourseCardHTML reads periodColors for inline styles)
   document.getElementById('course-list').innerHTML = '';
   courseCount = 0;
   (config.courses || []).forEach(c => addCourse({ ...c, locked: c.locked !== false }));
@@ -606,6 +665,13 @@ function detectChanges(oldCfg, newCfg) {
       if (nq.start||nq.end)
         changes.push({ type:'quarter', icon:'🗓️', text:`${q}: <strong>${nq.start||'?'}</strong> → <strong>${nq.end||'?'}</strong>` });
     }
+  });
+
+  // Period color changes
+  ALL_PERIODS.forEach(p => {
+    const oldC = (old.periodColors||DEFAULT_PERIOD_COLORS)[p];
+    const newC = (newCfg.periodColors||DEFAULT_PERIOD_COLORS)[p];
+    if(oldC?.bg !== newC?.bg) changes.push({type:'modified', icon:'🎨', text:`Block ${p} color changed`});
   });
 
   return changes;
@@ -713,6 +779,116 @@ async function apiFetch(action, payload = {}) {
     body: JSON.stringify({ password: PASSWORD, action, ...payload })
   });
   return resp.json();
+}
+
+// ── PERIOD TOGGLE (with dynamic colors) ──
+function adminTogglePeriod(btn) {
+    btn.classList.toggle('on');
+    const p = btn.dataset.p;
+    const col = periodColors[p] || DEFAULT_PERIOD_COLORS[p];
+    if(btn.classList.contains('on')) {
+        btn.style.background = col.bg;
+        btn.style.borderColor = col.bg;
+        btn.style.color = col.text;
+    } else {
+        btn.style.background = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+    }
+    markDirty();
+}
+
+// ── PERIOD COLOR PICKER ──
+function getTextColor(hex) {
+    // Calculate perceived luminance to decide whether text should be dark or light
+    const r = parseInt(hex.slice(1,3), 16) || 0;
+    const g = parseInt(hex.slice(3,5), 16) || 0;
+    const b = parseInt(hex.slice(5,7), 16) || 0;
+    const luminance = (0.299*r + 0.587*g + 0.114*b) / 255;
+    return luminance > 0.55 ? '#1e293b' : '#fff';
+}
+
+function renderPeriodColors() {
+    const grid = document.getElementById('period-color-grid');
+    if(!grid) return;
+    grid.innerHTML = ALL_PERIODS.map(p => {
+        const cur = periodColors[p] || DEFAULT_PERIOD_COLORS[p];
+        const isCustom = !PALETTE.find(c => c.bg.toLowerCase() === cur.bg.toLowerCase());
+        const swatches = PALETTE.map(col => {
+            const isSel = cur.bg.toLowerCase() === col.bg.toLowerCase();
+            const isWhite = col.bg === '#ffffff';
+            return `<button class="color-swatch ${isSel?'selected':''} ${isWhite?'white-swatch':''}"
+                data-bg="${col.bg}" data-text="${col.text}"
+                style="background:${col.bg}"
+                title="${col.name}"
+                onclick="pickPeriodColor('${p}','${col.bg}','${col.text}')">
+                ${isSel?`<span style="color:${col.text}">✓</span>`:''}
+            </button>`;
+        }).join('');
+        // Color wheel — shows current custom color if selected
+        const wheelTitle = 'Custom color — click to open color picker';
+        const wheelSel = isCustom ? `box-shadow:0 0 0 2.5px var(--text)` : '';
+        const wheelHtml = `<div class="color-wheel-wrap" title="${wheelTitle}" style="${wheelSel}">
+            <input type="color" class="color-wheel-input" id="cw-${p}"
+                value="${cur.bg !== '#ffffff' && cur.bg ? cur.bg : '#7c3aed'}"
+                onchange="pickCustomColor('${p}', this.value)">
+        </div>`;
+        return `<div class="color-row" data-period="${p}">
+            <div class="color-row-label">
+                <div class="color-preview" style="background:${cur.bg};color:${cur.text};${cur.bg==='#ffffff'?'border:1.5px solid #d1d5db':''}">${p}</div>
+                Block ${p}
+            </div>
+            <div class="color-swatches">${swatches}${wheelHtml}</div>
+        </div>`;
+    }).join('');
+}
+
+function pickPeriodColor(period, bg, text) {
+    periodColors[period] = { bg, text };
+    markDirty();
+    const row = document.querySelector(`.color-row[data-period="${period}"]`);
+    if(!row) return;
+    const preview = row.querySelector('.color-preview');
+    if(preview) {
+        preview.style.background = bg;
+        preview.style.color = text;
+        preview.style.border = bg === '#ffffff' ? '1.5px solid #d1d5db' : '';
+    }
+    row.querySelectorAll('.color-swatch').forEach(sw => {
+        const isSel = sw.dataset.bg.toLowerCase() === bg.toLowerCase();
+        sw.classList.toggle('selected', isSel);
+        sw.innerHTML = isSel ? `<span style="color:${text}">✓</span>` : '';
+    });
+    // Clear custom color wheel highlight (it's a preset)
+    const wheel = row.querySelector('.color-wheel-wrap');
+    if(wheel) wheel.style.boxShadow = '';
+    // Update all ptoggle buttons on the page for this period
+    document.querySelectorAll(`.ptoggle.on[data-p="${period}"]`).forEach(btn => {
+        btn.style.background = bg;
+        btn.style.borderColor = bg === '#ffffff' ? '#d1d5db' : bg;
+        btn.style.color = text;
+    });
+}
+
+function pickCustomColor(period, hex) {
+    const text = getTextColor(hex);
+    periodColors[period] = { bg: hex, text };
+    markDirty();
+    const row = document.querySelector(`.color-row[data-period="${period}"]`);
+    if(!row) return;
+    const preview = row.querySelector('.color-preview');
+    if(preview) { preview.style.background = hex; preview.style.color = text; preview.style.border = ''; }
+    // Deselect all preset swatches
+    row.querySelectorAll('.color-swatch').forEach(sw => { sw.classList.remove('selected'); sw.innerHTML = ''; });
+    // Highlight the color wheel
+    const wheel = row.querySelector('.color-wheel-wrap');
+    if(wheel) wheel.style.boxShadow = '0 0 0 2.5px var(--text)';
+    // Update ptoggle buttons
+    document.querySelectorAll(`.ptoggle.on[data-p="${period}"]`).forEach(btn => {
+        btn.style.background = hex;
+        btn.style.borderColor = hex;
+        btn.style.color = text;
+    });
 }
 
 // ── TOAST ──
