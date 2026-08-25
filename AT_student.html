@@ -231,12 +231,13 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
 .mbtn-green:hover { background:#16a34a; }
 
 /* ── SCHEDULE MODAL ── */
-.sched-row { display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.sched-row { display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--border); }
 .sched-row:last-child { border-bottom:none; }
-.sched-name { font-weight:700; font-size:.95em; min-width:150px; }
-.sched-blocks { display:flex; gap:6px; flex-wrap:wrap; }
-.sblock { width:36px; height:34px; border:1.5px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--muted); cursor:pointer; font-weight:800; font-size:.88em; font-family:'Outfit',sans-serif; transition:all .2s; }
+.sched-name { font-weight:700; font-size:.95em; min-width:150px; flex-shrink:0; }
+.sched-blocks { display:flex; gap:6px; align-items:center; }
+.sblock { width:36px; height:34px; border:1.5px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--muted); cursor:pointer; font-weight:800; font-size:.88em; font-family:'Outfit',sans-serif; transition:all .2s; flex-shrink:0; }
 .sblock:hover { border-color:var(--muted); color:var(--text); }
+.sblock.ghost { opacity:.22; cursor:default; pointer-events:none; }
 /* sblock active colors applied via inline style by JS using dynamic PERIOD_COLORS */
 .snone { padding:5px 12px; border:1.5px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--muted); cursor:pointer; font-size:.85em; font-weight:700; font-family:'Nunito',sans-serif; transition:all .2s; }
 .snone:hover { border-color:var(--muted); }
@@ -1491,21 +1492,27 @@ function renderSchedGrid(){
     const grid=document.getElementById('sched-grid');
     grid.innerHTML=Object.entries(CLASS_PERIODS).map(([cls,periods])=>{
         const sel=tempSchedule[cls];
-        const blockBtns=periods.map(b=>{
+        // Border color reflects the student's selected period color, or neutral if none chosen
+        const selCol=sel&&PERIOD_COLORS[sel]?PERIOD_COLORS[sel].bg:'#d1d5db';
+        // Always render all 7 periods so columns align — ghost (non-clickable) if not configured
+        const blockBtns=ALL_PERIODS.map(b=>{
+            const configured=periods.includes(b);
             const isActive=sel===b;
             const col=PERIOD_COLORS[b]||{bg:'#64748b',text:'#fff'};
             const activeStyle=isActive?`background:${col.bg};border-color:${col.bg};color:${col.text}`:'';
+            if(!configured){
+                return `<button class="sblock ghost" disabled>${b}</button>`;
+            }
             return `<button class="sblock ${isActive?'active':''}" data-b="${b}" style="${activeStyle}" onclick="pickBlock('${cls}','${b}')">${b}</button>`;
         }).join('');
         return `<div class="sched-row">
-            <div class="sched-name" style="border-left:3px solid ${CLASS_COLORS[cls]||'#ccc'};padding-left:8px">${cls}</div>
+            <div class="sched-name" style="border-left:3px solid ${selCol};padding-left:8px">${cls}</div>
             <div class="sched-blocks">${blockBtns}
                 <button class="snone ${!sel?'active':''}" onclick="pickBlock('${cls}','')">None</button>
             </div>
         </div>`;
     }).join('');
 }
-
 function pickBlock(cls,blk){
     if(blk==='') delete tempSchedule[cls];
     else tempSchedule[cls]=blk;
