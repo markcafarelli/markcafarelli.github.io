@@ -237,13 +237,7 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
 .sched-blocks { display:flex; gap:6px; flex-wrap:wrap; }
 .sblock { width:36px; height:34px; border:1.5px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--muted); cursor:pointer; font-weight:800; font-size:.88em; font-family:'Outfit',sans-serif; transition:all .2s; }
 .sblock:hover { border-color:var(--muted); color:var(--text); }
-.sblock.active[data-b="A"] { background:#ef4444; border-color:#ef4444; color:#fff; }
-.sblock.active[data-b="B"] { background:#f97316; border-color:#f97316; color:#fff; }
-.sblock.active[data-b="C"] { background:#eab308; border-color:#eab308; color:#1e293b; }
-.sblock.active[data-b="D"] { background:#22c55e; border-color:#22c55e; color:#fff; }
-.sblock.active[data-b="E"] { background:#3b82f6; border-color:#3b82f6; color:#fff; }
-.sblock.active[data-b="F"] { background:#8b5cf6; border-color:#8b5cf6; color:#fff; }
-.sblock.active[data-b="G"] { background:#ec4899; border-color:#ec4899; color:#fff; }
+/* sblock active colors applied via inline style by JS using dynamic PERIOD_COLORS */
 .snone { padding:5px 12px; border:1.5px solid var(--border); border-radius:7px; background:var(--surface2); color:var(--muted); cursor:pointer; font-size:.85em; font-weight:700; font-family:'Nunito',sans-serif; transition:all .2s; }
 .snone:hover { border-color:var(--muted); }
 .snone.active { background:var(--border); color:var(--text); border-color:var(--muted); }
@@ -367,6 +361,7 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
 @keyframes spin{to{transform:rotate(360deg)}}
 .spinner{width:38px;height:38px;border:3.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 </head>
 <body>
 <canvas id="confetti-canvas"></canvas>
@@ -375,15 +370,14 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
 <header class="topbar">
   <div class="brand"><span>8th Grade Assignment Tracker</span> 📝</div>
   <div class="topbar-spacer"></div>
+  <button class="topbar-btn" id="cal-top-btn" onclick="openCalendar()" style="display:none">📅 <span>Calendar</span></button>
   <div class="tools-dd" id="tools-dd">
     <button class="topbar-btn" onclick="toggleToolsMenu(event)">⚙️ <span>Tools</span> <span style="font-size:.7em">▾</span></button>
     <div class="tools-dd-menu">
       <button class="tools-dd-item" onclick="openSchedule();closeToolsMenu()">👤 My Schedule</button>
-      <button class="tools-dd-item" onclick="openScheduleCode();closeToolsMenu()">🔑 Save / Load Code</button>
+      <button class="tools-dd-item" onclick="openScheduleCode();closeToolsMenu()">💾 Save &amp; Restore</button>
       <div class="tools-dd-sep"></div>
-      <button class="tools-dd-item" id="cal-item" onclick="openCalendar();closeToolsMenu()" style="display:none">📅 Calendar</button>
       <button class="tools-dd-item" id="print-item" onclick="buildAndPrint();closeToolsMenu()" style="display:none">🖨️ Print</button>
-      <div class="tools-dd-sep" id="cal-sep" style="display:none"></div>
       <button class="tools-dd-item" id="dm-item" onclick="toggleDark();updateDarkLabel()">🌙 <span id="dm-label">Dark Mode</span></button>
     </div>
   </div>
@@ -449,12 +443,11 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
           <div class="fp-pills" id="cls-dd-menu"></div>
         </div>
         <div class="fp-section">
-          <div class="fp-label">Type</div>
+          <div class="fp-label">Engagement</div>
           <div class="fp-pills">
             <button class="fp-pill active" data-filter="eng" data-value="all" onclick="setEngFilter('all')">All</button>
             <button class="fp-pill" data-filter="eng" data-value="Required" onclick="setEngFilter('Required')">Required</button>
             <button class="fp-pill" data-filter="eng" data-value="Optional" onclick="setEngFilter('Optional')">Optional</button>
-            <button class="fp-pill" data-filter="eng" data-value="Extra Credit" onclick="setEngFilter('Extra Credit')">Extra Credit</button>
           </div>
         </div>
         <div class="fp-section">
@@ -508,16 +501,17 @@ body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text);
 <div class="modal-bg" id="code-modal">
   <div class="modal-box" style="max-width:460px">
     <div class="modal-hdr">
-      <span class="modal-title">🔑 Schedule Code</span>
+      <span class="modal-title">💾 Save &amp; Restore</span>
       <button class="modal-close" onclick="closeScheduleCode()">×</button>
     </div>
     <div class="modal-body" style="padding:20px 24px">
       <p style="font-size:.9em;color:var(--muted);margin-bottom:16px;line-height:1.6">
-        Copy this code and save it somewhere safe (Google Drive, Notes, email to yourself).
-        On any device, paste it here to instantly restore your class schedule.
+        This code saves your <strong>class schedule, completed assignments, and display settings</strong>.
+        Copy it and keep it somewhere safe (Google Drive, Notes, email to yourself).
+        Paste it on any device to instantly restore your full tracker state.
       </p>
       <div style="margin-bottom:16px">
-        <label style="font-size:.8em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px">Your Schedule Code</label>
+        <label style="font-size:.8em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px">Your Save Code</label>
         <div style="display:flex;gap:8px;align-items:center">
           <input type="text" id="code-display" readonly style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:monospace;font-size:.85em;background:var(--surface2);color:var(--text);outline:none">
           <button class="mbtn mbtn-primary" onclick="copyScheduleCode()" style="flex-shrink:0">📋 Copy</button>
@@ -613,6 +607,7 @@ async function loadConfigFromSheet() {
                     CLASS_PERIODS[course.name] = course.periods || [];
                 }
             });
+            if(result.config.periodColors) Object.assign(PERIOD_COLORS, result.config.periodColors);
             if(result.config.quarterDates) quarterDates=result.config.quarterDates;
         }
     } catch(err){ console.warn('Config load failed:',err.message); }
@@ -645,7 +640,8 @@ const CLASS_COLORS = {
 };
 
 const ALL_PERIODS  = ['A','B','C','D','E','F','G'];
-const PERIOD_COLORS = {
+// Period colors — loaded from Sheet config, falls back to defaults
+let PERIOD_COLORS = {
     A: { bg:'#ef4444', text:'#fff' },
     B: { bg:'#f97316', text:'#fff' },
     C: { bg:'#eab308', text:'#1e293b' },
@@ -767,11 +763,11 @@ async function loadData(){
     document.getElementById('expand-btn').style.display='';
     document.getElementById('view-toggle-group').style.display='';
     // Show Calendar and Print in tools menu
-    const calItem=document.getElementById('cal-item');
+    const calTopBtn=document.getElementById('cal-top-btn');
     const printItem=document.getElementById('print-item');
-    const calSep=document.getElementById('cal-sep');
-    if(calItem){calItem.style.display='';} if(printItem){printItem.style.display='';} if(calSep){calSep.style.display='';}
+    if(calTopBtn){calTopBtn.style.display='';} if(printItem){printItem.style.display='';}
     buildClassDropdown();
+    migrateIds(); // convert any old base64 doneList IDs to new short format
     autoSetQuarter();
     applyAndRender();
 }
@@ -1037,10 +1033,43 @@ function renderClassView(data){
 
 // ── SAFE ID ──
 function safeId(item){
-    const c=item._class||'';
-    const n=item['Assignment Name']||'';
-    const d=item['Date Due']||'';
-    return btoa(encodeURIComponent(`${c}||${n}||${d}`));
+    // Use the sheet's own ID field (short base36, ~10 chars) when available.
+    // Falls back to a short numeric hash if missing.
+    const raw = item['ID'] || item['id'] || '';
+    if(raw.trim()) return raw.trim();
+    // Fallback hash (no base64 — keeps IDs short and compressible)
+    const str = `${item._class||''}|${item['Assignment Name']||''}|${item['Date Due']||''}`;
+    let h=0; for(let i=0;i<str.length;i++) h=Math.imul(31,h)+str.charCodeAt(i)|0;
+    return 'h'+Math.abs(h).toString(36);
+}
+
+// ── MIGRATE old base64 doneList/customOrder IDs to new short IDs ──
+// Runs once after allData loads — converts any old btoa(encodeURI) IDs automatically
+function migrateIds(){
+    if(!allData.length) return;
+    const oldId = item => {
+        const c=item._class||'', n=item['Assignment Name']||'', d=item['Date Due']||'';
+        return btoa(encodeURIComponent(`${c}||${n}||${d}`));
+    };
+    let changed = false;
+    const newDone = doneList.map(id => {
+        if(id.length <= 20) return id; // already short
+        const match = allData.find(a => oldId(a) === id);
+        if(match){ changed=true; return safeId(match); }
+        return id;
+    });
+    const newOrder = customOrder.map(id => {
+        if(id.length <= 20) return id;
+        const match = allData.find(a => oldId(a) === id);
+        if(match){ changed=true; return safeId(match); }
+        return id;
+    });
+    if(changed){
+        doneList = [...new Set(newDone)];
+        customOrder = newOrder;
+        localStorage.setItem(DONE_KEY,         JSON.stringify(doneList));
+        localStorage.setItem(CUSTOM_ORDER_KEY, JSON.stringify(customOrder));
+    }
 }
 
 // ── STATS ──
@@ -1383,10 +1412,21 @@ function toggleDone(id){
     updateStats();
 }
 
-// ── SCHEDULE CODE (save/load across devices) ──
+// ── SAVE & RESTORE (full tracker state across devices) ──
 function openScheduleCode(){
+    // Build compact save object with short keys to minimise code length
+    const saveData = {
+        v: 2,                                                       // version
+        s: userSchedule,                                            // schedule
+        d: doneList,                                                // done list
+        t: localStorage.getItem(THEME_KEY) || 'light',             // theme
+        o: customOrder.length ? customOrder : undefined             // custom order (omit if empty)
+    };
+    // Remove undefined keys to keep code shorter
+    Object.keys(saveData).forEach(k => saveData[k] === undefined && delete saveData[k]);
+
     const code = Object.keys(userSchedule).length > 0
-        ? btoa(unescape(encodeURIComponent(JSON.stringify(userSchedule))))
+        ? LZString.compressToBase64(JSON.stringify(saveData))
         : '';
     const el = document.getElementById('code-display');
     if(el) el.value = code || '(No schedule saved yet — set up My Schedule first)';
@@ -1406,12 +1446,34 @@ async function loadScheduleCode(){
     errEl.style.display='none';
     if(!code){errEl.style.display='block';errEl.textContent='Please paste a code first.';return;}
     try {
-        const decoded = JSON.parse(decodeURIComponent(escape(atob(code))));
+        // Try LZ-String compressed format first (new), fall back to plain base64 (old codes)
+        let jsonStr = LZString.decompressFromBase64(code);
+        if (!jsonStr) jsonStr = decodeURIComponent(escape(atob(code))); // legacy fallback
+        const decoded = JSON.parse(jsonStr);
         if(typeof decoded!=='object'||Array.isArray(decoded)) throw new Error('invalid');
-        userSchedule=decoded;
-        localStorage.setItem(SCHED_KEY,JSON.stringify(userSchedule));
+
+        if(decoded.v === 2){
+            // New full-state format
+            userSchedule = decoded.s || {};
+            doneList     = decoded.d || [];
+            customOrder  = decoded.o || [];
+            const theme  = decoded.t || 'light';
+            localStorage.setItem(THEME_KEY, theme);
+            document.documentElement.setAttribute('data-theme', theme);
+            updateDarkLabel();
+        } else {
+            // Legacy format — just a schedule object
+            userSchedule = decoded;
+            doneList     = [];
+            customOrder  = [];
+        }
+
+        localStorage.setItem(SCHED_KEY,        JSON.stringify(userSchedule));
+        localStorage.setItem(DONE_KEY,          JSON.stringify(doneList));
+        localStorage.setItem(CUSTOM_ORDER_KEY,  JSON.stringify(customOrder));
+
         closeScheduleCode();
-        showToast('Schedule loaded! Fetching assignments…',2500);
+        showToast('Tracker restored! Loading assignments…', 2500);
         await loadData();
     } catch(e){
         errEl.style.display='block';
@@ -1429,7 +1491,12 @@ function renderSchedGrid(){
     const grid=document.getElementById('sched-grid');
     grid.innerHTML=Object.entries(CLASS_PERIODS).map(([cls,periods])=>{
         const sel=tempSchedule[cls];
-        const blockBtns=periods.map(b=>`<button class="sblock ${sel===b?'active':''}" data-b="${b}" onclick="pickBlock('${cls}','${b}')">${b}</button>`).join('');
+        const blockBtns=periods.map(b=>{
+            const isActive=sel===b;
+            const col=PERIOD_COLORS[b]||{bg:'#64748b',text:'#fff'};
+            const activeStyle=isActive?`background:${col.bg};border-color:${col.bg};color:${col.text}`:'';
+            return `<button class="sblock ${isActive?'active':''}" data-b="${b}" style="${activeStyle}" onclick="pickBlock('${cls}','${b}')">${b}</button>`;
+        }).join('');
         return `<div class="sched-row">
             <div class="sched-name" style="border-left:3px solid ${CLASS_COLORS[cls]||'#ccc'};padding-left:8px">${cls}</div>
             <div class="sched-blocks">${blockBtns}
