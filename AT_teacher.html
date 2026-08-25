@@ -72,7 +72,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);font
 .period-grid{display:flex;flex-wrap:wrap;gap:9px}
 .period-btn{width:52px;height:52px;border:2px solid var(--border);border-radius:9px;background:var(--surface2);color:var(--muted);font-weight:800;font-size:1.1em;cursor:pointer;transition:all .2s;font-family:'Outfit',sans-serif}
 .period-btn:hover{border-color:var(--accent-mid);color:var(--accent)}
-.period-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff}
+.period-btn.selected{border-color:currentColor} /* background/color now via inline style */
 .period-btn.not-configured{opacity:.4;cursor:not-allowed;border-style:dashed}
 .period-hint{font-size:0.88em;color:var(--muted);margin-top:10px}
 
@@ -109,21 +109,9 @@ input::placeholder,textarea::placeholder{color:#bbb}
 .override-header:hover{background:var(--border)}
 .override-title{display:flex;align-items:center;gap:9px;font-weight:700;font-size:1em}
 .period-badge{color:#fff;border-radius:6px;padding:4px 10px;font-size:0.85em;font-weight:800;font-family:'Outfit',sans-serif}
-.period-badge[data-period="A"],.ali-period[data-period="A"],.period-btn.selected[data-period="A"]{background:#ef4444;border-color:#ef4444}
-.period-badge[data-period="B"],.ali-period[data-period="B"],.period-btn.selected[data-period="B"]{background:#f97316;border-color:#f97316}
-.period-badge[data-period="C"],.ali-period[data-period="C"],.period-btn.selected[data-period="C"]{background:#eab308;border-color:#eab308;color:#1e293b}
-.period-badge[data-period="D"],.ali-period[data-period="D"],.period-btn.selected[data-period="D"]{background:#22c55e;border-color:#22c55e}
-.period-badge[data-period="E"],.ali-period[data-period="E"],.period-btn.selected[data-period="E"]{background:#3b82f6;border-color:#3b82f6}
-.period-badge[data-period="F"],.ali-period[data-period="F"],.period-btn.selected[data-period="F"]{background:#8b5cf6;border-color:#8b5cf6}
-.period-badge[data-period="G"],.ali-period[data-period="G"],.period-btn.selected[data-period="G"]{background:#ec4899;border-color:#ec4899}
-.period-btn.selected{color:#fff}
-.override-card[data-period="A"].has-overrides{border-color:#ef4444}
-.override-card[data-period="B"].has-overrides{border-color:#f97316}
-.override-card[data-period="C"].has-overrides{border-color:#eab308}
-.override-card[data-period="D"].has-overrides{border-color:#22c55e}
-.override-card[data-period="E"].has-overrides{border-color:#3b82f6}
-.override-card[data-period="F"].has-overrides{border-color:#8b5cf6}
-.override-card[data-period="G"].has-overrides{border-color:#ec4899}
+.period-btn.selected{border-color:var(--accent);color:#fff}
+/* period-btn, ali-period, and period-badge colors now applied via inline style from PERIOD_COLORS_MAP */
+/* override-card has-overrides border color now applied via inline style from PERIOD_COLORS_MAP */
 .override-badges{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
 .customized-badge{background:var(--accent-light);color:var(--accent);border-radius:99px;padding:3px 9px;font-size:0.78em;font-weight:800}
 .default-badge{background:#f1f5f9;color:var(--muted);border-radius:99px;padding:3px 9px;font-size:0.78em;font-weight:700}
@@ -457,6 +445,9 @@ async function loadConfigFromSheet() {
       CLASSES = courses.map(c => c.name).filter(Boolean);
       CLASS_PERIODS_MAP = {};
       courses.forEach(c => { if (c.name) CLASS_PERIODS_MAP[c.name] = c.periods || []; });
+      if (result.config.periodColors) {
+        Object.assign(PERIOD_COLORS_MAP, result.config.periodColors);
+      }
       if (result.config.quarterDates) QUARTER_DATES = result.config.quarterDates;
     } else {
       showToast('Could not load class config. Check your connection.', 'error');
@@ -589,8 +580,11 @@ function renderCreateMode() {
   ALL_PERIODS.forEach(p => {
     const notConf  = configured.length > 0 && !configured.includes(p);
     const selected = selectedPeriods.includes(p);
+    const col      = PERIOD_COLORS_MAP[p] || {bg:'#64748b', text:'#fff'};
+    const selStyle = selected ? `background:${col.bg};border-color:${col.bg};color:${col.text}` : '';
     html += `<button class="period-btn${selected?' selected':''}${notConf?' not-configured':''}"
       data-period="${p}"
+      style="${selStyle}"
       onclick="${notConf?'':'togglePeriod(\''+p+'\')'}"
       title="${notConf?'Not configured for '+currentClass:'Period '+p}">
       ${p}
@@ -701,10 +695,11 @@ function buildOverrideCard(period) {
   const count       = [hasDue,hasAssigned,hasNotes,hasRes].filter(Boolean).length;
   const dueVal      = hasDue      ? formatDateInput(ov.dateDue)      : '';
   const assignedVal = hasAssigned ? formatDateInput(ov.dateAssigned) : '';
-  return `<div class="override-card${count>0?' has-overrides':''}" id="oc-${period}" data-period="${period}">
+  const borderCol = count > 0 ? `border-color:${(PERIOD_COLORS_MAP[period]||{bg:'#64748b'}).bg}` : '';
+  return `<div class="override-card${count>0?' has-overrides':''}" id="oc-${period}" data-period="${period}" style="${borderCol}">
     <div class="override-header" onclick="toggleOverrideCard('${period}')">
       <div class="override-title">
-        <span class="period-badge" data-period="${period}">Period ${period}</span>
+        <span class="period-badge" data-period="${period}" style="background:${(PERIOD_COLORS_MAP[period]||{bg:'#64748b'}).bg};color:${(PERIOD_COLORS_MAP[period]||{text:'#fff'}).text}">Period ${period}</span>
         <span style="color:var(--muted);font-size:.85em">Customizations:</span>
         <span class="override-badges" id="ob-${period}">
           ${renderOverrideBadges(period)}
@@ -956,7 +951,16 @@ async function submitForm(isUpdate) {
 }
 
 // ── CONFIRMATION MODAL ──
-const PERIOD_COLORS_MAP = {A:'#ef4444',B:'#f97316',C:'#eab308',D:'#22c55e',E:'#3b82f6',F:'#8b5cf6',G:'#ec4899'};
+// Period colors — loaded from Sheet config, falls back to defaults
+let PERIOD_COLORS_MAP = {
+    A:{bg:'#ef4444',text:'#fff'},
+    B:{bg:'#f97316',text:'#fff'},
+    C:{bg:'#eab308',text:'#1e293b'},
+    D:{bg:'#22c55e',text:'#fff'},
+    E:{bg:'#3b82f6',text:'#fff'},
+    F:{bg:'#8b5cf6',text:'#fff'},
+    G:{bg:'#ec4899',text:'#fff'}
+};
 
 function showConfirmModal() {
   const { isUpdate, rows, postClass, name, engage, atype, quarter, where, assigned, due } = pendingPost;
@@ -965,7 +969,7 @@ function showConfirmModal() {
   const periodBadges = rows
     .map(r => r.block)
     .filter((v,i,a) => a.indexOf(v)===i)
-    .map(p => `<span class="confirm-period-badge" style="background:${PERIOD_COLORS_MAP[p]||'#64748b'}">${p}</span>`)
+    .map(p => `<span class="confirm-period-badge" style="background:${(PERIOD_COLORS_MAP[p]||{bg:'#64748b'}).bg};color:${(PERIOD_COLORS_MAP[p]||{text:'#fff'}).text}">${p}</span>`)
     .join('');
 
   const movingClass = isUpdate && reassignClass && reassignClass !== currentClass;
@@ -1116,7 +1120,7 @@ function renderAssignmentCards(search='') {
     const isAll = a.periods.length === ref.length && a.periods.every(p => ref.includes(p));
     const periodsHtml = isAll
       ? `<span class="tag tag-all">All Periods</span>`
-      : a.periods.map(p=>`<span class="ali-period" data-period="${p}">${p}</span>`).join('');
+      : a.periods.map(p=>{const c=PERIOD_COLORS_MAP[p]||{bg:'#64748b',text:'#fff'};return`<span class="ali-period" data-period="${p}" style="background:${c.bg};color:${c.text}">${p}</span>`;}).join('');
 
     const qTag   = a.quarter        ? `<span class="tag tag-q">${a.quarter}</span>` : '';
     const tTag   = a.assignmentType ? `<span class="tag tag-type">${a.assignmentType}</span>` : '';
